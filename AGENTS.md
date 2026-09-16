@@ -229,3 +229,22 @@ test(vm): add function call integration test
 chore(repo): add initial project structure
 ```
 Commit messages should describe the actual change and remain concise.
+
+## Documentation maintenance
+
+Project context files are living documents and must be kept up to date.
+
+When a change affects architecture, component responsibilities, public contracts, or previously open decisions, update the relevant documentation in the same Pull Request.
+
+Rules:
+
+- Update `docs/ai-context/00-project-overview.md` only when the overall project model changes.
+- Update `docs/ai-context/01-architecture.md` when architectural decisions or component boundaries change.
+- Update `docs/ai-context/02-open-questions.md` when:
+  - a new unresolved architectural question appears;
+  - an existing question is resolved.
+- When an open question is resolved, remove it from `02-open-questions.md` and document the accepted decision in the relevant architecture or specification file.
+- Update files in `spec/` whenever a public contract between components changes.
+- Do not leave documentation knowingly inconsistent with the implementation.
+
+Documentation changes should be included in the same Pull Request as the code change that caused them.
