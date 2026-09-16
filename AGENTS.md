@@ -248,3 +248,17 @@ Rules:
 - Do not leave documentation knowingly inconsistent with the implementation.
 
 Documentation changes should be included in the same Pull Request as the code change that caused them.
+
+### Pull Requests
+
+- Changes should reach `main` through a Pull Request.
+- Keep Pull Requests focused and reasonably small.
+- Every Pull Request should reference and close the related Issue.
+- Use GitHub closing keywords in the Pull Request description, for example:
+  - `Closes #12`
+  - `Fixes #12`
+  - `Resolves #12`
+- Pull Request titles must follow this format:
+
+```text
+Type | Short description
