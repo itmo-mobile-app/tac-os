@@ -6,6 +6,12 @@ This file defines the rules for AI agents working with the `tac-os` repository.
 
 The mobile application is written in a custom programming language, compiled into `.bc` bytecode, and executed by a custom virtual machine.
 
+## Language convention
+
+- Code, commit messages, `AGENTS.md`, `docs/`, and `spec/` are written in English.
+- GitHub Issues and Pull Request discussion (titles, descriptions, comments, review threads) are written in Russian.
+- Do not mix languages within the same file or the same PR title/description.
+
 ## Before making changes
 
 Before modifying code, read:
