@@ -186,6 +186,7 @@ A change is considered complete when:
 - If no suitable Issue exists, create one before making significant changes.
 - Keep Issues small and focused on one concrete increment.
 - An Issue should describe a verifiable result, not only a component name.
+- When creating an Issue, set: labels (component/type of change), Type (Task/Bug/Feature), Priority, and assignee (if the owner is already known), instead of leaving these fields empty.
 
 Bad:
 
