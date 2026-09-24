@@ -11,7 +11,7 @@ It does not change architectural boundaries: components remain separate even whe
 
 | # | Area                            | Person    | GitHub              | Main responsibilities                                                                                               |
 |---|---------------------------------|-----------|---------------------|---------------------------------------------------------------------------------------------------------------------|
-| 1 | Architecture and integration    | Максим С. | TheGeniusOfEternity | Requirements, architecture, shared contracts, integration, CI, end-to-end scenarios                                 |
+| 1 | Architecture and integration    | Максим    | TheGeniusOfEternity | Requirements, architecture, shared contracts, integration, CI, end-to-end scenarios                                 |
 | 2 | Language and compiler           | Маруся    | m4shustik-s         | Custom language, grammar, parsing, semantic analysis, `.tc` → `.bc` compilation                                     |
 | 3 | VM Core                         | Никита    | pypynyaa            | Bytecode loading, interpreter, stack, heap, function calls, branching, Runtime call mechanism                       |
 | 4 | Runtime                         | Андрей    | pateWY              | Threads, IPC, camera, location, orientation, network, files, time, Activity framework, WebView bridge               |
