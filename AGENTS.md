@@ -262,3 +262,8 @@ Documentation changes should be included in the same Pull Request as the code ch
 
 ```text
 Type | Short description
+```
+
+- A task is not complete until its Pull Request is opened; opening the PR is the final step of every task.
+- The Pull Request must be opened from the branch of the agent/developer who performed the task, under that same agent's/developer's account.
+- The Pull Request description must be filled in (not left as a template with empty sections) and must include applicable labels/tags (e.g. component, type of change).
