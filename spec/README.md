@@ -7,114 +7,22 @@ They should not contain unnecessary implementation details.
 
 Create a specification only when the corresponding contract becomes necessary.
 
-## Planned specifications
+## Specifications
 
-The project is expected to eventually contain files such as:
+| File | Contract | Status |
+| --- | --- | --- |
+| [`language.md`](language.md) | `.tc` syntax | draft, pending owner approval |
+| [`bytecode.md`](bytecode.md) | Compiler ↔ VM | draft, pending owner approval |
+| [`runtime-api.md`](runtime-api.md) | VM ↔ Runtime | draft, pending owner approval |
+| [`ipc.md`](ipc.md) | Analyzer ↔ Map | draft, pending owner approval |
+| [`broker-protocol.md`](broker-protocol.md) | Client/Target Service ↔ Broker | draft, pending owner approval |
+| [`data-model.md`](data-model.md) | Shared domain structures | draft, pending owner approval |
+| [`sql.md`](sql.md) | SQL subset for the DBMS | draft, pending owner approval |
 
-```text
-language.md
-bytecode.md
-runtime-api.md
-ipc.md
-broker-protocol.md
-data-model.md
-sql.md
-```
-
-## Intended scope
-
-### `language.md`
-
-Defines the minimal custom language required by the application.
-
-Expected topics:
-
-- syntax;
-- types;
-- functions;
-- control flow;
-- data structures;
-- Runtime API access.
-
-### `bytecode.md`
-
-Defines the contract between Compiler and VM.
-
-Expected topics:
-
-- `.bc` file structure;
-- instruction encoding;
-- instruction set;
-- function representation;
-- constants;
-- Runtime/native call encoding.
-
-### `runtime-api.md`
-
-Defines the API visible to programs running inside the VM.
-
-Expected areas:
-
-- threads;
-- IPC;
-- camera;
-- location;
-- orientation;
-- networking;
-- files;
-- time;
-- Activity lifecycle;
-- WebView;
-- Window Manager access.
-
-### `ipc.md`
-
-Defines communication between local application processes.
-
-Primary scenario:
-
-```text
-Analyzer process
-   ↓
-IPC
-   ↓
-Map process
-```
-
-Expected topics:
-
-- message types;
-- payload format;
-- serialization;
-- delivery behavior.
-
-### `broker-protocol.md`
-
-Defines communication with the message Broker.
-
-Expected topics:
-
-- transport;
-- framing;
-- publish/subscribe commands;
-- topics;
-- message format.
-
-### `data-model.md`
-
-Defines shared domain structures.
-
-Expected entities include:
-
-- `Detection`;
-- `Observation`;
-- `Target`.
-
-### `sql.md`
-
-Defines the SQL subset supported by the custom DBMS.
-
-Only SQL required by the Target Service should be included.
+Each file was proposed by Architecture & Integration ahead of Sprint 0 to unblock parallel work; the
+owner of the corresponding area (see `docs/ai-context/03-team-ownership.md`) reviews and amends it via a
+Pull Request once they pick up their Sprint 0 issue. "Draft" here means "may still change", not
+"undecided" — components can build against it in the meantime.
 
 ## Rules
 
