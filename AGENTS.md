@@ -198,10 +198,10 @@ Better:
 - Do not work directly on `main`.
 - Create a short-lived branch for each Issue.
 - Prefer names such as:
-    - `feat/runtime-ipc`
-    - `feat/vm-loader`
-    - `fix/broker-subscription`
-    - `docs/runtime-api`
+  - `feat/runtime-ipc`
+  - `feat/vm-loader`
+  - `fix/broker-subscription`
+  - `docs/runtime-api`
 
 ### Pull Requests
 
@@ -234,6 +234,7 @@ docs(spec): define runtime call ABI
 test(vm): add function call integration test
 chore(repo): add initial project structure
 ```
+
 Commit messages should describe the actual change and remain concise.
 
 Before committing, check that changed files are formatted correctly (e.g. Markdown tables are properly aligned, no stray/misaligned columns) and fix formatting issues before creating the commit.
