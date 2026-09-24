@@ -160,6 +160,10 @@ Remaining open:
 
 ## Application
 
+- Exact team/opponent affiliation encoding (how a marker identifies which team it belongs to, so a
+  client can tell its own team apart from opponents).
+- Exact "tag"/elimination rule (how many independent observations, within what time, confirm a hit).
+- What happens to a player after being tagged (eliminated for the round vs. respawn after a cooldown).
 - Exact UI structure.
 - Exact division between Analyzer and Map responsibilities.
 - Whether Analyzer has its own visible Activity.

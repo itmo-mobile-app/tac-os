@@ -6,7 +6,9 @@ Status: draft
 
 `tac-os` is an educational project that implements a simplified Android-like platform on top of Linux.
 
-The project also includes a tactical mobile application for outdoor games.
+The concrete target scenario for the mobile application is a tool that simplifies opponent detection
+during an airsoft game: the application recognizes an opponent's marker through the camera and shows
+their position on a shared tactical map in real time, for the whole team to see.
 
 ## Main goal
 
@@ -30,7 +32,7 @@ The project is intended to demonstrate and study the core ideas behind a mobile 
 A client device should be able to:
 
 1. receive a camera frame;
-2. detect and identify a target using a visible marker;
+2. detect and identify a target (an opposing player wearing a marker) using a visible marker;
 3. estimate target direction and distance;
 4. calculate target coordinates using the device position and orientation;
 5. create an observation;
