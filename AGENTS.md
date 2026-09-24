@@ -236,6 +236,8 @@ chore(repo): add initial project structure
 ```
 Commit messages should describe the actual change and remain concise.
 
+Before committing, check that changed files are formatted correctly (e.g. Markdown tables are properly aligned, no stray/misaligned columns) and fix formatting issues before creating the commit.
+
 ## Documentation maintenance
 
 Project context files are living documents and must be kept up to date.
