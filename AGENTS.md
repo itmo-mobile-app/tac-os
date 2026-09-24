@@ -6,6 +6,12 @@ This file defines the rules for AI agents working with the `tac-os` repository.
 
 The mobile application is written in a custom programming language, compiled into `.bc` bytecode, and executed by a custom virtual machine.
 
+## Language convention
+
+- Code, commit messages, `AGENTS.md`, `docs/`, and `spec/` are written in English.
+- GitHub Issues and Pull Request discussion (titles, descriptions, comments, review threads) are written in Russian.
+- Do not mix languages within the same file or the same PR title/description.
+
 ## Before making changes
 
 Before modifying code, read:
@@ -270,3 +276,5 @@ Type | Short description
 - The Pull Request must be opened from the branch of the agent/developer who performed the task, under that same agent's/developer's account.
 - The Pull Request description must be filled in (not left as a template with empty sections).
 - When opening a Pull Request, set: labels (component/type of change), assignees (the agent/developer who did the work), and the relevant GitHub Project (if the repository uses one), instead of leaving these fields empty.
+- The Pull Request description must be written in an impersonal form (e.g. Russian "Был закреплён", not "Я закрепил"), not as a first-person account of what the author did.
+- Before opening a Pull Request, an AI agent must present a summary of the work done and wait for explicit human confirmation before opening it.
