@@ -262,3 +262,11 @@ Documentation changes should be included in the same Pull Request as the code ch
 
 ```text
 Type | Short description
+```
+
+- `Type` must be capitalized (e.g. `Feat`, `Fix`, `Docs`, `Refactor`, `Test`, `Chore`, `CI`).
+
+- A task is not complete until its Pull Request is opened; opening the PR is the final step of every task.
+- The Pull Request must be opened from the branch of the agent/developer who performed the task, under that same agent's/developer's account.
+- The Pull Request description must be filled in (not left as a template with empty sections).
+- When opening a Pull Request, set: labels (component/type of change), assignees (the agent/developer who did the work), and the relevant GitHub Project (if the repository uses one), instead of leaving these fields empty.
