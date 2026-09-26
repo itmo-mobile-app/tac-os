@@ -4,7 +4,8 @@ This file defines the rules for AI agents working with the `tac-os` repository.
 
 `tac-os` is an educational project that implements a simplified Android-like platform on top of Linux.
 
-The mobile application is written in a custom programming language, compiled into `.bc` bytecode, and executed by a custom virtual machine.
+The mobile application is written in a custom programming language, compiled into `.bc` bytecode, and executed by a
+custom virtual machine.
 
 ## Language convention
 
@@ -164,7 +165,8 @@ Bad:
 
 Better:
 
-> Make the VM load `.bc` bytecode and execute the minimal instruction set required for the first compiler → VM integration test.
+> Make the VM load `.bc` bytecode and execute the minimal instruction set required for the first compiler → VM
+> integration test.
 
 ## Definition of done
 
@@ -184,6 +186,7 @@ A change is considered complete when:
 - If no suitable Issue exists, create one before making significant changes.
 - Keep Issues small and focused on one concrete increment.
 - An Issue should describe a verifiable result, not only a component name.
+- When creating an Issue, set: labels (component/type of change), Type (Task/Bug/Feature), Priority, and assignee (if the owner is already known), instead of leaving these fields empty.
 
 Bad:
 
@@ -191,17 +194,18 @@ Bad:
 
 Better:
 
-> Add `ipc.send` and `ipc.receive` to the Runtime and cover communication between Analyzer and Map with an integration test.
+> Add `ipc.send` and `ipc.receive` to the Runtime and cover communication between Analyzer and Map with an integration
+> test.
 
 ### Branches
 
 - Do not work directly on `main`.
 - Create a short-lived branch for each Issue.
 - Prefer names such as:
-    - `feat/runtime-ipc`
-    - `feat/vm-loader`
-    - `fix/broker-subscription`
-    - `docs/runtime-api`
+  - `feat/runtime-ipc`
+  - `feat/vm-loader`
+  - `fix/broker-subscription`
+  - `docs/runtime-api`
 
 ### Pull Requests
 
@@ -234,6 +238,7 @@ docs(spec): define runtime call ABI
 test(vm): add function call integration test
 chore(repo): add initial project structure
 ```
+
 Commit messages should describe the actual change and remain concise.
 
 Before committing, check that changed files are formatted correctly (e.g. Markdown tables are properly aligned, no stray/misaligned columns) and fix formatting issues before creating the commit.
@@ -242,7 +247,8 @@ Before committing, check that changed files are formatted correctly (e.g. Markdo
 
 Project context files are living documents and must be kept up to date.
 
-When a change affects architecture, component responsibilities, public contracts, or previously open decisions, update the relevant documentation in the same Pull Request.
+When a change affects architecture, component responsibilities, public contracts, or previously open decisions, update
+the relevant documentation in the same Pull Request.
 
 Rules:
 
@@ -251,7 +257,8 @@ Rules:
 - Update `docs/ai-context/02-open-questions.md` when:
   - a new unresolved architectural question appears;
   - an existing question is resolved.
-- When an open question is resolved, remove it from `02-open-questions.md` and document the accepted decision in the relevant architecture or specification file.
+- When an open question is resolved, remove it from `02-open-questions.md` and document the accepted decision in the
+  relevant architecture or specification file.
 - Update files in `spec/` whenever a public contract between components changes.
 - Do not leave documentation knowingly inconsistent with the implementation.
 
@@ -275,7 +282,8 @@ Type | Short description
 - `Type` must be capitalized (e.g. `Feat`, `Fix`, `Docs`, `Refactor`, `Test`, `Chore`, `CI`).
 
 - A task is not complete until its Pull Request is opened; opening the PR is the final step of every task.
-- The Pull Request must be opened from the branch of the agent/developer who performed the task, under that same agent's/developer's account.
+- The Pull Request must be opened from the branch of the agent/developer who performed the task, under that same
+  agent's/developer's account.
 - The Pull Request description must be filled in (not left as a template with empty sections).
 - When opening a Pull Request, set: labels (component/type of change), assignees (the agent/developer who did the work), and the relevant GitHub Project (if the repository uses one), instead of leaving these fields empty.
 - The Pull Request description must be written in an impersonal form (e.g. Russian "Был закреплён", not "Я закрепил"), not as a first-person account of what the author did.

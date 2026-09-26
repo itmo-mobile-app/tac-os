@@ -9,17 +9,20 @@ It does not change architectural boundaries: components remain separate even whe
 
 ## Ownership model
 
-| # | Area                            | Main responsibilities                                                                                               |
-|---|---------------------------------|---------------------------------------------------------------------------------------------------------------------|
-| 1 | Architecture and integration    | Requirements, architecture, shared contracts, integration, CI, end-to-end scenarios                                 |
-| 2 | Language and compiler           | Custom language, grammar, parsing, semantic analysis, `.tc` → `.bc` compilation                                     |
-| 3 | VM Core                         | Bytecode loading, interpreter, stack, heap, function calls, branching, Runtime call mechanism                       |
-| 4 | Runtime                         | Threads, IPC, camera, location, orientation, network, files, time, Activity framework, WebView bridge               |
-| 5 | Window Manager and UI framework | Window Manager, window lifecycle, input dispatch, Activity integration, WebView integration                         |
-| 6 | SQL DBMS                        | SQL parser, executor, tables, persistent storage, supported SQL subset                                              |
-| 7 | Broker and Target Service       | Publish/subscribe Broker, target aggregation, probability/time decay, DBMS interaction                              |
-| 8 | Analyzer                        | Camera processing, target identification, confidence, direction, distance, target coordinates, Observation creation |
-| 9 | Tactical Map / application UI   | 2D map, markers, probability display, IPC input, remote target updates, application shell                           |
+| # | Area                            | Person    | GitHub              | Main responsibilities                                                                                               |
+|---|---------------------------------|-----------|---------------------|---------------------------------------------------------------------------------------------------------------------|
+| 1 | Architecture and integration    | Максим    | TheGeniusOfEternity | Requirements, architecture, shared contracts, integration, CI, end-to-end scenarios                                 |
+| 2 | Language and compiler           | Маруся    | m4shustik-s         | Custom language, grammar, parsing, semantic analysis, `.tc` → `.bc` compilation                                     |
+| 3 | VM Core                         | Никита    | pypynyaa            | Bytecode loading, interpreter, stack, heap, function calls, branching, Runtime call mechanism                       |
+| 4 | Runtime                         | Андрей    | pateWY              | Threads, IPC, camera, location, orientation, network, files, time, Activity framework, WebView bridge               |
+| 5 | Window Manager and UI framework | Настя     | khamitova-prog      | Window Manager, window lifecycle, input dispatch, Activity integration, WebView integration                         |
+| 6 | SQL DBMS                        | Матвей К. | chatty-king         | SQL parser, executor, tables, persistent storage, supported SQL subset                                              |
+| 7 | Broker and Target Service       | Ника      | nika877             | Publish/subscribe Broker, target aggregation, probability/time decay, DBMS interaction                              |
+| 8 | Analyzer                        | Алиса     | slutswarming        | Camera processing, target identification, confidence, direction, distance, target coordinates, Observation creation |
+| 9 | Tactical Map / application UI   | Матвей С. | mattthewww          | 2D map, markers, probability display, IPC input, remote target updates, application shell                           |
+
+Not everyone has accepted the GitHub organization invite yet. Until a person joins, they cannot be set as an Issue/PR
+assignee in this repository, even though their ownership area is already fixed above.
 
 ## Notes
 
