@@ -34,4 +34,3 @@ Before making architectural or implementation decisions in `tac-os`:
 - Broker transports messages and contains no target business logic.
 - Target Service contains target-domain business logic.
 - DBMS executes SQL and manages persistent storage without knowing target-domain semantics.
-

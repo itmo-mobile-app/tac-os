@@ -8,6 +8,9 @@ AI agents must not silently resolve these questions. If implementation work requ
 
 ## Language
 
+A minimal syntax is proposed in `spec/language.md` (draft, pending approval by the Language and
+Compiler owner). Remaining open:
+
 - Exact language syntax.
 - Minimal type system.
 - Whether classes are required.
@@ -25,6 +28,9 @@ AI agents must not silently resolve these questions. If implementation work requ
 - Exact mapping from language constructs to bytecode.
 
 ## Bytecode
+
+A minimal instruction set and file format are proposed in `spec/bytecode.md` (draft, pending approval by
+the VM Core owner). Remaining open:
 
 - Instruction set.
 - Bytecode file format.
@@ -47,11 +53,13 @@ AI agents must not silently resolve these questions. If implementation work requ
 
 ## Runtime
 
-- Exact Runtime API.
+A minimal Runtime call ABI and one function (`runtime.log`) are proposed in `spec/runtime-api.md`
+(draft, pending approval by the Runtime owner). The IPC mechanism and message format for the
+Analyzer↔Map scenario are proposed in `spec/ipc.md` (draft, same owner). Remaining open:
+
+- Exact Runtime API (beyond `runtime.log`).
 - Linux threading primitive.
 - Thread synchronization primitives.
-- Exact IPC mechanism.
-- IPC message serialization format.
 - Camera API.
 - Location API.
 - Orientation API.
@@ -96,23 +104,18 @@ IPC
 Map process
 ```
 
-Still unresolved:
+A minimal transport, message type (`TARGET_DETECTED`), and payload format are proposed in
+`spec/ipc.md` (draft, pending approval by the Runtime owner). Still unresolved:
 
-- exact message types;
-- exact payload format;
-- delivery guarantees;
-- request/response requirements;
-- behavior when the receiving process is unavailable.
+- request/response requirements (the proposal is one-way notification only);
+- behavior when the receiving process is unavailable (the proposal is: drop the message).
 
 ## Broker
 
-- Exact network transport.
-- TCP vs WebSocket.
-- Wire protocol.
-- Message framing.
-- Subscription format.
+A minimal transport, wire protocol, and command set are proposed in `spec/broker-protocol.md` (draft,
+pending approval by the Broker and Target Service owner). Remaining open:
+
 - Reconnection behavior.
-- Delivery guarantees.
 - Whether message persistence is required.
 
 Initial logical topics are expected to include:
@@ -122,8 +125,9 @@ Initial logical topics are expected to include:
 
 ## Target Service
 
-- Exact `Observation` fields.
-- Exact `Target` fields.
+`Observation` and `Target` fields are proposed in `spec/data-model.md` (draft, pending approval by the
+Broker and Target Service owner together with the Analyzer and Tactical Map owners). Remaining open:
+
 - Aggregation algorithm.
 - Coordinate aggregation strategy.
 - Probability calculation formula.
@@ -133,8 +137,9 @@ Initial logical topics are expected to include:
 
 ## DBMS
 
-- Exact supported SQL subset.
-- SQL grammar.
+A minimal SQL subset is proposed in `spec/sql.md` (draft, pending approval by the SQL DBMS owner).
+Remaining open:
+
 - Storage format.
 - Table representation.
 - Whether indexes are required.
@@ -155,6 +160,10 @@ Initial logical topics are expected to include:
 
 ## Application
 
+- Exact team/opponent affiliation encoding (how a marker identifies which team it belongs to, so a
+  client can tell its own team apart from opponents).
+- Exact "tag"/elimination rule (how many independent observations, within what time, confirm a hit).
+- What happens to a player after being tagged (eliminated for the round vs. respawn after a cooldown).
 - Exact UI structure.
 - Exact division between Analyzer and Map responsibilities.
 - Whether Analyzer has its own visible Activity.
