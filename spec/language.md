@@ -1,7 +1,8 @@
 # Language specification
 
-Status: draft — proposed by Architecture & Integration ahead of Sprint 0, pending review and approval by
-the Language and Compiler owner (see `docs/ai-context/03-team-ownership.md`) in a follow-up Pull Request.
+Status: draft — proposed by Architecture & Integration ahead of Sprint 0, reviewed and approved by
+the Language and Compiler owner (see `docs/ai-context/03-team-ownership.md`). Compilation notes added
+following confirmation from the VM Core owner.
 
 This document defines the minimal syntax of the `.tc` language required for the first Compiler → VM
 integration scenario (see `docs/ai-context/02-open-questions.md` → "Language").
@@ -70,10 +71,33 @@ fn main() {
 }
 ```
 
+## Compilation notes
+
+Confirmed with the VM Core owner against `spec/bytecode.md`. These notes describe how language-level
+constructs map onto the bytecode format; they do not change the syntax above.
+
+- **Value representation**: every value — `Int`, `Bool`, and `String` — occupies a single 64-bit slot
+  in locals and on the operand stack.
+- **`Bool` representation**: `Bool` has no distinct runtime type. It is an `Int` slot holding `0`
+  (false) or `1` (true), consistent with `CMP_EQ` / `CMP_LT` in `spec/bytecode.md`.
+- **`String` representation**: at runtime, a `String` value is a reference (pointer) to a string object
+  on the heap. Locals and stack slots holding a `String` hold this reference, not the bytes themselves.
+  (String *constants* are stored inline in the constant pool per `spec/bytecode.md`; the reference is
+  materialized when the constant is pushed.)
+- **Function frame layout**: on `CALL`, locals `0` to `param_count - 1` hold the function's parameters,
+  in declaration order. Locals from `param_count` onward hold the function's own `let`-declared
+  variables, in order of declaration.
+- **Comparison operators beyond `CMP_EQ` / `CMP_LT`**: `spec/bytecode.md` defines `CMP_EQ` and
+  `CMP_LT` directly, plus a `NOT` opcode (pop Int 0/1, push the inverted 0/1) added specifically to
+  support lowering the remaining comparison operators. The compiler lowers them as follows:
+  - `a > b` compiles as `b < a` (operands swapped, using `CMP_LT`).
+  - `a != b` compiles as `CMP_EQ` followed by `NOT`.
+  - `a <= b` compiles as `b < a` (`CMP_LT`, operands swapped) followed by `NOT`.
+  - `a >= b` compiles as `a < b` (`CMP_LT`) followed by `NOT`.
+
 ## Open questions
 
 Not decided here; see `docs/ai-context/02-open-questions.md` → "Language":
 
-- whether classes/structs are required;
 - error handling model;
 - standard library scope beyond the Runtime API.
