@@ -1,8 +1,6 @@
 # Data model specification
 
-Status: draft — proposed by Architecture & Integration ahead of Sprint 0, pending review and approval by
-the Broker and Target Service owner together with the Analyzer and Tactical Map owners (see
-`docs/ai-context/03-team-ownership.md`) in a follow-up Pull Request.
+Status: Approved — reviewed and approved by the Broker and Target Service owner.
 
 This document formalizes the shared structures introduced conceptually in
 `docs/ai-context/04-data-model.md`, for use by `spec/ipc.md` and `spec/broker-protocol.md`.

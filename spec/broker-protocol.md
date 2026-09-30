@@ -1,8 +1,6 @@
 # Broker protocol specification
 
-Status: draft — proposed by Architecture & Integration ahead of Sprint 0, pending review and approval by
-the Broker and Target Service owner (see `docs/ai-context/03-team-ownership.md`) in a follow-up Pull
-Request.
+Status: Approved — reviewed and approved by the Broker and Target Service owner.
 
 This document defines the minimal publish/subscribe protocol between clients (Map, Target Service) and
 the Broker (see `docs/ai-context/01-architecture.md` → "Broker").
@@ -15,7 +13,9 @@ concrete scenario needs browser clients (WebSocket) or message persistence.
 ## Framing and encoding
 
 - One command per line (`\n`-terminated), UTF-8 text.
-- Command format: `<VERB> <topic> [payload]`, where `payload` (if present) is a single-line JSON object.
+- `SUB` has the format `<VERB> <topic>`.
+- `PUB` and `MSG` have the format `<VERB> <topic> <payload>`.
+- `payload` is a single-line JSON object.
 
 ## Commands
 
