@@ -93,4 +93,3 @@ Not decided here; see `docs/ai-context/02-open-questions.md` → "Bytecode" and 
 - versioning/compatibility strategy beyond the `version` field;
 - metadata (debug info, source locations);
 - stack overflow / underflow behaviour.
-```
