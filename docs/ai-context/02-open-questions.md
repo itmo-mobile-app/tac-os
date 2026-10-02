@@ -12,6 +12,10 @@ A minimal syntax is defined in `spec/language.md` (reviewed and approved by the 
 Compiler owner; compilation notes confirmed against `spec/bytecode.md` by the VM Core owner).
 Remaining open:
 
+- Minimal type system.
+- Whether classes are required.
+- Whether inheritance is required.
+- Exact representation of structs or objects.
 - Error handling model.
 - Standard library scope.
 
