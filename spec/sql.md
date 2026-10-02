@@ -1,7 +1,6 @@
 # SQL specification
 
-Status: draft — proposed by Architecture & Integration ahead of Sprint 0, pending review and approval by
-the SQL DBMS owner (see `docs/ai-context/03-team-ownership.md`) in a follow-up Pull Request.
+Status: approved by the SQL DBMS owner (@chatty-king) for the Sprint 0 minimal SQL subset
 
 This document defines the minimal SQL subset the DBMS must support for the Target Service (see
 `docs/ai-context/01-architecture.md` → "DBMS").
