@@ -16,6 +16,8 @@ concrete scenario needs browser clients (WebSocket) or message persistence.
 - `SUB` has the format `<VERB> <topic>`.
 - `PUB` and `MSG` have the format `<VERB> <topic> <payload>`.
 - `payload` is a single-line JSON object.
+- `topic` must not contain spaces.
+- `payload` is the rest of the line after the second space.
 
 ## Commands
 
