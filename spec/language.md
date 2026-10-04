@@ -92,6 +92,22 @@ constructs map onto the bytecode format; they do not change the syntax above.
   - `a != b` compiles as `CMP_EQ` followed by `NOT`.
   - `a <= b` compiles as `b < a` (`CMP_LT`, operands swapped) followed by `NOT`.
   - `a >= b` compiles as `a < b` (`CMP_LT`) followed by `NOT`.
+- **Return values**: every call — to a function in the same file (`CALL`) or to a Runtime function
+  (`CALL_RUNTIME`) — leaves exactly one value on the operand stack (see `spec/bytecode.md` and
+  `spec/runtime-api.md`). Consequently:
+  - a call used as an expression statement (e.g. `runtime.log("hello");`) is followed by `POP`;
+  - a function declared without `-> <type>` returns `Int 0`: the compiler emits `PUSH_CONST` of `0`
+    followed by `RET` for `return;` and at the end of the function body.
+
+For example, `fn main() { runtime.log("hello"); }` compiles to:
+
+```text
+PUSH_CONST   "hello"
+CALL_RUNTIME "runtime.log", 1
+POP
+PUSH_CONST   0
+RET
+```
 
 ## Open questions
 
