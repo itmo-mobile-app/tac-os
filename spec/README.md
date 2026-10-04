@@ -11,18 +11,17 @@ Create a specification only when the corresponding contract becomes necessary.
 
 | File | Contract | Status |
 | --- | --- | --- |
-| [`language.md`](language.md) | `.tc` syntax | draft, pending owner approval |
-| [`bytecode.md`](bytecode.md) | Compiler ↔ VM | draft, pending owner approval |
-| [`runtime-api.md`](runtime-api.md) | VM ↔ Runtime | draft, pending owner approval |
-| [`ipc.md`](ipc.md) | Analyzer ↔ Map | draft, pending owner approval |
-| [`broker-protocol.md`](broker-protocol.md) | Client/Target Service ↔ Broker | draft, pending owner approval |
-| [`data-model.md`](data-model.md) | Shared domain structures | draft, pending owner approval |
-| [`sql.md`](sql.md) | SQL subset for the DBMS | draft, pending owner approval |
+| [`language.md`](language.md) | `.tc` syntax | approved |
+| [`bytecode.md`](bytecode.md) | Compiler ↔ VM | approved |
+| [`runtime-api.md`](runtime-api.md) | VM ↔ Runtime | approved |
+| [`ipc.md`](ipc.md) | Analyzer ↔ Map | approved |
+| [`broker-protocol.md`](broker-protocol.md) | Client/Target Service ↔ Broker | approved |
+| [`data-model.md`](data-model.md) | Shared domain structures | approved by Broker/Target Service; pending Analyzer and Tactical Map owners |
+| [`sql.md`](sql.md) | SQL subset for the DBMS | approved |
 
-Each file was proposed by Architecture & Integration ahead of Sprint 0 to unblock parallel work; the
-owner of the corresponding area (see `docs/ai-context/03-team-ownership.md`) reviews and amends it via a
-Pull Request once they pick up their Sprint 0 issue. "Draft" here means "may still change", not
-"undecided" — components can build against it in the meantime.
+Each file was drafted by Architecture & Integration and then reviewed and approved by the owner of the
+corresponding area (see `docs/ai-context/03-team-ownership.md`) during Sprint 0. An approved contract
+changes only through a Pull Request that follows the "Contract changes" rules in `AGENTS.md`.
 
 ## Rules
 

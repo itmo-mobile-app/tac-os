@@ -87,7 +87,7 @@ constructs map onto the bytecode format; they do not change the syntax above.
   variables, in order of declaration.
 - **Comparison operators beyond `CMP_EQ` / `CMP_LT`**: `spec/bytecode.md` defines `CMP_EQ` and
   `CMP_LT` directly, plus a `NOT` opcode (pop Int 0/1, push the inverted 0/1) added specifically to
-  support lowering the remaining comparison operators (see `#21`). The compiler lowers them as follows:
+  support lowering the remaining comparison operators. The compiler lowers them as follows:
   - `a > b` compiles as `b < a` (operands swapped, using `CMP_LT`).
   - `a != b` compiles as `CMP_EQ` followed by `NOT`.
   - `a <= b` compiles as `b < a` (`CMP_LT`, operands swapped) followed by `NOT`.
