@@ -28,16 +28,12 @@ Remaining open:
 
 ## Bytecode
 
-A minimal instruction set and file format are proposed in `spec/bytecode.md` (draft, pending approval by
-the VM Core owner). Remaining open:
+The file format, constant pool, function representation, minimal instruction set, and encoding of
+Runtime calls are defined in `spec/bytecode.md` (approved by the VM Core owner). Remaining open:
 
-- Instruction set.
-- Bytecode file format.
-- Constant pool representation.
-- Function representation.
-- Metadata format.
-- Versioning strategy.
-- Encoding of Runtime calls.
+- Instructions for heap objects (structs/objects), once the language needs them.
+- Metadata format (debug info, source locations).
+- Versioning/compatibility strategy beyond the `version` field.
 
 ## VM
 
@@ -47,14 +43,14 @@ the VM Core owner). Remaining open:
 - Memory management strategy.
 - Garbage collection requirements.
 - Object representation.
-- Runtime/native call ABI.
-- Error handling during bytecode execution.
+- String interning and string object lifetime.
+- Error handling during bytecode execution, including stack overflow/underflow and `DIV` by zero.
 
 ## Runtime
 
-A minimal Runtime call ABI and one function (`runtime.log`) are proposed in `spec/runtime-api.md`
-(draft, pending approval by the Runtime owner). The IPC mechanism and message format for the
-Analyzer↔Map scenario are proposed in `spec/ipc.md` (draft, same owner). Remaining open:
+The Runtime call ABI and the first function (`runtime.log`) are defined in `spec/runtime-api.md`; the IPC
+mechanism and message format for the Analyzer↔Map scenario are defined in `spec/ipc.md` (both approved by
+the Runtime owner). Remaining open:
 
 - Exact Runtime API (beyond `runtime.log`).
 - Linux threading primitive.
@@ -103,16 +99,16 @@ IPC
 Map process
 ```
 
-A minimal transport, message type (`TARGET_DETECTED`), and payload format are proposed in
-`spec/ipc.md` (draft, pending approval by the Runtime owner). Still unresolved:
+The transport, message type (`TARGET_DETECTED`), payload format, and delivery behavior (one-way, no
+acknowledgement, message dropped when Map is not connected) are defined in `spec/ipc.md`. Still unresolved:
 
-- request/response requirements (the proposal is one-way notification only);
-- behavior when the receiving process is unavailable (the proposal is: drop the message).
+- reconnection behavior after the Map process restarts;
+- whether message types beyond `TARGET_DETECTED` are needed.
 
 ## Broker
 
-A minimal transport, wire protocol, and command set are proposed in `spec/broker-protocol.md` (draft,
-pending approval by the Broker and Target Service owner). Remaining open:
+The transport, wire protocol, and command set are defined in `spec/broker-protocol.md` (approved by the
+Broker and Target Service owner). Remaining open:
 
 - Reconnection behavior.
 - Whether message persistence is required.
@@ -124,8 +120,8 @@ Initial logical topics are expected to include:
 
 ## Target Service
 
-`Observation` and `Target` fields are proposed in `spec/data-model.md` (draft, pending approval by the
-Broker and Target Service owner together with the Analyzer and Tactical Map owners). Remaining open:
+`Observation` and `Target` fields are defined in `spec/data-model.md` (approved by the Broker and Target
+Service owner; pending approval by the Analyzer and Tactical Map owners). Remaining open:
 
 - Aggregation algorithm.
 - Coordinate aggregation strategy.
@@ -136,8 +132,7 @@ Broker and Target Service owner together with the Analyzer and Tactical Map owne
 
 ## DBMS
 
-A minimal SQL subset is proposed in `spec/sql.md` (draft, pending approval by the SQL DBMS owner).
-Remaining open:
+The minimal SQL subset is defined in `spec/sql.md` (approved by the SQL DBMS owner). Remaining open:
 
 - Storage format.
 - Table representation.
