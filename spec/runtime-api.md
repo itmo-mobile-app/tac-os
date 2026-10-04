@@ -1,7 +1,6 @@
 # Runtime API specification
 
-Status: draft — proposed by Architecture & Integration ahead of Sprint 0, pending review and approval by
-the Runtime owner (see `docs/ai-context/03-team-ownership.md`) in a follow-up Pull Request.
+Status: approved
 
 This document defines how the VM calls into the Runtime, and the first Runtime function used by the
 Compiler → VM integration test. It does not cover IPC (see `spec/ipc.md`) or the Broker (see
@@ -11,8 +10,11 @@ Compiler → VM integration test. It does not cover IPC (see `spec/ipc.md`) or t
 
 - The VM executes `CALL_RUNTIME` (see `spec/bytecode.md`) with a constant-pool string naming the
   Runtime function as `<namespace>.<function>` (e.g. `runtime.log`).
-- Arguments are popped off the operand stack in reverse order (last pushed = first argument) before
-  the call.
+- Arguments are pushed onto the operand stack by the caller from left to right.
+  Before the call, the VM pops them in reverse stack order and passes them to
+  the Runtime function in signature order.
+  For `foo(a, b)`, the caller pushes `a` and then `b`; the VM pops `b` and then
+  `a`, and invokes the Runtime function as `foo(a, b)`.
 - The Runtime function's return value, if any, is pushed back onto the operand stack; a function with
   no return value pushes nothing.
 - Calling an unknown `<namespace>.<function>` name is a load-time error (checked when the VM resolves
