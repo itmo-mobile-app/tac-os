@@ -11,6 +11,27 @@ This document defines the minimal SQL subset the DBMS must support for the Targe
 - `REAL`
 - `TEXT`
 
+## Literals and lexical rules
+
+The supported value literals are:
+
+| Type | Syntax | Examples |
+| --- | --- | --- |
+| `INTEGER` | An optional `-` followed by one or more decimal digits, without a decimal point | `30`, `-30` |
+| `REAL` | An optional `-`, one or more decimal digits, `.`, and one or more decimal digits | `30.0`, `-30.5` |
+| `TEXT` | Characters enclosed in single quotes | `'t1'`, `'O''Reilly'` |
+
+A single quote inside a `TEXT` literal is written as two consecutive single
+quotes (`''`). A backslash is not an escape character. The contents and case
+of a `TEXT` literal are preserved.
+
+`30` is an `INTEGER` literal; `30.0` is a `REAL` literal. Negative numbers,
+including `-30` and `-30.5`, are supported.
+
+SQL keywords are case-insensitive: `SELECT`, `select`, and `Select` have the
+same meaning. Every statement must end with `;`. A semicolon inside a quoted
+`TEXT` literal does not end the statement.
+
 ## Statements
 
 ```sql
