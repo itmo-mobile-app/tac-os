@@ -25,23 +25,41 @@ and a standard library remain open questions and are intentionally not covered h
 
 No user-defined types (structs/objects/classes) in this minimal version.
 
+## Syntax style
+
+The syntax follows the part shared by Kotlin and TypeScript: `fun` for functions, `name: Type` for type
+annotations, `let` / `const` for variables, optional semicolons, and `//` comments.
+
+## Lexical rules
+
+- Comments: `//` starts a comment that runs to the end of the line.
+- A statement ends at a newline or at `;`. Semicolons are optional; several statements may share a line
+  only when separated by `;`.
+- An expression may continue onto the next line only inside parentheses `( ... )`.
+
 ## Functions
 
 ```text
-fn <name>(<param>: <type>, ...) -> <type> {
+fun <name>(<param>: <type>, ...): <type> {
     <statements>
 }
 ```
 
-A function with no return value omits `-> <type>`.
+- Parameter types are required.
+- A function with no return value omits `: <type>` after the parameter list.
 
 ## Variables
 
 ```text
-let <name>: <type> = <expression>;
+let <name>[: <type>] = <expression>
+const <name>[: <type>] = <expression>
 ```
 
-Variables are mutable and block-scoped.
+- `let` declares a mutable variable; `const` declares one that cannot be reassigned (reassignment is a
+  compile-time error).
+- The initializer is required. The type annotation is optional: without it, the variable takes the type
+  of the initializer expression.
+- Variables are block-scoped.
 
 ## Expressions
 
@@ -55,18 +73,40 @@ Variables are mutable and block-scoped.
 
 ## Statements
 
-- Expression statement: `<expression>;`
+- Expression statement: `<expression>`
 - Variable declaration: see above.
-- Assignment: `<name> = <expression>;`
+- Assignment: `<name> = <expression>` (only for `let` variables).
 - `if (<expr>) { ... } else { ... }` (`else` optional).
 - `while (<expr>) { ... }`.
-- `return <expression>;` / `return;`
+- `return <expression>` / `return`
 
-## Example
+## Examples
 
 ```text
-fn main() {
-    runtime.log("hello");
+// hello world
+fun main() {
+    runtime.log("hello")
+}
+```
+
+```text
+fun add(a: Int, b: Int): Int {
+    return a + b
+}
+
+fun main() {
+    let count = 0            // mutable, type inferred as Int
+    const limit: Int = 3     // immutable, explicit type
+
+    while (count < limit) {
+        count = add(count, 1)
+    }
+
+    if (count == limit) {
+        runtime.log("done")
+    } else {
+        runtime.log("unexpected")
+    }
 }
 ```
 
@@ -83,8 +123,8 @@ constructs map onto the bytecode format; they do not change the syntax above.
   on the heap. Locals and stack slots holding a `String` hold this reference, not the bytes themselves.
   String constants are resolved to heap objects at load time, per `spec/bytecode.md`.
 - **Function frame layout**: on `CALL`, locals `0` to `param_count - 1` hold the function's parameters,
-  in declaration order. Locals from `param_count` onward hold the function's own `let`-declared
-  variables, in order of declaration.
+  in declaration order. Locals from `param_count` onward hold the function's own `let`- and
+  `const`-declared variables, in order of declaration.
 - **Comparison operators beyond `CMP_EQ` / `CMP_LT`**: `spec/bytecode.md` defines `CMP_EQ` and
   `CMP_LT` directly, plus a `NOT` opcode (pop Int 0/1, push the inverted 0/1) added specifically to
   support lowering the remaining comparison operators. The compiler lowers them as follows:
@@ -95,11 +135,11 @@ constructs map onto the bytecode format; they do not change the syntax above.
 - **Return values**: every call — to a function in the same file (`CALL`) or to a Runtime function
   (`CALL_RUNTIME`) — leaves exactly one value on the operand stack (see `spec/bytecode.md` and
   `spec/runtime-api.md`). Consequently:
-  - a call used as an expression statement (e.g. `runtime.log("hello");`) is followed by `POP`;
-  - a function declared without `-> <type>` returns `Int 0`: the compiler emits `PUSH_CONST` of `0`
-    followed by `RET` for `return;` and at the end of the function body.
+  - a call used as an expression statement (e.g. `runtime.log("hello")`) is followed by `POP`;
+  - a function declared without `: <type>` after its parameter list returns `Int 0`: the compiler emits
+    `PUSH_CONST` of `0` followed by `RET` for `return` and at the end of the function body.
 
-For example, `fn main() { runtime.log("hello"); }` compiles to:
+For example, `fun main() { runtime.log("hello") }` compiles to:
 
 ```text
 PUSH_CONST   "hello"
