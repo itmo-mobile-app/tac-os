@@ -64,22 +64,77 @@ const <name>[: <type>] = <expression>;
 
 ## Expressions
 
-- Integer literals: `123`.
-- String literals: `"text"`.
+- Integer literals: `123` (decimal; negative values are written with unary `-`).
+- String literals: `"text"`, with escapes `\"`, `\\`, `\n`.
 - Boolean literals: `true`, `false`.
-- Arithmetic: `+ - * /` on `Int`.
-- Comparison: `== != < <= > >=`.
+- Arithmetic: `+ - * /` and unary `-` on `Int`.
+- Comparison: `< <= > >=` on `Int`; `== !=` on two values of the same type.
+- Logical negation: unary `!` on `Bool`.
+- Parentheses: `( <expression> )`.
 - Function call: `name(arg, ...)`.
 - Runtime call: `<namespace>.<function>(arg, ...)` (see `spec/runtime-api.md`).
 
+Operator precedence and associativity are defined in "Grammar".
+
 ## Statements
 
-- Expression statement: `<expression>;`
+- Call statement: `<call>;` — only a function or Runtime call may be used as a statement on its own.
 - Variable declaration: see above.
 - Assignment: `<name> = <expression>;` (only for `let` variables).
-- `if (<expr>) { ... } else { ... }` (`else` optional).
+- `if (<expr>) { ... } else { ... }` (`else` optional; `else if` chains are allowed).
 - `while (<expr>) { ... }`.
 - `return <expression>;` / `return;`
+
+## Grammar
+
+The grammar below (EBNF) is authoritative; the sections above explain it. `{ x }` means zero or more,
+`[ x ]` means optional, quoted text is a literal token.
+
+```text
+program      = { function } ;
+function     = "fun" ident "(" [ param { "," param } ] ")" [ ":" type ] block ;
+param        = ident ":" type ;
+type         = "Int" | "Bool" | "String" ;
+
+block        = "{" { statement } "}" ;
+statement    = var_decl | assignment | if_stmt | while_stmt | return_stmt | call_stmt ;
+var_decl     = ( "let" | "const" ) ident [ ":" type ] "=" expression ";" ;
+assignment   = ident "=" expression ";" ;
+if_stmt      = "if" "(" expression ")" block [ "else" ( if_stmt | block ) ] ;
+while_stmt   = "while" "(" expression ")" block ;
+return_stmt  = "return" [ expression ] ";" ;
+call_stmt    = call ";" ;
+
+expression   = equality ;
+equality     = relational [ ( "==" | "!=" ) relational ] ;
+relational   = additive [ ( "<" | "<=" | ">" | ">=" ) additive ] ;
+additive     = term { ( "+" | "-" ) term } ;
+term         = unary { ( "*" | "/" ) unary } ;
+unary        = ( "-" | "!" ) unary | primary ;
+primary      = int_lit | string_lit | "true" | "false" | call | ident | "(" expression ")" ;
+call         = ident [ "." ident ] "(" [ expression { "," expression } ] ")" ;
+```
+
+Lexical tokens:
+
+```text
+ident        = ( letter | "_" ) { letter | digit | "_" } ;   (* not a keyword *)
+int_lit      = digit { digit } ;                            (* must fit in a signed 64-bit integer *)
+string_lit   = '"' { string_char | escape } '"' ;           (* no raw newlines inside *)
+string_char  = ? any character except '"', "\" and newline ? ;
+escape       = "\" ( '"' | "\" | "n" ) ;
+letter       = "a" … "z" | "A" … "Z" ;
+digit        = "0" … "9" ;
+```
+
+- Keywords: `fun`, `let`, `const`, `if`, `else`, `while`, `return`, `true`, `false`, `Int`, `Bool`,
+  `String`.
+- Whitespace (space, tab, `\r`, `\n`) and `//` comments may appear between any two tokens and are
+  otherwise ignored.
+- Binary operators within one precedence level are left-associative. Comparison and equality operators
+  do not chain: `a < b < c` and `a == b == c` are syntax errors.
+- Precedence, from lowest to highest: equality; comparison; `+` `-`; `*` `/`; unary `-` `!`; calls and
+  parentheses.
 
 ## Examples
 
@@ -133,6 +188,8 @@ constructs map onto the bytecode format; they do not change the syntax above.
   - `a != b` compiles as `CMP_EQ` followed by `NOT`.
   - `a <= b` compiles as `b < a` (`CMP_LT`, operands swapped) followed by `NOT`.
   - `a >= b` compiles as `a < b` (`CMP_LT`) followed by `NOT`.
+- **Unary operators**: `!x` compiles as `x` followed by `NOT`; `-x` compiles as `PUSH_CONST` of `0`,
+  then `x`, then `SUB`.
 - **Return values**: every call — to a function in the same file (`CALL`) or to a Runtime function
   (`CALL_RUNTIME`) — leaves exactly one value on the operand stack (see `spec/bytecode.md` and
   `spec/runtime-api.md`). Consequently:
