@@ -28,14 +28,15 @@ No user-defined types (structs/objects/classes) in this minimal version.
 ## Syntax style
 
 The syntax follows the part shared by Kotlin and TypeScript: `fun` for functions, `name: Type` for type
-annotations, `let` / `const` for variables, optional semicolons, and `//` comments.
+annotations, `let` / `const` for variables, and `//` comments. Unlike Kotlin and TypeScript,
+semicolons are mandatory.
 
 ## Lexical rules
 
 - Comments: `//` starts a comment that runs to the end of the line.
-- A statement ends at a newline or at `;`. Semicolons are optional; several statements may share a line
-  only when separated by `;`.
-- An expression may continue onto the next line only inside parentheses `( ... )`.
+- Every simple statement ends with `;` (see "Statements"). Block statements (`if`, `while`) and function
+  declarations end with `}` and take no `;`.
+- Newlines are ordinary whitespace: a statement or expression may span several lines.
 
 ## Functions
 
@@ -51,8 +52,8 @@ fun <name>(<param>: <type>, ...): <type> {
 ## Variables
 
 ```text
-let <name>[: <type>] = <expression>
-const <name>[: <type>] = <expression>
+let <name>[: <type>] = <expression>;
+const <name>[: <type>] = <expression>;
 ```
 
 - `let` declares a mutable variable; `const` declares one that cannot be reassigned (reassignment is a
@@ -73,39 +74,39 @@ const <name>[: <type>] = <expression>
 
 ## Statements
 
-- Expression statement: `<expression>`
+- Expression statement: `<expression>;`
 - Variable declaration: see above.
-- Assignment: `<name> = <expression>` (only for `let` variables).
+- Assignment: `<name> = <expression>;` (only for `let` variables).
 - `if (<expr>) { ... } else { ... }` (`else` optional).
 - `while (<expr>) { ... }`.
-- `return <expression>` / `return`
+- `return <expression>;` / `return;`
 
 ## Examples
 
 ```text
 // hello world
 fun main() {
-    runtime.log("hello")
+    runtime.log("hello");
 }
 ```
 
 ```text
 fun add(a: Int, b: Int): Int {
-    return a + b
+    return a + b;
 }
 
 fun main() {
-    let count = 0            // mutable, type inferred as Int
-    const limit: Int = 3     // immutable, explicit type
+    let count = 0;            // mutable, type inferred as Int
+    const limit: Int = 3;     // immutable, explicit type
 
     while (count < limit) {
-        count = add(count, 1)
+        count = add(count, 1);
     }
 
     if (count == limit) {
-        runtime.log("done")
+        runtime.log("done");
     } else {
-        runtime.log("unexpected")
+        runtime.log("unexpected");
     }
 }
 ```
@@ -135,11 +136,11 @@ constructs map onto the bytecode format; they do not change the syntax above.
 - **Return values**: every call — to a function in the same file (`CALL`) or to a Runtime function
   (`CALL_RUNTIME`) — leaves exactly one value on the operand stack (see `spec/bytecode.md` and
   `spec/runtime-api.md`). Consequently:
-  - a call used as an expression statement (e.g. `runtime.log("hello")`) is followed by `POP`;
+  - a call used as an expression statement (e.g. `runtime.log("hello");`) is followed by `POP`;
   - a function declared without `: <type>` after its parameter list returns `Int 0`: the compiler emits
-    `PUSH_CONST` of `0` followed by `RET` for `return` and at the end of the function body.
+    `PUSH_CONST` of `0` followed by `RET` for `return;` and at the end of the function body.
 
-For example, `fun main() { runtime.log("hello") }` compiles to:
+For example, `fun main() { runtime.log("hello"); }` compiles to:
 
 ```text
 PUSH_CONST   "hello"
