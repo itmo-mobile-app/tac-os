@@ -73,6 +73,17 @@ Expected Runtime areas include:
 
 The Runtime may be linked into the VM executable and does not need to run as a separate process.
 
+### Implementation and build
+
+- The Compiler, the VM, and the Runtime are written in C++17.
+- The repository has a single CMake build (`CMakeLists.txt` at the root). It produces two executables:
+  `tacc` (the Compiler: `tacc <input.tc> -o <output.bc>`) and `tacvm` (the VM with the Runtime linked
+  in: `tacvm <program.bc>`).
+- Integration tests live in `tests/` and run through CTest: a test runs a program and compares its
+  standard output with an expected file.
+- CI builds the project with AddressSanitizer and UndefinedBehaviorSanitizer and runs CTest on every Pull
+  Request.
+
 ## Client application
 
 The user interacts with a single Tactical App.

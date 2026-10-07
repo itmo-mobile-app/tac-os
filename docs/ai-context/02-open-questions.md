@@ -180,8 +180,13 @@ The minimal SQL subset is defined in `spec/sql.md` (approved by the SQL DBMS own
 
 ## Testing
 
+The build and the integration test approach for the Compiler, the VM, and the Runtime (CMake, CTest,
+comparison of program output with an expected file, sanitizer build in CI) are described in
+`01-architecture.md` → "Implementation and build". Remaining open:
+
 - Required unit-test framework per language.
-- Integration test strategy.
+- Implementation language for the Window Manager, DBMS, Broker, and Target Service (C++17 with the same
+  CMake build is the expected default).
 - End-to-end environment.
 - Mock strategy for camera, GPS, and network.
 - Required CI checks before merge.

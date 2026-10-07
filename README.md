@@ -126,6 +126,18 @@ docs/       — архитектура и документация
 tests/      — интеграционные и end-to-end тесты
 ```
 
+## Сборка и тесты
+
+Нужны CMake 3.16+ и компилятор C++17 (GCC или Clang).
+
+```bash
+cmake -S . -B build
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+Сборка с санитайзерами, как в CI: `cmake -S . -B build -DTACOS_SANITIZE=ON`.
+
 ## Работа с репозиторием
 
 - `main` должна оставаться рабочей;
