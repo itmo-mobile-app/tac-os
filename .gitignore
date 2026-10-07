@@ -80,6 +80,9 @@ node_modules/
 *.bc
 *.tacpkg
 
+# Hand-written reference bytecode used by tests
+!tests/**/*.bc
+
 # ===== Test / coverage =====
 
 coverage/
