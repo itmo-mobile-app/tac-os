@@ -28,6 +28,10 @@ of a `TEXT` literal are preserved.
 `30` is an `INTEGER` literal; `30.0` is a `REAL` literal. Negative numbers,
 including `-30` and `-30.5`, are supported.
 
+`INTEGER` values are signed 64-bit integers, so they can hold millisecond
+timestamps such as `1732000000000`. An `INTEGER` literal outside this range is
+an error.
+
 SQL keywords are case-insensitive: `SELECT`, `select`, and `Select` have the
 same meaning. Every statement must end with `;`. A semicolon inside a quoted
 `TEXT` literal does not end the statement.
