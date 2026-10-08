@@ -28,7 +28,8 @@ Compiler → VM integration test. It does not cover IPC (see `spec/ipc.md`) or t
 runtime.log(message: String)
 ```
 
-Writes `message` to the process's standard output and returns `Int 0` (it has no meaningful result).
+Writes `message` followed by a newline (`\n`) to the process's standard output and returns `Int 0` (it
+has no meaningful result).
 This is the minimal function needed for the first Compiler → VM → Runtime integration test.
 
 ## Open questions
