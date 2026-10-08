@@ -122,7 +122,7 @@ Initial logical topics are expected to include:
 ## Target Service
 
 `Observation` and `Target` fields are defined in `spec/data-model.md` (approved by the Broker and Target
-Service owner; pending approval by the Analyzer and Tactical Map owners). Remaining open:
+Service owner and the Tactical Map owner; pending approval by the Analyzer owner). Remaining open:
 
 - Aggregation algorithm.
 - Coordinate aggregation strategy.
