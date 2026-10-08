@@ -130,7 +130,7 @@ Each requirement lists the components that implement it.
 | FR-15 | The Target Service consumes observations and aggregates observations of the same `targetId` into one `Target` | Target Service |
 | FR-16 | Fresh independent observations increase target probability; probability decays over time | Target Service (formulas not decided, see open questions → "Target Service") |
 | FR-17 | The Target Service stores targets and observations in the DBMS and publishes every target update | Target Service, DBMS, Broker |
-| FR-18 | The DBMS executes the SQL subset in `spec/sql.md` and keeps data between restarts | DBMS |
+| FR-18 | The DBMS runs as a separate process, executes the SQL subset in `spec/sql.md` received from the Target Service, and keeps data in a file between restarts | DBMS, Target Service |
 
 ### Platform
 
