@@ -10,12 +10,18 @@ The first Compiler → VM → Runtime integration scenario.
 
 ## How the files are used
 
-- VM and Runtime: run the reference `hello.bc` and compare standard output with `expected.txt`. This does
-  not depend on the compiler.
-- Compiler: compile `hello.tc`, run the result in the VM, and compare standard output with
-  `expected.txt`. The compiled file is not compared with `hello.bc` byte for byte: the order of entries
-  in the constant pool is not fixed by `spec/bytecode.md`, so a correct compiler may produce different
-  bytes.
+Two CTest tests are defined in `CMakeLists.txt` and run by `tests/run_program.cmake`:
+
+- `hello_vm` (VM and Runtime): runs the reference `hello.bc` with `tacvm` and compares standard output
+  with `expected.txt`. It does not depend on the compiler.
+- `hello_e2e` (full chain): compiles `hello.tc` with `tacc` (the Kotlin compiler, built with
+  `./gradlew installDist` in `compiler/`), runs the result with `tacvm`, and compares
+  standard output with `expected.txt`. The compiled file is not compared with `hello.bc` byte for byte:
+  the order of entries in the constant pool is not fixed by `spec/bytecode.md`, so a correct compiler may
+  produce different bytes.
+
+Both tests are disabled until the VM (#29) and the compiler (#28) can run hello world. To enable a test,
+remove it from `set_tests_properties(... DISABLED TRUE)` in `CMakeLists.txt`.
 
 `spec/runtime-api.md` does not yet say whether `runtime.log` appends a newline. Until it does, the
 comparison with `expected.txt` ignores a single trailing newline.

@@ -73,6 +73,18 @@ Expected Runtime areas include:
 
 The Runtime may be linked into the VM executable and does not need to run as a separate process.
 
+### Implementation and build
+
+- The VM and the Runtime are written in C++17 and built with CMake (`CMakeLists.txt` at the root). The
+  build produces `tacvm`, the VM with the Runtime linked in: `tacvm <program.bc>`.
+- The Compiler is written in Kotlin (JVM 17) and built with Gradle in `compiler/`. `./gradlew installDist`
+  produces the `tacc` launcher: `tacc <input.tc> <output.bc>`.
+- Integration tests live in `tests/` and run through CTest: a test runs a program and compares its
+  standard output with an expected file.
+- On every Pull Request, CI builds the Compiler with Gradle, builds the VM and the Runtime with
+  AddressSanitizer and UndefinedBehaviorSanitizer (these sanitizers apply only to the C++ code), and runs
+  CTest.
+
 ## Client application
 
 The user interacts with a single Tactical App.
