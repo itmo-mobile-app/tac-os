@@ -1,6 +1,8 @@
+
 #include "tacos/runtime/runtime.hpp"
 
-#include <iostream>
+#include <ostream>
+#include <unordered_map>
 #include <utility>
 
 namespace tacos::runtime {
@@ -22,23 +24,84 @@ Value Value::string_value_of(std::string value) {
 RuntimeError::RuntimeError(const std::string& message)
     : std::runtime_error(message) {}
 
+namespace {
+
+// Тип указателя на Runtime-функцию.
+using Handler = Value (*)(
+    std::ostream&,
+    const std::vector<Value>&
+);
+
+// Описание Runtime-функции.
+struct FunctionEntry {
+    std::uint8_t arg_count;
+    Handler handler;
+};
+
+// Реализация runtime.log
+Value runtime_log(
+    std::ostream& output,
+    const std::vector<Value>& args
+) {
+    if (args.size() != 1 ||
+        args[0].kind != ValueKind::String) {
+        throw RuntimeError(
+            "runtime.log expects one String argument"
+        );
+    }
+
+    output << args[0].string_value << '\n';
+    return Value::int_value_of(0);
+}
+
+// Таблица Runtime-функций.
+const std::unordered_map<std::string, FunctionEntry>&
+function_table() {
+    static const std::unordered_map<
+        std::string, FunctionEntry> table = {
+        {"runtime.log", {1, &runtime_log}},
+    };
+
+    return table;
+}
+
+} // namespace
+
 Runtime::Runtime(std::ostream& output)
     : output_(output) {}
 
-bool Runtime::has_function(const std::string& name, std::uint8_t arg_count) const {
-    return name == "runtime.log" && arg_count == 1;
+bool Runtime::has_function(
+    const std::string& name,
+    std::uint8_t arg_count
+) const {
+    const auto& table = function_table();
+    const auto it = table.find(name);
+
+    return it != table.end() &&
+           it->second.arg_count == arg_count;
 }
 
-Value Runtime::call(const std::string& name, const std::vector<Value>& args) {
-    if (name == "runtime.log" && args.size() == 1) {
-        if (args[0].kind != ValueKind::String) {
-            throw RuntimeError("runtime.log expects a String argument");
-        }
-        output_ << args[0].string_value << '\n';
-        return Value::int_value_of(0);
+Value Runtime::call(
+    const std::string& name,
+    const std::vector<Value>& args
+) {
+    const auto& table = function_table();
+    const auto it = table.find(name);
+
+    if (it == table.end()) {
+        throw RuntimeError(
+            "unknown Runtime function: " + name
+        );
     }
 
-    throw RuntimeError("unknown Runtime function: " + name);
+    if (args.size() != it->second.arg_count) {
+        throw RuntimeError(
+            "wrong argument count for Runtime function: "
+            + name
+        );
+    }
+
+    return it->second.handler(output_, args);
 }
 
 } // namespace tacos::runtime
