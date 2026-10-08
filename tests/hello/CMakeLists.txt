@@ -17,6 +17,3 @@ add_test(NAME hello_e2e
         -DBYTECODE=${CMAKE_CURRENT_BINARY_DIR}/hello.bc
         -DEXPECTED=${HELLO_DIR}/expected.txt
         -P ${CMAKE_SOURCE_DIR}/tests/run_program.cmake)
-
-# Disabled until the compiler (#28) can run hello world.
-set_tests_properties(hello_e2e PROPERTIES DISABLED TRUE)

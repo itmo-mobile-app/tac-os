@@ -3,19 +3,14 @@ package tacc
 import java.io.ByteArrayOutputStream
 
 /**
- * Binary `.bc` writer per spec/bytecode.md (approved by VM Core).
+ * Lowers the AST to a [BytecodeModule].
  *
- * ASSUMPTION — flag with VM Core owner before relying on this for real
- * integration: spec/bytecode.md does not currently state how the element
- * count of `constant_pool` and `function_table` is encoded. This writer
- * assumes a `u16` count immediately before each list, for consistency with
- * the other u16-sized index/count fields already in the format (constant
- * index, function index, `entry_function`). If the VM Core owner specifies
- * a different encoding (e.g. u32, or no explicit count), this writer and
- * the corresponding VM loader must be updated together.
- *
- * ASSUMPTION — `version` is not given a concrete value in spec/bytecode.md;
- * this writer emits `1`.
+ * Per spec/language.md -> "Compilation notes" -> "Return values" and spec/runtime-api.md: every
+ * call, including CALL_RUNTIME, leaves exactly one value on the operand stack (a Runtime function
+ * that conceptually returns nothing, such as `runtime.log`, pushes `Int 0`), so a call used as a
+ * statement is followed by POP. A function with no declared return type (every function in this
+ * increment, since return types are not parsed yet) implicitly returns `Int 0`: the compiler
+ * emits `PUSH_CONST 0` followed by `RET` at the end of the function body.
  */
 object BytecodeWriter {
     private const val MAGIC = "TACB"

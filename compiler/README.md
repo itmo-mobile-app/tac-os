@@ -6,7 +6,7 @@ calls a single Runtime function (e.g. `runtime.log("hello")`) into a `.bc` file 
 
 ## Scope (this increment)
 
-`spec/language.md` now defines the full `.tc` grammar (variables, arithmetic, `if`/`while`,
+`spec/language.md` defines the full `.tc` grammar (variables, arithmetic, `if`/`while`,
 parameters, typed return values). This compiler still only implements the strict subset needed
 for the first Compiler → VM scenario — the rest is the remainder of Sprint 1:
 
@@ -21,50 +21,26 @@ value on the stack, so:
 - a function with no declared return type implicitly returns `Int 0`, so the compiler emits
   `PUSH_CONST 0` + `RET` at the end of the function body.
 
-## Build
+## Build and run
+
+Requires JDK 17+. From `compiler/`:
 
 ```sh
-./gradlew build
+./gradlew installDist
+build/install/tacc/bin/tacc ../tests/hello/hello.tc build/hello.bc
 ```
 
-## Run
+On Windows use `.\gradlew.bat installDist` and `build\install\tacc\bin\tacc.bat`.
 
-```sh
-./gradlew run --args="tests/hello/hello.tc tests/hello/out.bc"
-```
+Usage: `tacc <input.tc> <output.bc>`. Write the output under `build/` (ignored by git), not under
+`tests/`: `.bc` files in `tests/` are not ignored.
 
-or, after building a fat/runnable jar:
+## Testing
 
-```sh
-java -jar build/libs/tacc-0.1.0.jar tests/hello/hello.tc tests/hello/out.bc
-```
-
-Compare the result against the reference fixture byte-for-byte:
-
-```sh
-diff tests/hello/out.bc tests/hello/hello.bc && echo OK
-```
-
-## Assumptions to confirm before integration testing
-
-With the VM Core owner — `spec/bytecode.md` does not currently specify:
-
-- **Element count encoding** for `constant_pool` and `function_table`. This implementation
-  assumes a `u16` count immediately before each list, for consistency with the other
-  u16-sized fields already in the format (constant index, function index, `entry_function`).
-- **`version` field value.** This implementation emits `1`.
-
-With the Runtime owner — **this one is a potential spec inconsistency, not just a gap:**
-`spec/language.md` → "Compilation notes" now states that `CALL_RUNTIME` always leaves exactly
-one value on the stack (hence the `POP` after `runtime.log(...)` in the example trace below).
-The last version of `spec/runtime-api.md` seen by this compiler said a Void-returning Runtime
-function "pushes nothing". If that hasn't changed, the generated `POP` pops the wrong value (or
-underflows). Please confirm with the Runtime owner whether `runtime-api.md` was updated to match,
-before relying on `tests/hello/hello.bc` for a real VM/Runtime integration test.
-
-Any of the above changing requires updating `BytecodeWriter.kt` / `CodeGen.kt` and regenerating
-`tests/hello/hello.bc` (via `tests/hello/generate_reference.py`) together with the corresponding
-change on the other side.
+The CTest test `hello_e2e` (see `tests/hello/README.md`) compiles `tests/hello/hello.tc` with
+`tacc`, runs the result with `tacvm`, and compares standard output with `expected.txt`. The output
+is not compared with `tests/hello/hello.bc` byte for byte: `spec/bytecode.md` does not fix the
+order of constant-pool entries.
 
 ## Example
 
