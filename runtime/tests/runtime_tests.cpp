@@ -32,7 +32,7 @@ int main() {
         std::ostringstream output;
         Runtime runtime(output);
 
-        // 1. Проверяем реестр.
+        // 1. Function table lookup.
         check(
             runtime.has_function("runtime.log", 1),
             "runtime.log missing"
@@ -48,7 +48,7 @@ int main() {
             "unknown name accepted"
         );
 
-        // 2. Проверяем runtime.log.
+        // 2. runtime.log output.
         const Value result = runtime.call(
             "runtime.log",
             {Value::string_value_of("test message")}
@@ -59,24 +59,24 @@ int main() {
             "incorrect output"
         );
 
-        // 3. Проверяем возвращаемое Int 0.
+        // 3. runtime.log returns Int 0.
         check(
             result.kind == ValueKind::Int &&
             result.int_value == 0,
             "runtime.log must return Int 0"
         );
 
-        // 4. Неизвестная функция.
+        // 4. Unknown function.
         expect_runtime_error([&] {
             runtime.call("runtime.missing", {});
         });
 
-        // 5. Неверное количество аргументов.
+        // 5. Wrong argument count.
         expect_runtime_error([&] {
             runtime.call("runtime.log", {});
         });
 
-        // 6. Неверный тип аргумента.
+        // 6. Wrong argument type.
         expect_runtime_error([&] {
             runtime.call(
                 "runtime.log",

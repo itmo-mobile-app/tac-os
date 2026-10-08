@@ -23,8 +23,8 @@ Two CTest tests are defined in `CMakeLists.txt` and run by `tests/run_program.cm
 `hello_e2e` is disabled until the compiler (#28) is merged. To enable it, remove it from
 `set_tests_properties(... DISABLED TRUE)` in `CMakeLists.txt`.
 
-`spec/runtime-api.md` does not yet say whether `runtime.log` appends a newline. Until it does, the
-comparison with `expected.txt` ignores a single trailing newline.
+`runtime.log` appends a newline (`spec/runtime-api.md`). The comparison with `expected.txt` ignores a
+single trailing newline.
 
 ## Layout of `hello.bc`
 

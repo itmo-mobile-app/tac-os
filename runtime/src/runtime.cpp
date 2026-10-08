@@ -1,4 +1,3 @@
-
 #include "tacos/runtime/runtime.hpp"
 
 #include <ostream>
@@ -26,19 +25,19 @@ RuntimeError::RuntimeError(const std::string& message)
 
 namespace {
 
-// Тип указателя на Runtime-функцию.
+// Pointer to a Runtime function implementation.
 using Handler = Value (*)(
     std::ostream&,
     const std::vector<Value>&
 );
 
-// Описание Runtime-функции.
+// Runtime function table entry.
 struct FunctionEntry {
     std::uint8_t arg_count;
     Handler handler;
 };
 
-// Реализация runtime.log
+// runtime.log(message: String)
 Value runtime_log(
     std::ostream& output,
     const std::vector<Value>& args
@@ -54,7 +53,7 @@ Value runtime_log(
     return Value::int_value_of(0);
 }
 
-// Таблица Runtime-функций.
+// Runtime functions by `<namespace>.<function>` name.
 const std::unordered_map<std::string, FunctionEntry>&
 function_table() {
     static const std::unordered_map<
