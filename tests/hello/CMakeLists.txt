@@ -18,6 +18,5 @@ add_test(NAME hello_e2e
         -DEXPECTED=${HELLO_DIR}/expected.txt
         -P ${CMAKE_SOURCE_DIR}/tests/run_program.cmake)
 
-# Disabled until the VM (#29) and the compiler (#28) can run hello world.
-# Remove a test from this list once the component it needs is merged.
-set_tests_properties(hello_vm hello_e2e PROPERTIES DISABLED TRUE)
+# Disabled until the compiler (#28) can run hello world.
+set_tests_properties(hello_e2e PROPERTIES DISABLED TRUE)

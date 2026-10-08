@@ -20,8 +20,8 @@ Two CTest tests are defined in `CMakeLists.txt` and run by `tests/run_program.cm
   the order of entries in the constant pool is not fixed by `spec/bytecode.md`, so a correct compiler may
   produce different bytes.
 
-Both tests are disabled until the VM (#29) and the compiler (#28) can run hello world. To enable a test,
-remove it from `set_tests_properties(... DISABLED TRUE)` in `CMakeLists.txt`.
+`hello_e2e` is disabled until the compiler (#28) is merged. To enable it, remove it from
+`set_tests_properties(... DISABLED TRUE)` in `CMakeLists.txt`.
 
 `spec/runtime-api.md` does not yet say whether `runtime.log` appends a newline. Until it does, the
 comparison with `expected.txt` ignores a single trailing newline.
