@@ -7,6 +7,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(TACOS_SANITIZE "Build with AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
 
+# The compiler is a Kotlin project built by Gradle (compiler/); tests call its launcher.
+set(TACOS_TACC "${CMAKE_SOURCE_DIR}/compiler/build/install/tacc/bin/tacc"
+    CACHE FILEPATH "Path to the tacc compiler launcher (built with ./gradlew installDist)")
+
 add_compile_options(-Wall -Wextra -Wpedantic)
 
 if(TACOS_SANITIZE)
@@ -16,7 +20,6 @@ endif()
 
 enable_testing()
 
-add_subdirectory(compiler)
 add_subdirectory(runtime)
 add_subdirectory(vm)
 add_subdirectory(tests)

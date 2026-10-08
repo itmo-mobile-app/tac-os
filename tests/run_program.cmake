@@ -8,7 +8,7 @@
 
 if(DEFINED TACC)
     execute_process(
-        COMMAND ${TACC} ${SOURCE} -o ${BYTECODE}
+        COMMAND ${TACC} ${SOURCE} ${BYTECODE}
         RESULT_VARIABLE compile_result)
     if(NOT compile_result EQUAL 0)
         message(FATAL_ERROR "tacc failed (${compile_result}) on ${SOURCE}")

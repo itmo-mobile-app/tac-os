@@ -11,7 +11,7 @@ add_test(NAME hello_vm
 # Full chain: compile hello.tc, then run the result.
 add_test(NAME hello_e2e
     COMMAND ${CMAKE_COMMAND}
-        -DTACC=$<TARGET_FILE:tacc>
+        -DTACC=${TACOS_TACC}
         -DSOURCE=${HELLO_DIR}/hello.tc
         -DTACVM=$<TARGET_FILE:tacvm>
         -DBYTECODE=${CMAKE_CURRENT_BINARY_DIR}/hello.bc
