@@ -1,6 +1,6 @@
 # Data model specification
 
-Status: approved by the Broker and Target Service owner and the Tactical Map owner; pending approval by the Analyzer owner.
+Status: approved by the Broker and Target Service, Analyzer, and Tactical Map owners.
 
 This document formalizes the shared structures introduced conceptually in
 `docs/ai-context/04-data-model.md`, for use by `spec/ipc.md` and `spec/broker-protocol.md`.

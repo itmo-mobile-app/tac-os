@@ -16,7 +16,7 @@ Create a specification only when the corresponding contract becomes necessary.
 | [`runtime-api.md`](runtime-api.md) | VM ↔ Runtime | approved |
 | [`ipc.md`](ipc.md) | Analyzer ↔ Map | approved |
 | [`broker-protocol.md`](broker-protocol.md) | Client/Target Service ↔ Broker | approved |
-| [`data-model.md`](data-model.md) | Shared domain structures | approved by Broker/Target Service and Tactical Map; pending Analyzer owner |
+| [`data-model.md`](data-model.md) | Shared domain structures | approved |
 | [`sql.md`](sql.md) | SQL subset for the DBMS | approved |
 
 Each file was drafted by Architecture & Integration and then reviewed and approved by the owner of the
