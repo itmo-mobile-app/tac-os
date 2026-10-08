@@ -75,10 +75,10 @@ The Runtime may be linked into the VM executable and does not need to run as a s
 
 ### Implementation and build
 
-- The Compiler, the VM, and the Runtime are written in C++17.
-- The repository has a single CMake build (`CMakeLists.txt` at the root). It produces two executables:
-  `tacc` (the Compiler: `tacc <input.tc> -o <output.bc>`) and `tacvm` (the VM with the Runtime linked
-  in: `tacvm <program.bc>`).
+- The VM and the Runtime are written in C++17 and built with CMake (`CMakeLists.txt` at the root). The
+  build produces `tacvm`, the VM with the Runtime linked in: `tacvm <program.bc>`.
+- The Compiler is written in Kotlin (JVM 17) and built with Gradle in `compiler/`. `./gradlew installDist`
+  produces the `tacc` launcher: `tacc <input.tc> <output.bc>`.
 - Integration tests live in `tests/` and run through CTest: a test runs a program and compares its
   standard output with an expected file.
 - CI builds the project with AddressSanitizer and UndefinedBehaviorSanitizer and runs CTest on every Pull
