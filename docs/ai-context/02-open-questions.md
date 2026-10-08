@@ -53,6 +53,7 @@ mechanism and message format for the Analyzer↔Map scenario are defined in `spe
 the Runtime owner). Remaining open:
 
 - Exact Runtime API (beyond `runtime.log`).
+- Whether `runtime.log` appends a newline after the message.
 - Linux threading primitive.
 - Thread synchronization primitives.
 - Camera API.
