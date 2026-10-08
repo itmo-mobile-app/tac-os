@@ -81,8 +81,9 @@ The Runtime may be linked into the VM executable and does not need to run as a s
   produces the `tacc` launcher: `tacc <input.tc> <output.bc>`.
 - Integration tests live in `tests/` and run through CTest: a test runs a program and compares its
   standard output with an expected file.
-- CI builds the project with AddressSanitizer and UndefinedBehaviorSanitizer and runs CTest on every Pull
-  Request.
+- On every Pull Request, CI builds the Compiler with Gradle, builds the VM and the Runtime with
+  AddressSanitizer and UndefinedBehaviorSanitizer (these sanitizers apply only to the C++ code), and runs
+  CTest.
 
 ## Client application
 

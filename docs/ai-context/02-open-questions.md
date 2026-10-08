@@ -184,7 +184,7 @@ The minimal SQL subset is defined in `spec/sql.md` (approved by the SQL DBMS own
 
 The build and the integration test approach for the Compiler, the VM, and the Runtime (Gradle for the
 Compiler, CMake for the VM and the Runtime, CTest, comparison of program output with an expected file,
-sanitizer build in CI) are described in
+sanitizer build of the C++ code in CI) are described in
 `01-architecture.md` → "Implementation and build". Remaining open:
 
 - Required unit-test framework per language.

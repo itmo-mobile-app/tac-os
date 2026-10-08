@@ -138,7 +138,8 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-Сборка с санитайзерами, как в CI: `cmake -S . -B build -DTACOS_SANITIZE=ON`.
+Сборка VM и Runtime с санитайзерами ASan/UBSan, как в CI: `cmake -S . -B build -DTACOS_SANITIZE=ON`
+(к компилятору на Kotlin санитайзеры не относятся).
 
 ## Работа с репозиторием
 
