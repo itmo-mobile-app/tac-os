@@ -53,6 +53,7 @@ mechanism and message format for the Analyzer↔Map scenario are defined in `spe
 the Runtime owner). Remaining open:
 
 - Exact Runtime API (beyond `runtime.log`).
+- Whether `runtime.log` appends a newline after the message.
 - Linux threading primitive.
 - Thread synchronization primitives.
 - Camera API.
@@ -121,7 +122,7 @@ Initial logical topics are expected to include:
 ## Target Service
 
 `Observation` and `Target` fields are defined in `spec/data-model.md` (approved by the Broker and Target
-Service owner; pending approval by the Analyzer and Tactical Map owners). Remaining open:
+Service owner and the Tactical Map owner; pending approval by the Analyzer owner). Remaining open:
 
 - Aggregation algorithm.
 - Coordinate aggregation strategy.
@@ -181,8 +182,14 @@ The minimal SQL subset is defined in `spec/sql.md` (approved by the SQL DBMS own
 
 ## Testing
 
+The build and the integration test approach for the Compiler, the VM, and the Runtime (Gradle for the
+Compiler, CMake for the VM and the Runtime, CTest, comparison of program output with an expected file,
+sanitizer build of the C++ code in CI) are described in
+`01-architecture.md` → "Implementation and build". Remaining open:
+
 - Required unit-test framework per language.
-- Integration test strategy.
+- Implementation language for the Window Manager, DBMS, Broker, and Target Service (C++17 with the same
+  CMake build is the expected default).
 - End-to-end environment.
 - Mock strategy for camera, GPS, and network.
 - Required CI checks before merge.
