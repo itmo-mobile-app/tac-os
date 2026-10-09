@@ -1,0 +1,4 @@
+CREATE TABLE demo (x INTEGER);
+UPDATE demo SET x = 2 WHERE x = 1;
+INSERT INTO demo (x) VALUES (7);
+SELECT * FROM demo;
