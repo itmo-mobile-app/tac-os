@@ -138,8 +138,8 @@ The minimal SQL subset is defined in `spec/sql.md` (approved by the SQL DBMS own
 - Table representation.
 - Whether indexes are required.
 - Whether transactions are required.
-- Client protocol between Target Service and DBMS.
-- Whether DBMS runs as a separate process or is embedded as a library.
+- Client protocol between Target Service and DBMS: transport (TCP or Unix socket), request framing, how
+  result rows and errors are returned. The DBMS runs as a separate process (`01-architecture.md` → "DBMS").
 - How stale Observation records are removed or expired, since `DELETE` is not
   included in the minimal SQL subset.
 
@@ -160,6 +160,8 @@ The minimal SQL subset is defined in `spec/sql.md` (approved by the SQL DBMS own
   client can tell its own team apart from opponents).
 - Exact "tag"/elimination rule (how many independent observations, within what time, confirm a hit).
 - What happens to a player after being tagged (eliminated for the round vs. respawn after a cooldown).
+- Whether the match history (who observed whom and when) must be kept and viewable after the match.
+- Number of teams in a match and whether each team runs its own central node or all teams share one.
 - Exact UI structure.
 - Exact division between Analyzer and Map responsibilities.
 - Whether Analyzer has its own visible Activity.
