@@ -16,6 +16,7 @@ endif()
 
 enable_testing()
 
+add_subdirectory(broker)
 add_subdirectory(compiler)
 add_subdirectory(runtime)
 add_subdirectory(vm)
