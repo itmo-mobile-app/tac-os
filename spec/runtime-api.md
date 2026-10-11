@@ -36,7 +36,7 @@ This is the minimal function needed for the first Compiler → VM → Runtime in
 
 Not decided here; see `docs/ai-context/02-open-questions.md` → "Runtime":
 
-- the full Runtime API surface (threads, IPC, camera, location, orientation, networking, files, time,
-  Activity lifecycle, WebView bridge, Window Manager access) — added incrementally, one concrete
-  scenario at a time;
+- the remaining Runtime API surface (threads, IPC, camera, location, orientation, networking, files, time,
+  Activity lifecycle, WebView bridge) — added incrementally, one concrete
+  scenario at a time; Window Manager access is defined in `spec/window-manager.md`.
 - error handling for a Runtime call that fails (e.g. camera unavailable).

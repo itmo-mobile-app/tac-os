@@ -128,6 +128,8 @@ Responsible for:
 
 IPC is used for communication between separate application processes.
 
+Runtime ↔ Window Manager uses the separate contract in `spec/window-manager.md`.
+
 Primary local scenario:
 
 ```text
@@ -154,7 +156,7 @@ The Runtime maps the project threading API to Linux threading facilities.
 
 ## Window Manager
 
-The Window Manager is a separate system component running on the client system.
+The Window Manager is a separate C++17 system process implementing a custom Wayland compositor.
 
 It is responsible for:
 
@@ -163,9 +165,14 @@ It is responsible for:
 - closing windows;
 - dispatching input events.
 
-Applications do not access Linux windowing facilities directly.
+Applications do not access Linux windowing facilities directly. They access the WM through Runtime APIs.
 
-They access the Window Manager through Runtime APIs.
+The selected development backend is Wayland with a custom compositor built using wlroots 0.18 as a low-level
+library. The first target is a nested compositor inside an existing graphical session; no ready-made compositor
+is used as the Window Manager. The one-window prototype contract is defined in `spec/window-manager.md`.
+The first Runtime functions are `wm.create`, `wm.show`, `wm.close`, and non-blocking `wm.poll_event`.
+The first input event is `window_close`; general keyboard/pointer delivery and Activity/WebView integration are
+outside the current prototype.
 
 ## Activity model
 

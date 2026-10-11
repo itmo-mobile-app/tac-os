@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(tac-os LANGUAGES CXX)
+project(tac-os LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(TACOS_SANITIZE "Build with AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
 
 # The compiler is a Kotlin project built by Gradle (compiler/); tests call its launcher.
+
 set(TACOS_TACC "${CMAKE_SOURCE_DIR}/compiler/build/install/tacc/bin/tacc"
     CACHE FILEPATH "Path to the tacc compiler launcher (built with ./gradlew installDist)")
 
@@ -23,3 +24,8 @@ enable_testing()
 add_subdirectory(runtime)
 add_subdirectory(vm)
 add_subdirectory(tests)
+
+option(TACOS_BUILD_WINDOW_MANAGER "Build the custom wlroots-based Window Manager prototype" OFF)
+if(TACOS_BUILD_WINDOW_MANAGER)
+    add_subdirectory(window-manager)
+endif()

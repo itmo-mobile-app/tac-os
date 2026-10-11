@@ -64,10 +64,13 @@ the Runtime owner). Remaining open:
 
 ## Window Manager
 
-- Exact Linux graphics/windowing backend.
-- Window lifecycle.
-- Input event model.
-- Communication protocol between Runtime and Window Manager.
+The backend decision, one-window lifecycle, initial input event, and Runtime ↔ WM protocol are defined in
+`spec/window-manager.md`. Remaining open:
+
+- Direct DRM/KMS deployment and session ownership.
+- Window lifecycle beyond the one-window prototype.
+- General keyboard and pointer event delivery to applications.
+- Resize policy and resize event delivery.
 - Whether the Window Manager runs permanently as a system service.
 - Exact startup mechanism.
 
