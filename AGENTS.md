@@ -297,6 +297,8 @@ Rules:
 - When an open question is resolved, remove it from `02-open-questions.md` and document the accepted decision in the
   relevant architecture or specification file.
 - Update files in `spec/` whenever a public contract between components changes.
+- `docs/requirements.md` is the source of truth for requirements. When it changes, update the short Russian summary in
+  `README.md` → "Требования" in the same Pull Request, keeping the FR numbers in sync.
 - Update the architecture diagrams in `docs/architecture/` when a decision changes what they show (component
   language, transport, protocol, components, data exchanged); see the table in `docs/architecture/README.md`.
 - Do not leave documentation knowingly inconsistent with the implementation.

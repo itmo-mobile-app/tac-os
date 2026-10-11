@@ -2,6 +2,9 @@
 
 Status: draft
 
+This is the agent-facing source of truth for requirements. A short human summary in Russian is kept in the root
+`README.md` → "Требования"; update it in the same Pull Request when requirements change.
+
 This document describes the problem domain, the stakeholders, and the functional and non-functional
 requirements of `tac-os`. Architecture is described in `docs/ai-context/01-architecture.md`; public
 contracts are in `spec/`. Decisions that are not made yet are listed in
