@@ -1,0 +1,65 @@
+<!--
+  tac-os architecture diagram — Logical level: system parts and the domain data they exchange (Observation, Target). No transport, no Broker.
+  Maintained by hand as plain SVG; edit the text and coordinates directly.
+  WHEN TO UPDATE: Update when a component is added or removed or the domain data exchanged between components changes (spec/data-model.md).
+  Keep this diagram on its own level (see docs/architecture/README.md) and keep labels in Russian:
+  the diagrams are embedded in the Russian README.md.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="300" font-family="IBM Plex Sans, Helvetica, Arial, sans-serif" color="#1f1c26" viewBox="0 0 1000 300" role="img" aria-label="Analyzer передаёт Observation в Map, Map передаёт Observation в Target Service, Target Service возвращает Target во все Map и хранит данные в хранилище; Map выводит карту через Window Manager.">
+  <defs>
+    <marker id="c1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+<style>.zone { fill: none; stroke: #d3cfdd; stroke-width: 2; }
+.t-zone { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 12px; fill: #625d70; letter-spacing: .06em; }
+.proc { fill: #f7f6fa; stroke: #2f2a3a; stroke-width: 1.5; }
+.proc-head { fill: #2f2a3a; }
+.t-head { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 12px; fill: #f4f2f8; letter-spacing: .03em; }
+.box { fill: #ffffff; stroke: #1f1c26; stroke-width: 1.25; }
+.app { fill: #ece8f8; stroke: #6b4fbb; stroke-width: 1.5; }
+.fn { fill: #f7f6fa; stroke: #625d70; stroke-width: 1; }
+.file { fill: #ffffff; stroke: #1f1c26; stroke-width: 1.5; }
+.t-name { font-size: 15px; font-weight: 600; fill: currentColor; }
+.t-code { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 13.5px; font-weight: 500; fill: currentColor; }
+.t-sub { font-size: 12.5px; fill: #625d70; }
+.t-arrow { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 11.5px; fill: currentColor; }
+.t-note { font-size: 12px; fill: #625d70; font-style: italic; }
+.edge { stroke: currentColor; stroke-width: 1.5; fill: none; }
+.edge.ret { stroke-dasharray: 6 4; }
+.actor { fill: #f7f6fa; stroke: #625d70; stroke-width: 1.5; }
+</style>
+<rect width="1000" height="300" fill="#ffffff"/>
+  <rect class="box" x="20" y="70" width="180" height="100" rx="6"/>
+  <text class="t-name" x="38" y="100">Analyzer</text>
+  <text class="t-sub" x="38" y="122">узнаёт противника</text>
+  <text class="t-sub" x="38" y="140">и считает, где он</text>
+  <line class="edge" x1="200" y1="120" x2="296" y2="120" marker-end="url(#c1)"/>
+  <text class="t-arrow" x="248" y="108" text-anchor="middle">Observation</text>
+
+  <rect class="box" x="300" y="70" width="180" height="100" rx="6"/>
+  <text class="t-name" x="318" y="100">Map</text>
+  <text class="t-sub" x="318" y="122">показывает карту</text>
+  <text class="t-sub" x="318" y="140">с целями</text>
+  <line class="edge" x1="480" y1="100" x2="586" y2="100" marker-end="url(#c1)"/>
+  <text class="t-arrow" x="533" y="88" text-anchor="middle">Observation</text>
+  <line class="edge" x1="586" y1="142" x2="484" y2="142" marker-end="url(#c1)"/>
+  <text class="t-arrow" x="535" y="160" text-anchor="middle">Target</text>
+  <text class="t-note" x="535" y="176" text-anchor="middle">всем Map</text>
+
+  <rect class="box" x="590" y="70" width="200" height="100" rx="6"/>
+  <text class="t-name" x="608" y="100">Target Service</text>
+  <text class="t-sub" x="608" y="122">объединяет наблюдения</text>
+  <text class="t-sub" x="608" y="140">в цели</text>
+  <line class="edge" x1="790" y1="120" x2="846" y2="120" marker-start="url(#c1)" marker-end="url(#c1)"/>
+  <text class="t-arrow" x="818" y="108" text-anchor="middle">данные</text>
+
+  <rect class="box" x="850" y="70" width="130" height="100" rx="6"/>
+  <text class="t-name" x="866" y="100">Хранилище</text>
+  <text class="t-sub" x="866" y="122">наблюдения</text>
+  <text class="t-sub" x="866" y="140">и цели</text>
+
+  <rect class="box" x="300" y="220" width="180" height="64" rx="6"/>
+  <text class="t-name" x="318" y="248">Window Manager</text>
+  <text class="t-sub" x="318" y="268">окна и ввод</text>
+  <line class="edge" x1="390" y1="170" x2="390" y2="216" marker-start="url(#c1)" marker-end="url(#c1)"/>
+  <text class="t-arrow" x="398" y="198">окно ↔ ввод</text>
+  </svg>

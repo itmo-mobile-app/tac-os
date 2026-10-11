@@ -12,6 +12,8 @@ custom virtual machine.
 - Code, commit messages, `AGENTS.md`, `docs/`, and `spec/` are written in English.
 - GitHub Issues and Pull Request discussion (titles, descriptions, comments, review threads) are written in Russian.
 - Do not mix languages within the same file or the same PR title/description.
+- Exception: diagram labels in `docs/architecture/*.svg` are in Russian, because the diagrams are embedded in the
+  Russian `README.md`.
 
 ## Before making changes
 
@@ -295,6 +297,8 @@ Rules:
 - When an open question is resolved, remove it from `02-open-questions.md` and document the accepted decision in the
   relevant architecture or specification file.
 - Update files in `spec/` whenever a public contract between components changes.
+- Update the architecture diagrams in `docs/architecture/` when a decision changes what they show (component
+  language, transport, protocol, components, data exchanged); see the table in `docs/architecture/README.md`.
 - Do not leave documentation knowingly inconsistent with the implementation.
 
 Documentation changes should be included in the same Pull Request as the code change that caused them.

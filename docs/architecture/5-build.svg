@@ -1,0 +1,87 @@
+<!--
+  tac-os architecture diagram — Build level: .tc source -> tacc -> .bc -> tacvm.
+  Maintained by hand as plain SVG; edit the text and coordinates directly.
+  WHEN TO UPDATE: Update when the toolchain changes: compiler technology (e.g. ANTLR4), file formats, command lines (01-architecture.md, spec/bytecode.md).
+  Keep this diagram on its own level (see docs/architecture/README.md) and keep labels in Russian:
+  the diagrams are embedded in the Russian README.md.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1010" height="240" font-family="IBM Plex Sans, Helvetica, Arial, sans-serif" color="#1f1c26" viewBox="0 0 1010 240" role="img" aria-label="Процесс tacc читает файл hello.tc и пишет файл hello.bc; процесс tacvm читает hello.bc, его VM вызывает Runtime, Runtime печатает hello в консоль.">
+  <defs>
+    <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+<style>.zone { fill: none; stroke: #d3cfdd; stroke-width: 2; }
+.t-zone { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 12px; fill: #625d70; letter-spacing: .06em; }
+.proc { fill: #f7f6fa; stroke: #2f2a3a; stroke-width: 1.5; }
+.proc-head { fill: #2f2a3a; }
+.t-head { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 12px; fill: #f4f2f8; letter-spacing: .03em; }
+.box { fill: #ffffff; stroke: #1f1c26; stroke-width: 1.25; }
+.app { fill: #ece8f8; stroke: #6b4fbb; stroke-width: 1.5; }
+.fn { fill: #f7f6fa; stroke: #625d70; stroke-width: 1; }
+.file { fill: #ffffff; stroke: #1f1c26; stroke-width: 1.5; }
+.t-name { font-size: 15px; font-weight: 600; fill: currentColor; }
+.t-code { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 13.5px; font-weight: 500; fill: currentColor; }
+.t-sub { font-size: 12.5px; fill: #625d70; }
+.t-arrow { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 11.5px; fill: currentColor; }
+.t-note { font-size: 12px; fill: #625d70; font-style: italic; }
+.edge { stroke: currentColor; stroke-width: 1.5; fill: none; }
+.edge.ret { stroke-dasharray: 6 4; }
+.actor { fill: #f7f6fa; stroke: #625d70; stroke-width: 1.5; }
+</style>
+<rect width="1010" height="240" fill="#ffffff"/>
+  <!-- hello.tc file -->
+  <path class="file" d="M10 64 h104 l22 22 v90 h-126 z"/>
+  <path class="file" d="M114 64 v22 h22" fill="none"/>
+  <text class="t-code" x="26" y="112">hello.tc</text>
+  <text class="t-sub" x="26" y="134">исходник</text>
+  <text class="t-sub" x="26" y="154">на языке .tc</text>
+
+  <line class="edge" x1="136" y1="120" x2="186" y2="120" marker-end="url(#a2)"/>
+  <text class="t-arrow" x="161" y="110" text-anchor="middle">читает</text>
+
+  <!-- tacc process -->
+  <rect class="proc" x="190" y="30" width="196" height="188" rx="6"/>
+  <path class="proc-head" d="M190 36 a6 6 0 0 1 6 -6 h184 a6 6 0 0 1 6 6 v26 h-196 z"/>
+  <text class="t-head" x="206" y="51">процесс: tacc</text>
+  <rect class="box" x="206" y="78" width="164" height="124" rx="5"/>
+  <text class="t-name" x="224" y="104">компилятор</text>
+  <text class="t-sub" x="224" y="126">Kotlin, JVM 17</text>
+  <text class="t-sub" x="224" y="146">лексер, парсер,</text>
+  <text class="t-sub" x="224" y="166">кодогенерация</text>
+
+  <line class="edge" x1="386" y1="120" x2="420" y2="120" marker-end="url(#a2)"/>
+  <text class="t-arrow" x="403" y="110" text-anchor="middle">пишет</text>
+
+  <!-- hello.bc file -->
+  <path class="file" d="M424 64 h112 l22 22 v90 h-134 z"/>
+  <path class="file" d="M536 64 v22 h22" fill="none"/>
+  <text class="t-code" x="440" y="112">hello.bc</text>
+  <text class="t-sub" x="440" y="134">байткод, 73 байта</text>
+  <text class="t-sub" x="440" y="154">spec/bytecode.md</text>
+
+  <line class="edge" x1="558" y1="140" x2="628" y2="140" marker-end="url(#a2)"/>
+  <text class="t-arrow" x="581" y="130" text-anchor="middle">читает</text>
+
+  <!-- tacvm process -->
+  <rect class="proc" x="604" y="30" width="306" height="188" rx="6"/>
+  <path class="proc-head" d="M604 36 a6 6 0 0 1 6 -6 h294 a6 6 0 0 1 6 6 v26 h-306 z"/>
+  <text class="t-head" x="620" y="51">процесс: tacvm hello.bc</text>
+  <rect class="box" x="620" y="78" width="152" height="124" rx="5"/>
+  <text class="t-name" x="636" y="102">VM</text>
+  <rect class="app" x="632" y="116" width="128" height="70" rx="4"/>
+  <text class="t-code" x="646" y="140">hello.bc</text>
+  <text class="t-sub" x="646" y="160">загружен,</text>
+  <text class="t-sub" x="646" y="176">исполняется</text>
+  <line class="edge" x1="772" y1="140" x2="802" y2="140" marker-end="url(#a2)"/>
+  <text class="t-arrow" x="787" y="128" text-anchor="middle">call</text>
+  <rect class="box" x="806" y="78" width="92" height="124" rx="5"/>
+  <text class="t-name" x="818" y="102">Runtime</text>
+  <text class="t-sub" x="818" y="124">таблица</text>
+  <text class="t-sub" x="818" y="144">функций,</text>
+  <text class="t-sub" x="818" y="164">runtime.</text>
+  <text class="t-sub" x="818" y="180">log</text>
+
+  <line class="edge" x1="910" y1="120" x2="944" y2="120" marker-end="url(#a2)"/>
+  <text class="t-arrow" x="927" y="104" text-anchor="middle">stdout</text>
+  <text class="t-sub" x="948" y="114">консоль:</text>
+  <text class="t-code" x="948" y="134">hello</text>
+  </svg>
