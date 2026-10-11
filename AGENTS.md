@@ -30,8 +30,6 @@ If a required decision is not documented, do not assume that it has already been
 ## General rules
 
 - Do not change the architecture without an explicit reason.
-- Do not add new subsystems or abstractions "for future use".
-- Prefer the smallest implementation sufficient for the current scenario.
 - Do not replace required custom components with ready-made equivalents.
 - Linux is the base operating system and may be used through system APIs.
 - The custom language is primarily intended for the mobile application.
@@ -39,6 +37,25 @@ If a required decision is not documented, do not assume that it has already been
 - Compiled bytecode files use the `.bc` extension.
 - Public contracts between components must be documented in `spec/`.
 - If a decision is not fixed yet, treat it as an open question instead of silently choosing an implementation.
+
+## Engineering principles
+
+- **KISS.** Prefer the simplest implementation that is sufficient for the current scenario.
+- **YAGNI.** Do not add subsystems, abstractions, fields, opcodes, API functions, or settings "for future use";
+  add them when a concrete task needs them.
+- **DRY, with limits.**
+  - Extract shared code when the same logic appears a third time, not the second; an early abstraction is
+    harder to undo than a small duplicate.
+  - Do not share code across component boundaries for the sake of DRY. Components share contracts in `spec/`,
+    not code: for example, the compiler (Kotlin) and the VM (C++) each read the `.bc` format on their own.
+- **Separation of concerns.** Each component keeps the single responsibility described in "Architectural
+  boundaries": the Broker knows nothing about targets, the DBMS knows nothing about the Broker.
+- **Fail explicitly.** Invalid input produces a clear error that says what is wrong and where; never continue
+  silently with bad data.
+- **Verifiable changes.** Every change can be checked by a test or a reproducible command (see "Definition of
+  done").
+- **Match the surrounding code.** Follow the naming, structure, and comment density of the neighboring files; do
+  not introduce a personal style inside another owner's component.
 
 ## Architectural boundaries
 
