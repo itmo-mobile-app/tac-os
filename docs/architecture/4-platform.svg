@@ -1,0 +1,63 @@
+<!--
+  tac-os architecture diagram — Platform level: layers on the player device (.tc app, VM, Runtime, Linux) and the Window Manager process.
+  Maintained by hand as plain SVG; edit the text and coordinates directly.
+  WHEN TO UPDATE: Update when layers or implementation languages change, e.g. the Window Manager language is chosen (01-architecture.md -> Implementation and build).
+  Keep this diagram on its own level (see docs/architecture/README.md) and keep labels in Russian:
+  the diagrams are embedded in the Russian README.md.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="330" font-family="IBM Plex Sans, Helvetica, Arial, sans-serif" color="#1f1c26" viewBox="0 0 1000 330" role="img" aria-label="На устройстве игрока два процесса tacvm, в каждом слои: код приложения на .tc, VM, Runtime; рядом процесс Window Manager; все работают поверх Linux.">
+<style>.zone { fill: none; stroke: #d3cfdd; stroke-width: 2; }
+.t-zone { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 12px; fill: #625d70; letter-spacing: .06em; }
+.proc { fill: #f7f6fa; stroke: #2f2a3a; stroke-width: 1.5; }
+.proc-head { fill: #2f2a3a; }
+.t-head { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 12px; fill: #f4f2f8; letter-spacing: .03em; }
+.box { fill: #ffffff; stroke: #1f1c26; stroke-width: 1.25; }
+.app { fill: #ece8f8; stroke: #6b4fbb; stroke-width: 1.5; }
+.fn { fill: #f7f6fa; stroke: #625d70; stroke-width: 1; }
+.file { fill: #ffffff; stroke: #1f1c26; stroke-width: 1.5; }
+.t-name { font-size: 15px; font-weight: 600; fill: currentColor; }
+.t-code { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 13.5px; font-weight: 500; fill: currentColor; }
+.t-sub { font-size: 12.5px; fill: #625d70; }
+.t-arrow { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 11.5px; fill: currentColor; }
+.t-note { font-size: 12px; fill: #625d70; font-style: italic; }
+.edge { stroke: currentColor; stroke-width: 1.5; fill: none; }
+.edge.ret { stroke-dasharray: 6 4; }
+.actor { fill: #f7f6fa; stroke: #625d70; stroke-width: 1.5; }
+</style>
+<rect width="1000" height="330" fill="#ffffff"/>
+  <!-- Analyzer stack -->
+  <text class="t-zone" x="40" y="30">ПРОЦЕСС ANALYZER</text>
+  <rect class="app" x="40" y="44" width="260" height="56" rx="5"/>
+  <text class="t-code" x="58" y="68">analyzer.bc</text>
+  <text class="t-sub" x="58" y="88">приложение, код на .tc</text>
+  <rect class="box" x="40" y="108" width="260" height="56" rx="5"/>
+  <text class="t-name" x="58" y="132">VM</text>
+  <text class="t-sub" x="58" y="152">исполняет байткод · C++</text>
+  <rect class="box" x="40" y="172" width="260" height="56" rx="5"/>
+  <text class="t-name" x="58" y="196">Runtime</text>
+  <text class="t-sub" x="58" y="216">IPC, сеть, камера, окна · C++</text>
+
+  <!-- Map stack -->
+  <text class="t-zone" x="340" y="30">ПРОЦЕСС MAP</text>
+  <rect class="app" x="340" y="44" width="260" height="56" rx="5"/>
+  <text class="t-code" x="358" y="68">map.bc</text>
+  <text class="t-sub" x="358" y="88">приложение, код на .tc</text>
+  <rect class="box" x="340" y="108" width="260" height="56" rx="5"/>
+  <text class="t-name" x="358" y="132">VM</text>
+  <text class="t-sub" x="358" y="152">исполняет байткод · C++</text>
+  <rect class="box" x="340" y="172" width="260" height="56" rx="5"/>
+  <text class="t-name" x="358" y="196">Runtime</text>
+  <text class="t-sub" x="358" y="216">IPC, сеть, камера, окна · C++</text>
+
+  <!-- WM -->
+  <text class="t-zone" x="660" y="30">ПРОЦЕСС WINDOW MANAGER</text>
+  <rect class="box" x="660" y="44" width="300" height="184" rx="5"/>
+  <text class="t-name" x="678" y="72">Window Manager</text>
+  <text class="t-sub" x="678" y="94">системный сервис · Go или Rust</text>
+  <text class="t-sub" x="678" y="114">окна и ввод для всех приложений</text>
+
+  <!-- Linux -->
+  <rect class="box" x="40" y="246" width="920" height="64" rx="5"/>
+  <text class="t-name" x="58" y="274">Linux</text>
+  <text class="t-sub" x="58" y="294">процессы, сокеты, файлы, камера, экран — готовая ОС, её не пишем</text>
+  </svg>

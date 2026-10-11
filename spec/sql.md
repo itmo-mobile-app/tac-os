@@ -73,4 +73,8 @@ Not decided here; see `docs/ai-context/02-open-questions.md` → "DBMS":
 - whether indexes are required;
 - whether transactions are required;
 - storage format;
-- client protocol between Target Service and DBMS (in-process library call vs. separate process).
+- client protocol between Target Service and DBMS: TCP or Unix socket, how request boundaries are marked,
+  how result rows and errors are encoded.
+
+The DBMS runs as a separate server process and the Target Service connects to it as a client (see
+`docs/ai-context/01-architecture.md` → "DBMS").

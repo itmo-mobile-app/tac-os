@@ -79,6 +79,9 @@ The Runtime may be linked into the VM executable and does not need to run as a s
   build produces `tacvm`, the VM with the Runtime linked in: `tacvm <program.bc>`.
 - The Compiler is written in Kotlin (JVM 17) and built with Gradle in `compiler/`. `./gradlew installDist`
   produces the `tacc` launcher: `tacc <input.tc> <output.bc>`.
+- The Window Manager, Broker, Target Service, and DBMS are written in Go or Rust, as required by the course
+  technology stack (`docs/requirements.md`, C-11). Each component owner picks one of the two; the choice is
+  recorded here.
 - Integration tests live in `tests/` and run through CTest: a test runs a program and compares its
   standard output with an expected file.
 - On every Pull Request, CI builds the Compiler with Gradle, builds the VM and the Runtime with
@@ -253,6 +256,8 @@ It is responsible for:
 - reading and writing data through the DBMS;
 - publishing `Target` updates through the Broker.
 
+The Target Service runs as its own process on the central node. It is a client of the DBMS process.
+
 ## DBMS
 
 The DBMS is a custom minimal SQL database management system.
@@ -265,6 +270,10 @@ It is responsible for:
 - persistent storage.
 
 The DBMS does not understand the target domain and does not interact with the Broker directly.
+
+The DBMS runs as a separate server process on the central node. The Target Service connects to it over a
+socket, sends SQL statements, and receives result rows. The DBMS stores the database in a file on the
+central node's disk, so data survives a restart of either process.
 
 ## Database
 
