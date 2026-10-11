@@ -128,15 +128,18 @@ tests/      — интеграционные и end-to-end тесты
 
 ## Сборка и тесты
 
-Нужны CMake 3.16+ и компилятор C++17 (GCC или Clang).
+Нужны CMake 3.16+, компилятор C++17 (GCC или Clang) для VM и Runtime и JDK 17 для компилятора `.tc`
+(Kotlin, Gradle).
 
 ```bash
+(cd compiler && ./gradlew installDist)
 cmake -S . -B build
 cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-Сборка с санитайзерами, как в CI: `cmake -S . -B build -DTACOS_SANITIZE=ON`.
+Сборка VM и Runtime с санитайзерами ASan/UBSan, как в CI: `cmake -S . -B build -DTACOS_SANITIZE=ON`
+(к компилятору на Kotlin санитайзеры не относятся).
 
 ## Работа с репозиторием
 
