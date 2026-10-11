@@ -5,7 +5,7 @@
   Keep this diagram on its own level (see docs/architecture/README.md) and keep labels in Russian:
   the diagrams are embedded in the Russian README.md.
 -->
-<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="310" font-family="IBM Plex Sans, Helvetica, Arial, sans-serif" color="#1f1c26" viewBox="0 0 1000 310" role="img" aria-label="Игрок наводит камеру на противника, система распознаёт его маркер, определяет, где он, объединяет наблюдения всех игроков в цель с уверенностью и показывает цель на карте всей команде.">
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="310" font-family="IBM Plex Sans, Helvetica, Arial, sans-serif" color="#1f1c26" viewBox="0 0 1000 310" role="img" aria-label="Игрок наводит камеру на другого игрока, система распознаёт его маркер — свой или противник, определяет, где он, объединяет наблюдения всех игроков в цели с уверенностью и показывает своих и противников на карте всей команде.">
   <defs>
     <marker id="b1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
   </defs>
@@ -34,10 +34,10 @@
   <text class="t-arrow" x="150" y="88" text-anchor="middle">камера</text>
 
   <rect class="box" x="180" y="50" width="200" height="100" rx="6"/>
-  <text class="t-name" x="198" y="80">Узнать противника</text>
+  <text class="t-name" x="198" y="80">Узнать игрока</text>
   <text class="t-sub" x="198" y="102">по маркеру на нём:</text>
-  <text class="t-sub" x="198" y="120">кто это и из какой</text>
-  <text class="t-sub" x="198" y="138">команды</text>
+  <text class="t-sub" x="198" y="120">кто это — свой</text>
+  <text class="t-sub" x="198" y="138">или противник</text>
   <line class="edge" x1="380" y1="100" x2="436" y2="100" marker-end="url(#b1)"/>
   <text class="t-arrow" x="408" y="88" text-anchor="middle">кто</text>
 
@@ -59,8 +59,8 @@
 
   <rect class="box" x="740" y="210" width="240" height="80" rx="6"/>
   <text class="t-name" x="758" y="240">Показать на карте</text>
-  <text class="t-sub" x="758" y="262">где цель, насколько уверены,</text>
-  <text class="t-sub" x="758" y="280">когда видели последний раз</text>
+  <text class="t-sub" x="758" y="262">свои и противники: где,</text>
+  <text class="t-sub" x="758" y="280">насколько уверены, когда видели</text>
   <line class="edge" x1="740" y1="250" x2="644" y2="250" marker-end="url(#b1)"/>
   <text class="t-arrow" x="692" y="238" text-anchor="middle">видят</text>
 

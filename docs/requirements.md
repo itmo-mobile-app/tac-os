@@ -20,16 +20,16 @@ without reliable mobile internet.
 
 The hardest part of the game is situational awareness: a player sees an opponent for a moment, but the
 rest of the team does not know where that opponent is. `tac-os` gives the whole team a shared picture
-of where opponents were recently seen.
+of where opponents and teammates were recently seen.
 
 ### How the system is used
 
 1. Every player wears a visible marker that identifies them.
-2. A player points the device camera at an opponent. The device recognizes the opponent's marker,
+2. A player points the device camera at another player. The device recognizes the player's marker,
    estimates direction and distance, and combines them with its own position and orientation to
-   calculate the opponent's coordinates.
+   calculate the player's coordinates.
 3. The device shows the detection on its map immediately and sends it to the central node.
-4. The central node combines detections of the same opponent from several devices into one target
+4. The central node combines detections of the same player from several devices into one target
    whose probability grows with fresh, independent observations and decays over time.
 5. Every device of the team shows the aggregated targets on a shared 2D map.
 
@@ -43,7 +43,7 @@ of where opponents were recently seen.
 | Marker | A visible tag worn by a player that identifies them to the camera |
 | Detection | A local recognition result on one device: marker id, direction, distance, confidence |
 | Observation | One device's report about a target with calculated coordinates (`spec/data-model.md`) |
-| Target | The aggregated state of one opponent: position, probability, last seen time (`spec/data-model.md`) |
+| Target | The aggregated state of one detected player, teammate or opponent: position, probability, last seen time (`spec/data-model.md`) |
 | Probability | The system's confidence that the target is at its current position; decays over time |
 | Tag | An opponent confirmed as hit by the game rules (rule not decided yet) |
 | Central node | The Linux device on site that runs the Broker, the Target Service, and the DBMS |
@@ -77,12 +77,16 @@ content to the requirements but cannot remove a required platform component.
 - C-11. Technology stack set by the course: the custom language for the mobile application; C/C++ for the
   virtual machine (a simplified analogue of ART); Kotlin (with ANTLR4) for the compiler; Go or Rust for all
   other components; Markdown or PDF for documentation; git for project management.
+- C-12. The map shows both own and enemy targets. Target reliability grows with the number of players who see
+  the target and decreases with the time since it was last seen.
+- C-13. Target identification by AI (a recognition model) is optional; recognition by a visible marker is
+  acceptable.
 
 ### Players
 
 - P-1. I point the camera at an opponent and see them on the map without noticeable delay.
 - P-2. I see my own position on the same map as the detected opponents.
-- P-3. The system does not confuse my teammates with opponents.
+- P-3. I see teammates and opponents on the map and can tell them apart.
 - P-4. When the connection to the central node is lost, the app keeps working and shows the last known
   state.
 - P-5. The interface is one screen with the map; nothing has to be configured during the game.
@@ -110,11 +114,11 @@ Each requirement lists the components that implement it.
 | ID | Requirement | Components |
 | --- | --- | --- |
 | FR-1 | The app reads frames from the device camera | Analyzer, Runtime |
-| FR-2 | The app recognizes a player marker in a frame and reads its identifier | Analyzer, Runtime |
+| FR-2 | The app recognizes a player marker in a frame and reads its identifier (AI-based recognition is optional, C-13) | Analyzer, Runtime |
 | FR-3 | The app estimates the direction (angle from the camera axis) and distance to a recognized marker | Analyzer, Runtime |
 | FR-4 | The app reads the device position and orientation | Analyzer, Runtime |
 | FR-5 | The app calculates the target coordinates and creates an `Observation` with a confidence value | Analyzer |
-| FR-6 | The app ignores markers of the player's own team | Analyzer (encoding not decided, see open questions → "Application") |
+| FR-6 | The app tells teammates from opponents by the marker, and the Map shows them differently | Analyzer, Map (team encoding not decided, see open questions → "Application") |
 
 ### Map (client)
 
