@@ -71,6 +71,9 @@ content to the requirements but cannot remove a required platform component.
 - C-8. Missing server components are written by the team; ready-made servers are not allowed.
 - C-9. The result is a working mobile application built on this stack, not separate demos.
 - C-10. Linux is the base operating system; running on a laptop with Linux is acceptable.
+- C-11. Technology stack set by the course: the custom language for the mobile application; C/C++ for the
+  virtual machine (a simplified analogue of ART); Kotlin (with ANTLR4) for the compiler; Go or Rust for all
+  other components; Markdown or PDF for documentation; git for project management.
 
 ### Players
 
@@ -151,7 +154,7 @@ Each requirement lists the components that implement it.
 | NFR-4 | Every platform component is implemented by the team (constraints C-1 to C-8) |
 | NFR-5 | Clients and the central node run on Linux; client devices may be laptops |
 | NFR-6 | Losing the connection to the central node does not crash the client (P-4) |
-| NFR-7 | The VM and the Runtime are written in C++17 and built with sanitizers in CI; the compiler is written in Kotlin |
+| NFR-7 | Implementation languages follow C-11: the VM and the Runtime in C++17, the compiler in Kotlin, the Window Manager, Broker, Target Service, and DBMS in Go or Rust |
 | NFR-8 | Every pull request is checked by CI: build, integration tests, Markdown lint |
 
 ## Out of scope

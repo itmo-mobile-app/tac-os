@@ -79,6 +79,9 @@ The Runtime may be linked into the VM executable and does not need to run as a s
   build produces `tacvm`, the VM with the Runtime linked in: `tacvm <program.bc>`.
 - The Compiler is written in Kotlin (JVM 17) and built with Gradle in `compiler/`. `./gradlew installDist`
   produces the `tacc` launcher: `tacc <input.tc> <output.bc>`.
+- The Window Manager, Broker, Target Service, and DBMS are written in Go or Rust, as required by the course
+  technology stack (`docs/requirements.md`, C-11). Each component owner picks one of the two; the choice is
+  recorded here.
 - Integration tests live in `tests/` and run through CTest: a test runs a program and compares its
   standard output with an expected file.
 - On every Pull Request, CI builds the Compiler with Gradle, builds the VM and the Runtime with
