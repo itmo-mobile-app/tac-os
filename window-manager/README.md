@@ -1,0 +1,77 @@
+# tac-os Window Manager prototype (Go)
+
+This is a self-contained Go prototype for the Window Manager task (#33). It is intended to be copied into `tac-os/system/window-manager/` and built independently while the repository integration is completed.
+
+## Scope
+
+- Standalone WM process.
+- Unix-domain socket protocol.
+- Commands: `CREATE`, `SHOW`, `CLOSE`, `QUIT`.
+- A small test client.
+- SDL2 graphical window backend (optional build, requires SDL2 development libraries).
+- A headless protocol server mode for repeatable tests.
+
+This is a prototype, not yet a complete integration with `tac-os` Runtime. The Runtime's IPC API and the project-wide build wiring must be matched to the current branch before calling it integrated.
+
+## Requirements
+
+- Go 1.22+
+- Linux
+- For graphical mode: SDL2 development package and `github.com/veandco/go-sdl2` binding.
+
+## Build and test headless mode
+
+```bash
+go test ./...
+go build -o wm-server ./cmd/wm-server
+go build -o wm-client ./cmd/wm-client
+```
+
+Run server:
+```bash
+./wm-server -socket /tmp/tacos-wm.sock -backend headless
+```
+
+In another terminal:
+```bash
+./wm-client -socket /tmp/tacos-wm.sock CREATE
+./wm-client -socket /tmp/tacos-wm.sock SHOW
+./wm-client -socket /tmp/tacos-wm.sock CLOSE
+./wm-client -socket /tmp/tacos-wm.sock QUIT
+```
+
+The headless backend validates the protocol and lifecycle but does not open a real GUI window.
+
+## Build graphical backend
+
+```bash
+sudo apt-get install libsdl2-dev
+go mod download
+go build -tags sdl -o wm-server-sdl ./cmd/wm-server
+```
+
+Run with:
+```bash
+./wm-server-sdl -socket /tmp/tacos-wm.sock -backend sdl
+```
+
+The SDL implementation is behind a build tag so headless tests do not require system SDL packages.
+
+## Wire protocol (newline-delimited JSON)
+
+Request:
+```json
+{"command":"CREATE","window_id":"map","title":"Tactical Map","width":960,"height":640}
+```
+Response:
+```json
+{"ok":true,"message":"created"}
+```
+
+Commands:
+- `CREATE`: create one window; defaults to `map`, 960×640.
+- `SHOW`: show the created window.
+- `CLOSE`: close the created window.
+- `QUIT`: stop the WM process.
+
+The socket path defaults to `/tmp/tacos-wm.sock`. The socket is local to the machine and has normal Unix filesystem permissions. This protocol is a draft; align it with `spec/window-manager.md` before merging.

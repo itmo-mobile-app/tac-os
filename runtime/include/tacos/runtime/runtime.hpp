@@ -29,13 +29,26 @@ public:
 
 class Runtime {
 public:
-    explicit Runtime(std::ostream& output);
+    explicit Runtime(
+        std::ostream& output,
+        std::string wm_socket_path = "/tmp/tacos-wm.sock"
+    );
 
-    bool has_function(const std::string& name, std::uint8_t arg_count) const;
-    Value call(const std::string& name, const std::vector<Value>& args);
+    bool has_function(
+        const std::string& name,
+        std::uint8_t arg_count
+    ) const;
+
+    Value call(
+        const std::string& name,
+        const std::vector<Value>& args
+    );
+
+    const std::string& wm_socket_path() const;
 
 private:
     std::ostream& output_;
+    std::string wm_socket_path_;
 };
 
 } // namespace tacos::runtime
