@@ -28,11 +28,13 @@ go build -o wm-client ./cmd/wm-client
 ```
 
 Run server:
+
 ```bash
 ./wm-server -socket /tmp/tacos-wm.sock -backend headless
 ```
 
 In another terminal:
+
 ```bash
 ./wm-client -socket /tmp/tacos-wm.sock CREATE
 ./wm-client -socket /tmp/tacos-wm.sock SHOW
@@ -51,6 +53,7 @@ go build -tags sdl -o wm-server-sdl ./cmd/wm-server
 ```
 
 Run with:
+
 ```bash
 ./wm-server-sdl -socket /tmp/tacos-wm.sock -backend sdl
 ```
@@ -60,15 +63,19 @@ The SDL implementation is behind a build tag so headless tests do not require sy
 ## Wire protocol (newline-delimited JSON)
 
 Request:
+
 ```json
 {"command":"CREATE","window_id":"map","title":"Tactical Map","width":960,"height":640}
 ```
+
 Response:
+
 ```json
 {"ok":true,"message":"created"}
 ```
 
 Commands:
+
 - `CREATE`: create one window; defaults to `map`, 960×640.
 - `SHOW`: show the created window.
 - `CLOSE`: close the created window.

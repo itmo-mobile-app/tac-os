@@ -162,6 +162,7 @@ The Window Manager
 The Window Manager is a separate system component running on the client system.
 
 It is responsible for:
+
 - creating windows;
 - showing and hiding windows;
 - closing windows and releasing their resources;
