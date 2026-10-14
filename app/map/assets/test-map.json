@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "image": "test-map.png",
+  "width": 960,
+  "height": 640,
+  "bounds": {
+    "latMin": 59.9490,
+    "latMax": 59.9510,
+    "lonMin": 30.3080,
+    "lonMax": 30.3140
+  }
+}
