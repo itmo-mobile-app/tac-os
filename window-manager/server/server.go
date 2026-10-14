@@ -15,6 +15,12 @@ import (
 	"github.com/itmo-mobile-app/tac-os/system/window-manager/protocol"
 )
 
+type receivedRequest struct {
+	conn net.Conn
+	req protocol.Request
+	err error
+}
+
 type Server struct {
 	SocketPath      string
 	EventSocketPath string
@@ -87,15 +93,6 @@ func (s *Server) Run(ctx context.Context) error {
 		)
 	}
 
-	unixListener, ok := commandListener.(*net.UnixListener)
-	if !ok {
-		_ = commandListener.Close()
-		_ = eventListener.Close()
-		_ = os.Remove(s.SocketPath)
-		_ = os.Remove(s.EventSocketPath)
-		return errors.New("expected a Unix domain socket listener")
-	}
-
 	_ = os.Chmod(s.SocketPath, 0600)
 	_ = os.Chmod(s.EventSocketPath, 0600)
 
@@ -156,45 +153,43 @@ func (s *Server) Run(ctx context.Context) error {
 		}
 	}()
 
-	for {
-		// Периодически проверяем события SDL,
-		// даже если клиент не отправляет команды.
-		if err := unixListener.SetDeadline(
-			time.Now().Add(25 * time.Millisecond),
-		); err != nil {
-			return err
-		}
-
-		conn, err := unixListener.Accept()
-		if err != nil {
-			if ctx.Err() != nil {
-				return nil
+	// Read slow/partial requests on separate goroutines while keeping all
+	// SDL backend operations on this event-loop goroutine.
+	requests := make(chan receivedRequest)
+	go func() {
+		for {
+			conn, err := commandListener.Accept()
+			if err != nil {
+				return
 			}
-
-			select {
-			case <-s.stop:
-				return nil
-			default:
-			}
-
-			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-				if err := s.pollWindowEvents(); err != nil {
-					return fmt.Errorf("poll window events: %w", err)
+			go func(conn net.Conn) {
+				_ = conn.SetDeadline(time.Now().Add(10 * time.Second))
+				req, err := protocol.ReadRequest(bufio.NewReader(conn))
+				select {
+				case requests <- receivedRequest{conn: conn, req: req, err: err}:
+				case <-ctx.Done():
+					_ = conn.Close()
+				case <-s.stop:
+					_ = conn.Close()
 				}
-				continue
-			}
-
-			return err
+			}(conn)
 		}
+	}()
 
-		if err := s.handle(ctx, conn); err != nil {
-			// Ошибка отдельной команды не останавливает сервер.
-		}
-
+	ticker := time.NewTicker(25 * time.Millisecond)
+	defer ticker.Stop()
+	for {
 		select {
+		case <-ctx.Done():
+			return nil
 		case <-s.stop:
 			return nil
-		default:
+		case <-ticker.C:
+			if err := s.pollWindowEvents(); err != nil {
+				return fmt.Errorf("poll window events: %w", err)
+			}
+		case received := <-requests:
+			_ = s.handleRequest(received.conn, received.req, received.err)
 		}
 	}
 }
@@ -236,18 +231,11 @@ func (s *Server) pollWindowEvents() error {
 	return nil
 }
 
-func (s *Server) handle(ctx context.Context, conn net.Conn) error {
+func (s *Server) handleRequest(conn net.Conn, req protocol.Request, readErr error) error {
 	defer conn.Close()
-
-	_ = conn.SetDeadline(time.Now().Add(10 * time.Second))
-
-	req, err := protocol.ReadRequest(bufio.NewReader(conn))
-	if err != nil {
-		_ = protocol.WriteResponse(conn, protocol.Response{
-			OK:      false,
-			Message: err.Error(),
-		})
-		return err
+	if readErr != nil {
+		_ = protocol.WriteResponse(conn, protocol.Response{OK: false, Message: readErr.Error()})
+		return readErr
 	}
 
 	cmd := strings.ToUpper(strings.TrimSpace(req.Command))
