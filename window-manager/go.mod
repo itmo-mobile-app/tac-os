@@ -1,4 +1,4 @@
-module github.com/itmo-mobile-app/tac-os/system/window-manager
+module github.com/itmo-mobile-app/tac-os/window-manager
 
 go 1.22
 

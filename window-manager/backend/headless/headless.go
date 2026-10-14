@@ -3,7 +3,7 @@ package headless
 import (
 	"sync"
 
-	"github.com/itmo-mobile-app/tac-os/system/window-manager/backend"
+	"github.com/itmo-mobile-app/tac-os/window-manager/backend"
 )
 
 type Backend struct {

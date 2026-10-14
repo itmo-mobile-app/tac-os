@@ -8,7 +8,7 @@ import (
 
 	"github.com/veandco/go-sdl2/sdl"
 
-	"github.com/itmo-mobile-app/tac-os/system/window-manager/backend"
+	"github.com/itmo-mobile-app/tac-os/window-manager/backend"
 )
 
 type Backend struct{}
@@ -28,7 +28,7 @@ func (b *Backend) Create(cfg backend.WindowConfig) (backend.Window, error) {
 	if err := sdl.Init(sdl.INIT_VIDEO); err != nil {
 		return nil, err
 	}
-	win, err := sdl.CreateWindow(cfg.Title, sdl.WINDOWPOS_CENTERED, sdl.WINDOWPOS_CENTERED, int32(cfg.Width), int32(cfg.Height), sdl.WINDOW_SHOWN | sdl.WINDOW_BORDERLESS)
+	win, err := sdl.CreateWindow(cfg.Title, sdl.WINDOWPOS_CENTERED, sdl.WINDOWPOS_CENTERED, int32(cfg.Width), int32(cfg.Height), sdl.WINDOW_SHOWN)
 	if err != nil {
 		sdl.Quit()
 		return nil, err

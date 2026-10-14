@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/itmo-mobile-app/tac-os/system/window-manager/backend"
-	"github.com/itmo-mobile-app/tac-os/system/window-manager/protocol"
+	"github.com/itmo-mobile-app/tac-os/window-manager/backend"
+	"github.com/itmo-mobile-app/tac-os/window-manager/protocol"
 )
 
 type receivedRequest struct {

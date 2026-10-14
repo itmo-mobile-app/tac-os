@@ -5,7 +5,7 @@ package sdl
 import (
 	"errors"
 
-	"github.com/itmo-mobile-app/tac-os/system/window-manager/backend"
+	"github.com/itmo-mobile-app/tac-os/window-manager/backend"
 )
 
 var ErrSDLBuildTag = errors.New("SDL backend not compiled; rebuild with -tags sdl")
