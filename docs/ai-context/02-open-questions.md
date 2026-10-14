@@ -186,9 +186,9 @@ Compiler, CMake for the VM and the Runtime, CTest, comparison of program output 
 sanitizer build of the C++ code in CI) are described in
 `01-architecture.md` → "Implementation and build". Remaining open:
 
-- Required unit-test framework per language.
-- Implementation language for the Window Manager, DBMS, Broker, and Target Service (C++17 with the same
-  CMake build is the expected default).
+- Unit-test frameworks for components other than DBMS (DBMS uses Go's standard testing package).
+- Implementation language for the Window Manager, Broker, and Target Service.
+  The DBMS uses Go, as documented in `01-architecture.md` → "Implementation and build".
 - End-to-end environment.
 - Mock strategy for camera, GPS, and network.
 - Required CI checks before merge.
