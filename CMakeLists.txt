@@ -22,4 +22,5 @@ enable_testing()
 
 add_subdirectory(runtime)
 add_subdirectory(vm)
+add_subdirectory(server/dbms)
 add_subdirectory(tests)

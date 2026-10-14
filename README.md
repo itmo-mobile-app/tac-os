@@ -207,7 +207,7 @@ tests/      — интеграционные и end-to-end тесты
 ## Сборка и тесты
 
 Нужны CMake 3.16+, компилятор C++17 (GCC или Clang) для VM и Runtime и JDK 17 для компилятора `.tc`
-(Kotlin, Gradle).
+(Kotlin, Gradle), а также Go 1.22+ для SQL-СУБД.
 
 ```bash
 (cd compiler && ./gradlew installDist)

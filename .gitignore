@@ -87,3 +87,5 @@ node_modules/
 
 coverage/
 *.prof
+
+/build-dbms/

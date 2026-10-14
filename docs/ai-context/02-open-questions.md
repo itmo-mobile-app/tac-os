@@ -188,11 +188,12 @@ Compiler, CMake for the VM and the Runtime, CTest, comparison of program output 
 sanitizer build of the C++ code in CI) are described in
 `01-architecture.md` → "Implementation and build". Remaining open:
 
-- Required unit-test framework per language.
-- Go or Rust for each of the Window Manager, Broker, Target Service, and DBMS (`01-architecture.md` →
-  "Implementation and build").
+- Unit-test frameworks for components other than DBMS (DBMS uses Go's standard testing package).
+- Choice of Go or Rust for the Window Manager, Broker, and Target Service.
+  The DBMS uses Go, as documented in `01-architecture.md` → "Implementation and build".
 - Whether the compiler must use ANTLR4 (the course stack names "Kotlin (ANTLR4)"; the current compiler has
   a hand-written lexer and parser).
+  
 - End-to-end environment.
 - Mock strategy for camera, GPS, and network.
 - Required CI checks before merge.

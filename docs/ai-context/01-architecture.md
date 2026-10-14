@@ -79,6 +79,10 @@ The Runtime may be linked into the VM executable and does not need to run as a s
   build produces `tacvm`, the VM with the Runtime linked in: `tacvm <program.bc>`.
 - The Compiler is written in Kotlin (JVM 17) and built with Gradle in `compiler/`. `./gradlew installDist`
   produces the `tacc` launcher: `tacc <input.tc> <output.bc>`.
+- The DBMS is written in Go (1.22+) in `server/dbms/`, matching the course stack. It uses
+  only the standard library. `go build ./cmd/tacdb` builds its CLI; `go test ./...` runs
+  its unit tests. CMake also builds this executable and registers DBMS tests with CTest.
+  Issue #31 is an in-memory increment; persistence and the client protocol are deferred.
 - The Window Manager, Broker, Target Service, and DBMS are written in Go or Rust, as required by the course
   technology stack (`docs/requirements.md`, C-11). Each component owner picks one of the two; the choice is
   recorded here.
@@ -86,7 +90,7 @@ The Runtime may be linked into the VM executable and does not need to run as a s
   standard output with an expected file.
 - On every Pull Request, CI builds the Compiler with Gradle, builds the VM and the Runtime with
   AddressSanitizer and UndefinedBehaviorSanitizer (these sanitizers apply only to the C++ code), and runs
-  CTest.
+  CTest. CI also checks Go formatting, runs `go vet`, and tests the DBMS with the Go race detector.
 
 ## Client application
 

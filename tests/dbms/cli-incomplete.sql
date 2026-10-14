@@ -1,0 +1,2 @@
+CREATE TABLE demo (x INTEGER);
+SELECT * FROM demo
