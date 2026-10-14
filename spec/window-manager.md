@@ -33,6 +33,7 @@ Command messages and event messages use newline-delimited JSON (one JSON object 
 ## 3. Command protocol
 
 A command request contains the following fields:
+
 | Field | Type | Description |
 |---|---|---|
 | `command` | string | Command to execute. |
@@ -45,7 +46,7 @@ The `title`, `width`, and `height` fields are primarily used when creating a win
 
 ### Commands
 
-- **`CREATE`** — creates a window and associates it with a window ID. The initial Map window uses a drawing area of `960 × 640` pixels and the title `Tactical Map`. The window has no frame. WM chooses its position.
+- **`CREATE`** — creates a window and associates it with a window ID. The initial Map window uses a drawing area of `960 × 640` pixels and the title `Tactical Map`. The window uses native window decorations and a close control. WM chooses its position.
 
 - **`SHOW`** — displays an existing window.
 
@@ -58,6 +59,7 @@ The prototype supports one window at a time. It does not define multi-window beh
 ### Command responses
 
 A response contains:
+
 | Field | Type | Description |
 |---|---|---|
 | `ok` | boolean | Indicates whether the operation succeeded. |
