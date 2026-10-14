@@ -1,0 +1,31 @@
+name: Broker Go checks
+
+on:
+  pull_request:
+    paths:
+      - "broker/**"
+      - ".github/workflows/go-broker.yml"
+  push:
+    branches: [main]
+    paths:
+      - "broker/**"
+      - ".github/workflows/go-broker.yml"
+
+jobs:
+  broker:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: broker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: broker/go.mod
+          cache: false
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)"
+      - name: Vet
+        run: go vet ./...
+      - name: Tests with race detector
+        run: go test -race -count=1 ./...

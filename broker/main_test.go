@@ -9,15 +9,16 @@ import (
 	"time"
 )
 
-func startTestBroker(t *testing.T) string {
+func startTestBroker(t *testing.T) (string, *broker) {
 	t.Helper()
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = listener.Close() })
-	go func() { _ = newBroker().serve(listener) }()
-	return listener.Addr().String()
+	b := newBroker()
+	go func() { _ = b.serve(listener) }()
+	return listener.Addr().String(), b
 }
 
 func connect(t *testing.T, address string) net.Conn {
@@ -47,14 +48,27 @@ func readLine(t *testing.T, c net.Conn) string {
 	return strings.TrimSuffix(line, "\n")
 }
 
+func waitForSubscribers(t *testing.T, b *broker, topic string, want int) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		b.mu.RLock()
+		got := len(b.subscribers[topic])
+		b.mu.RUnlock()
+		if got == want {
+			return
+		}
+		time.Sleep(time.Millisecond)
+	}
+	t.Fatalf("subscription count for %q never reached %d", topic, want)
+}
+
 func TestDeliveryAndNoSubscribers(t *testing.T) {
-	addr := startTestBroker(t)
+	addr, b := startTestBroker(t)
 	subscriber := connect(t, addr)
 	publisher := connect(t, addr)
 	sendLine(t, subscriber, "SUB observations")
-	// Ensure the subscription was processed before publishing.
-	// A second subscription and a small wait are sufficient for this network-level test.
-	time.Sleep(30 * time.Millisecond)
+	waitForSubscribers(t, b, "observations", 1)
 	payload := `{"latitude": 55.75, "longitude": -37.61}`
 	sendLine(t, publisher, "PUB observations "+payload)
 	want := "MSG observations " + payload
@@ -69,19 +83,55 @@ func TestDeliveryAndNoSubscribers(t *testing.T) {
 }
 
 func TestDisconnectRemovesSubscriptions(t *testing.T) {
+	addr, b := startTestBroker(t)
+	subscriber := connect(t, addr)
+	sendLine(t, subscriber, "SUB observations")
+	waitForSubscribers(t, b, "observations", 1)
+	if err := subscriber.Close(); err != nil {
+		t.Fatal(err)
+	}
+	waitForSubscribers(t, b, "observations", 0)
+}
+
+func TestSlowSubscriberDoesNotBlockHealthySubscriber(t *testing.T) {
 	b := newBroker()
-	a, other := net.Pipe()
-	c := &client{conn: a}
-	b.subscribe(c, "observations")
-	if len(b.subscribers["observations"]) != 1 {
-		t.Fatal("missing subscription")
+	slowServer, slowPeer := net.Pipe()
+	fastServer, fastPeer := net.Pipe()
+	defer slowServer.Close()
+	defer slowPeer.Close()
+	defer fastServer.Close()
+	defer fastPeer.Close()
+	b.subscribe(&client{conn: slowServer}, "observations")
+	b.subscribe(&client{conn: fastServer}, "observations")
+
+	delivered := make(chan string, 1)
+	go func() {
+		_ = fastPeer.SetReadDeadline(time.Now().Add(2 * time.Second))
+		line, err := bufio.NewReader(fastPeer).ReadString('\n')
+		if err == nil {
+			delivered <- line
+		}
+	}()
+
+	published := make(chan struct{})
+	go func() {
+		b.publish("observations", "{}")
+		close(published)
+	}()
+	select {
+	case got := <-delivered:
+		if got != "MSG observations {}\n" {
+			t.Fatalf("unexpected delivery: %q", got)
+		}
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("a stalled subscriber delayed delivery to a healthy one")
 	}
-	b.remove(c)
-	if len(b.subscribers) != 0 {
-		t.Fatal("subscription was not removed")
+	select {
+	case <-published:
+	case <-time.After(2 * time.Second):
+		t.Fatal("publication remained blocked on a stalled subscriber")
 	}
-	_ = a.Close()
-	_ = other.Close()
+	waitForSubscribers(t, b, "observations", 1)
 }
 
 func TestValidTopic(t *testing.T) {

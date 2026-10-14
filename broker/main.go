@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type client struct {
@@ -22,6 +23,10 @@ type client struct {
 func (c *client) send(message string) error {
 	c.writeMu.Lock()
 	defer c.writeMu.Unlock()
+	// Never allow one subscriber that stopped reading to block delivery forever.
+	if err := c.conn.SetWriteDeadline(time.Now().Add(time.Second)); err != nil {
+		return err
+	}
 	_, err := io.WriteString(c.conn, message+"\n")
 	return err
 }
@@ -68,13 +73,20 @@ func (b *broker) publish(topic, payload string) {
 	b.mu.RUnlock()
 
 	message := "MSG " + topic + " " + payload
+	// Each subscriber is independent. A slow connection must not delay a
+	// healthy one, and client.send serializes concurrent writes per client.
+	var deliveries sync.WaitGroup
 	for _, c := range recipients {
-		if err := c.send(message); err != nil {
-			// A failed connection will also be removed when its reader exits.
-			_ = c.conn.Close()
-			b.remove(c)
-		}
+		deliveries.Add(1)
+		go func(c *client) {
+			defer deliveries.Done()
+			if err := c.send(message); err != nil {
+				_ = c.conn.Close()
+				b.remove(c)
+			}
+		}(c)
 	}
+	deliveries.Wait()
 }
 
 func (b *broker) handle(conn net.Conn) {
