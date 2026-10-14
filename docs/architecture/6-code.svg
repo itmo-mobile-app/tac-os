@@ -1,0 +1,85 @@
+<!--
+  tac-os architecture diagram — Code level: functions inside one tacvm process and calls between VM and Runtime.
+  Maintained by hand as plain SVG; edit the text and coordinates directly.
+  WHEN TO UPDATE: Update when the VM <-> Runtime interface (runtime.hpp) or the load/execute flow changes (spec/runtime-api.md).
+  Keep this diagram on its own level (see docs/architecture/README.md) and keep labels in Russian:
+  the diagrams are embedded in the Russian README.md.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="400" font-family="IBM Plex Sans, Helvetica, Arial, sans-serif" color="#1f1c26" viewBox="0 0 1000 400" role="img" aria-label="Внутри одного процесса tacvm два компонента: VM и Runtime. При загрузке VM вызывает has_function у таблицы функций Runtime и получает true или false. При исполнении VM вызывает call, Runtime находит обработчик в таблице, runtime_log печатает строку и возвращает Int 0.">
+  <defs>
+    <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+<style>.zone { fill: none; stroke: #d3cfdd; stroke-width: 2; }
+.t-zone { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 12px; fill: #625d70; letter-spacing: .06em; }
+.proc { fill: #f7f6fa; stroke: #2f2a3a; stroke-width: 1.5; }
+.proc-head { fill: #2f2a3a; }
+.t-head { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 12px; fill: #f4f2f8; letter-spacing: .03em; }
+.box { fill: #ffffff; stroke: #1f1c26; stroke-width: 1.25; }
+.app { fill: #ece8f8; stroke: #6b4fbb; stroke-width: 1.5; }
+.fn { fill: #f7f6fa; stroke: #625d70; stroke-width: 1; }
+.file { fill: #ffffff; stroke: #1f1c26; stroke-width: 1.5; }
+.t-name { font-size: 15px; font-weight: 600; fill: currentColor; }
+.t-code { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 13.5px; font-weight: 500; fill: currentColor; }
+.t-sub { font-size: 12.5px; fill: #625d70; }
+.t-arrow { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 11.5px; fill: currentColor; }
+.t-note { font-size: 12px; fill: #625d70; font-style: italic; }
+.edge { stroke: currentColor; stroke-width: 1.5; fill: none; }
+.edge.ret { stroke-dasharray: 6 4; }
+.actor { fill: #f7f6fa; stroke: #625d70; stroke-width: 1.5; }
+</style>
+<rect width="1000" height="400" fill="#ffffff"/>
+  <!-- process -->
+  <rect class="proc" x="10" y="10" width="980" height="380" rx="6"/>
+  <path class="proc-head" d="M10 16 a6 6 0 0 1 6 -6 h968 a6 6 0 0 1 6 6 v26 h-980 z"/>
+  <text class="t-head" x="26" y="31">процесс: tacvm hello.bc — один процесс, одна память</text>
+
+  <!-- VM component -->
+  <rect class="box" x="30" y="60" width="340" height="310" rx="6"/>
+  <text class="t-name" x="48" y="86">VM</text>
+  <text class="t-sub" x="84" y="86">vm/src/main.cpp</text>
+  <rect class="fn" x="48" y="104" width="304" height="132" rx="4"/>
+  <text class="t-code" x="66" y="130">load_program</text>
+  <text class="t-sub" x="66" y="152">проверяет TACB и версию 1</text>
+  <text class="t-sub" x="66" y="172">читает константы и функции</text>
+  <text class="t-sub" x="66" y="192">entry_function</text>
+  <text class="t-sub" x="66" y="212">проверяет каждый CALL_RUNTIME</text>
+  <line class="edge" x1="200" y1="236" x2="200" y2="262" marker-end="url(#a3)"/>
+  <text class="t-arrow" x="208" y="254">Program</text>
+  <rect class="fn" x="48" y="266" width="304" height="88" rx="4"/>
+  <text class="t-code" x="66" y="292">Vm::execute</text>
+  <text class="t-sub" x="66" y="314">ip + стек операндов</text>
+  <text class="t-sub" x="66" y="334">PUSH_CONST · CALL_RUNTIME · POP · RET</text>
+
+  <!-- boundary note -->
+  <text class="t-arrow" x="500" y="74" text-anchor="middle">интерфейс между ними:</text>
+  <text class="t-arrow" x="500" y="90" text-anchor="middle">runtime.hpp</text>
+
+  <!-- calls -->
+  <line class="edge" x1="352" y1="152" x2="646" y2="152" marker-end="url(#a3)"/>
+  <text class="t-arrow" x="500" y="126" text-anchor="middle">при загрузке</text>
+  <text class="t-arrow" x="500" y="142" text-anchor="middle">has_function("runtime.log", 1)</text>
+  <line class="edge ret" x1="646" y1="186" x2="356" y2="186" marker-end="url(#a3)"/>
+  <text class="t-arrow" x="500" y="204" text-anchor="middle">true / false</text>
+
+  <line class="edge" x1="352" y1="292" x2="646" y2="292" marker-end="url(#a3)"/>
+  <text class="t-arrow" x="500" y="266" text-anchor="middle">при исполнении</text>
+  <text class="t-arrow" x="500" y="282" text-anchor="middle">call("runtime.log", ["hello"])</text>
+  <line class="edge ret" x1="646" y1="326" x2="356" y2="326" marker-end="url(#a3)"/>
+  <text class="t-arrow" x="500" y="344" text-anchor="middle">Int 0 → кладёт на стек</text>
+
+  <!-- Runtime component -->
+  <rect class="box" x="630" y="60" width="340" height="310" rx="6"/>
+  <text class="t-name" x="648" y="86">Runtime</text>
+  <text class="t-sub" x="718" y="86">runtime/src/runtime.cpp</text>
+  <rect class="fn" x="648" y="104" width="304" height="110" rx="4"/>
+  <text class="t-code" x="666" y="130">таблица функций</text>
+  <text class="t-arrow" x="666" y="156">"runtime.log" → 1 арг., runtime_log</text>
+  <text class="t-sub" x="666" y="184">новая функция — одна строка</text>
+  <line class="edge" x1="800" y1="214" x2="800" y2="246" marker-end="url(#a3)"/>
+  <text class="t-arrow" x="808" y="236">обработчик</text>
+  <rect class="fn" x="648" y="250" width="304" height="104" rx="4"/>
+  <text class="t-code" x="666" y="276">runtime_log</text>
+  <text class="t-sub" x="666" y="298">проверяет, что аргумент — строка</text>
+  <text class="t-sub" x="666" y="318">печатает строку + \n в stdout</text>
+  <text class="t-sub" x="666" y="338">возвращает Int 0</text>
+  </svg>

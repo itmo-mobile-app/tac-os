@@ -35,6 +35,7 @@ Examples include:
 - Avoid adding fields, commands, instructions, or API methods for hypothetical future use.
 - If the change requires resolving an open architectural question, surface that decision explicitly.
 - After a decision is accepted, remove the resolved item from `docs/ai-context/02-open-questions.md`.
+- Update the affected diagrams in `docs/architecture/` (see the table in `docs/architecture/README.md`).
 - Update relevant integration tests in the same Pull Request.
 
 ## Required output for a contract change
@@ -67,4 +68,5 @@ An architecture-sensitive change is complete only when:
 - both sides of the interface are updated;
 - relevant project context is updated if necessary;
 - resolved open questions are cleaned up;
+- the architecture diagrams in `docs/architecture/` match the change;
 - integration tests cover the changed interaction.

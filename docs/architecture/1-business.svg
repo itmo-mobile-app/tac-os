@@ -1,0 +1,70 @@
+<!--
+  tac-os architecture diagram — Business level: actors and scenario steps in domain language. No processes, no transport.
+  Maintained by hand as plain SVG; edit the text and coordinates directly.
+  WHEN TO UPDATE: Update when the game scenario or domain rules change (docs/requirements.md, e.g. tag rule, team encoding).
+  Keep this diagram on its own level (see docs/architecture/README.md) and keep labels in Russian:
+  the diagrams are embedded in the Russian README.md.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="310" font-family="IBM Plex Sans, Helvetica, Arial, sans-serif" color="#1f1c26" viewBox="0 0 1000 310" role="img" aria-label="Игрок наводит камеру на другого игрока, система распознаёт его маркер — свой или противник, определяет, где он, объединяет наблюдения всех игроков в цели с уверенностью и показывает своих и противников на карте всей команде.">
+  <defs>
+    <marker id="b1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+<style>.zone { fill: none; stroke: #d3cfdd; stroke-width: 2; }
+.t-zone { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 12px; fill: #625d70; letter-spacing: .06em; }
+.proc { fill: #f7f6fa; stroke: #2f2a3a; stroke-width: 1.5; }
+.proc-head { fill: #2f2a3a; }
+.t-head { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 12px; fill: #f4f2f8; letter-spacing: .03em; }
+.box { fill: #ffffff; stroke: #1f1c26; stroke-width: 1.25; }
+.app { fill: #ece8f8; stroke: #6b4fbb; stroke-width: 1.5; }
+.fn { fill: #f7f6fa; stroke: #625d70; stroke-width: 1; }
+.file { fill: #ffffff; stroke: #1f1c26; stroke-width: 1.5; }
+.t-name { font-size: 15px; font-weight: 600; fill: currentColor; }
+.t-code { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 13.5px; font-weight: 500; fill: currentColor; }
+.t-sub { font-size: 12.5px; fill: #625d70; }
+.t-arrow { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 11.5px; fill: currentColor; }
+.t-note { font-size: 12px; fill: #625d70; font-style: italic; }
+.edge { stroke: currentColor; stroke-width: 1.5; fill: none; }
+.edge.ret { stroke-dasharray: 6 4; }
+.actor { fill: #f7f6fa; stroke: #625d70; stroke-width: 1.5; }
+</style>
+<rect width="1000" height="310" fill="#ffffff"/>
+  <rect class="actor" x="20" y="72" width="104" height="56" rx="28"/>
+  <text class="t-name" x="72" y="105" text-anchor="middle">Игрок</text>
+  <line class="edge" x1="124" y1="100" x2="176" y2="100" marker-end="url(#b1)"/>
+  <text class="t-arrow" x="150" y="88" text-anchor="middle">камера</text>
+
+  <rect class="box" x="180" y="50" width="200" height="100" rx="6"/>
+  <text class="t-name" x="198" y="80">Узнать игрока</text>
+  <text class="t-sub" x="198" y="102">по маркеру на нём:</text>
+  <text class="t-sub" x="198" y="120">кто это — свой</text>
+  <text class="t-sub" x="198" y="138">или противник</text>
+  <line class="edge" x1="380" y1="100" x2="436" y2="100" marker-end="url(#b1)"/>
+  <text class="t-arrow" x="408" y="88" text-anchor="middle">кто</text>
+
+  <rect class="box" x="440" y="50" width="220" height="100" rx="6"/>
+  <text class="t-name" x="458" y="80">Определить, где он</text>
+  <text class="t-sub" x="458" y="102">направление и расстояние</text>
+  <text class="t-sub" x="458" y="120">от игрока + где стоит</text>
+  <text class="t-sub" x="458" y="138">сам игрок</text>
+  <line class="edge" x1="660" y1="100" x2="736" y2="100" marker-end="url(#b1)"/>
+  <text class="t-arrow" x="698" y="88" text-anchor="middle">наблюдение</text>
+
+  <rect class="box" x="740" y="50" width="240" height="100" rx="6"/>
+  <text class="t-name" x="758" y="80">Объединить наблюдения</text>
+  <text class="t-sub" x="758" y="102">всех игроков: уверенность</text>
+  <text class="t-sub" x="758" y="120">растёт от новых наблюдений</text>
+  <text class="t-sub" x="758" y="138">и падает со временем</text>
+  <line class="edge" x1="860" y1="150" x2="860" y2="206" marker-end="url(#b1)"/>
+  <text class="t-arrow" x="868" y="184">цель</text>
+
+  <rect class="box" x="740" y="210" width="240" height="80" rx="6"/>
+  <text class="t-name" x="758" y="240">Показать на карте</text>
+  <text class="t-sub" x="758" y="262">свои и противники: где,</text>
+  <text class="t-sub" x="758" y="280">насколько уверены, когда видели</text>
+  <line class="edge" x1="740" y1="250" x2="644" y2="250" marker-end="url(#b1)"/>
+  <text class="t-arrow" x="692" y="238" text-anchor="middle">видят</text>
+
+  <rect class="actor" x="460" y="222" width="180" height="56" rx="28"/>
+  <text class="t-name" x="550" y="248" text-anchor="middle">Команда</text>
+  <text class="t-sub" x="550" y="266" text-anchor="middle">все игроки</text>
+  </svg>

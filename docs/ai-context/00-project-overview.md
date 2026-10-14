@@ -10,6 +10,9 @@ The concrete target scenario for the mobile application is a tool that simplifie
 during an airsoft game: the application recognizes an opponent's marker through the camera and shows
 their position on a shared tactical map in real time, for the whole team to see.
 
+Stakeholders, the problem domain, and functional and non-functional requirements are described in
+`docs/requirements.md`.
+
 ## Main goal
 
 The project is intended to demonstrate and study the core ideas behind a mobile software platform:
