@@ -1,6 +1,6 @@
 # tac-os Window Manager prototype (Go)
 
-This is a self-contained Go prototype for the Window Manager task (#33). It is intended to be copied into `tac-os/system/window-manager/` and built independently while the repository integration is completed.
+This is a self-contained Go prototype for the Window Manager task (#33). It lives in `window-manager/` and builds as a standalone Go module alongside the C++ Runtime.
 
 ## Scope
 
@@ -11,7 +11,7 @@ This is a self-contained Go prototype for the Window Manager task (#33). It is i
 - SDL2 graphical window backend (optional build, requires SDL2 development libraries).
 - A headless protocol server mode for repeatable tests.
 
-This is a prototype, not yet a complete integration with `tac-os` Runtime. The Runtime's IPC API and the project-wide build wiring must be matched to the current branch before calling it integrated.
+The Runtime command client is implemented in `runtime/src/window_manager_client.cpp`. Window-event subscription from Map remains a separate integration step.
 
 ## Requirements
 
@@ -81,4 +81,4 @@ Commands:
 - `CLOSE`: close the created window.
 - `QUIT`: stop the WM process.
 
-The socket path defaults to `/tmp/tacos-wm.sock`. The socket is local to the machine and has normal Unix filesystem permissions. This protocol is a draft; align it with `spec/window-manager.md` before merging.
+The socket path defaults to `/tmp/tacos-wm.sock`. The socket is local and restricted to its owning user (0600). The protocol is defined in `spec/window-manager.md`.

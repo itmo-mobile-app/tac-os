@@ -7,11 +7,10 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/itmo-mobile-app/tac-os/system/window-manager/protocol"
+	"github.com/itmo-mobile-app/tac-os/window-manager/protocol"
 )
 
 func main() {
@@ -33,5 +32,4 @@ func main() {
 	if err := json.NewDecoder(bufio.NewReader(conn)).Decode(&resp); err != nil { fmt.Fprintln(os.Stderr, err); os.Exit(1) }
 	fmt.Printf("ok=%t message=%s\n", resp.OK, resp.Message)
 	if !resp.OK { os.Exit(1) }
-	_ = strconv.IntSize
 }

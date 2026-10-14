@@ -9,10 +9,10 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/itmo-mobile-app/tac-os/system/window-manager/backend"
-	"github.com/itmo-mobile-app/tac-os/system/window-manager/backend/headless"
-	"github.com/itmo-mobile-app/tac-os/system/window-manager/backend/sdl"
-	"github.com/itmo-mobile-app/tac-os/system/window-manager/server"
+	"github.com/itmo-mobile-app/tac-os/window-manager/backend"
+	"github.com/itmo-mobile-app/tac-os/window-manager/backend/headless"
+	"github.com/itmo-mobile-app/tac-os/window-manager/backend/sdl"
+	"github.com/itmo-mobile-app/tac-os/window-manager/server"
 )
 
 func main() {
