@@ -64,10 +64,6 @@ the Runtime owner). Remaining open:
 
 ## Window Manager
 
-- Exact Linux graphics/windowing backend.
-- Window lifecycle.
-- Input event model.
-- Communication protocol between Runtime and Window Manager.
 - Whether the Window Manager runs permanently as a system service.
 - Exact startup mechanism.
 

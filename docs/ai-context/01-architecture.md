@@ -161,18 +161,28 @@ The Runtime maps the project threading API to Linux threading facilities.
 
 ## Window Manager
 
+The Window Manager
+
 The Window Manager is a separate system component running on the client system.
 
 It is responsible for:
 
 - creating windows;
 - showing and hiding windows;
-- closing windows;
-- dispatching input events.
+- closing windows and releasing their resources;
+- dispatching supported window events to applications through Runtime communication channels.
 
-Applications do not access Linux windowing facilities directly.
+Applications do not access Linux windowing facilities directly. They access the Window Manager through Runtime APIs.
 
-They access the Window Manager through Runtime APIs.
+The Window Manager is implemented in Go and runs as a separate Linux process. Runtime communicates with it through local Unix-domain sockets.
+
+SDL2 is the agreed windowing library for the Window Manager. X11 and Wayland are native Linux window-system options, while SDL2 provides a higher-level API that can use the available system backend. This avoids tying the Window Manager directly to a single window-system protocol and provides a common interface for window creation, display, closure, and native window events.
+
+The initial implementation supports one Tactical Map window with a fixed drawing area of 960 × 640 pixels, the title `Tactical Map`, and native window decorations with a close control. The Window Manager chooses the window position.
+
+The initial event support includes notification when the user requests that the window be closed through its native close control. Mouse and keyboard event forwarding, window resizing, multiple simultaneous windows, Activity lifecycle management, and WebView integration are outside the scope of the initial implementation.
+
+The Runtime–Window Manager protocol is documented in `spec/window-manager.md`.
 
 ## Activity model
 
