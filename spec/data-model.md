@@ -11,7 +11,7 @@ Produced by Analyzer, sent to Map over IPC, and published by Map to the Broker.
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `targetId` | String | Identifier of the observed target |
+| `targetId` | String | Identifier of the observed target: the marker id as a decimal string, e.g. `"17"` |
 | `observerId` | String | Identifier of the reporting client/device |
 | `latitude` | Float | Calculated target latitude |
 | `longitude` | Float | Calculated target longitude |
