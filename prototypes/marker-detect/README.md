@@ -35,13 +35,26 @@ If the build cannot find OpenCV (`Package opencv4 was not found`), point `pkg-co
 
 ```bash
 export PKG_CONFIG_PATH="$(brew --prefix opencv)/lib/pkgconfig"
+````
+
+On older macOS versions Homebrew builds OpenCV from source, which can take hours. conda is faster. Note
+that conda-forge now ships OpenCV 5 by default, which gocv does not support, so ask for version 4:
+
+```bash
+conda create -n tac-opencv -c conda-forge pkg-config "opencv>=4.12,<4.15"
+conda activate tac-opencv
+export PKG_CONFIG_PATH="$CONDA_PREFIX/lib/pkgconfig"
+export CGO_LDFLAGS="-Wl,-rpath,$CONDA_PREFIX/lib"
 ```
+
+The linker may print `duplicate -rpath ... ignored`; it is harmless.
 
 ## Versions
 
 gocv v0.43.0 (the latest release) officially supports OpenCV 4.12.0. Homebrew currently installs
 OpenCV 4.14.0. On Linux the project was built and tested with gocv v0.43.0 against both OpenCV 4.12.0 and
-OpenCV 4.14.0: everything compiles and all tests pass. macOS was not tested.
+OpenCV 4.14.0: everything compiles and all tests pass. On macOS (Apple Silicon) it was built and all tests pass with
+gocv v0.43.0 and OpenCV 4.13.0 from conda-forge (see above); the camera was tried on a MacBook.
 
 If the build fails with compile errors inside gocv's C++ code, the OpenCV on your machine is too different
 from the one gocv expects. Install the version named in the gocv README (the gocv repository has a
@@ -124,3 +137,7 @@ calibration.
 - With a corner error of 0.3 px the distance is on average 1% off and at worst about 5% off (see
   `pose/pose_test.go`); real cameras may be worse.
 - `confidence` is not produced: the ArUco detector does not give a score (open question).
+- A single frame can contain a false detection of a marker that is not there (seen once in a camera run).
+  The Analyzer should accept a marker only if it is seen in several frames in a row.
+- The distance was not checked against a measured distance on a real camera (the camera is not
+  calibrated); the angle was checked only by moving the marker to the left and to the right.
