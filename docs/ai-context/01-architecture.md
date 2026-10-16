@@ -91,6 +91,9 @@ The Runtime may be linked into the VM executable and does not need to run as a s
 - On every Pull Request, CI builds the Compiler with Gradle, builds the VM and the Runtime with
   AddressSanitizer and UndefinedBehaviorSanitizer (these sanitizers apply only to the C++ code), and runs
   CTest. CI also checks Go formatting, runs `go vet`, and tests the DBMS with the Go race detector.
+- The marker detector is written in Go (a separate module, built with `go build`) and uses OpenCV through
+  gocv, so building it needs cgo, OpenCV and `pkg-config`; the gocv version must match the OpenCV version.
+  Its packages that do not use OpenCV are built and tested with plain `go test`.
 
 ## Client application
 
@@ -110,11 +113,8 @@ Each process runs its own VM instance.
 
 Responsible for:
 
-- receiving camera frames;
-- detecting a target marker;
-- identifying the target;
+- receiving marker detections from the marker detector (see "Marker recognition");
 - estimating detection confidence;
-- estimating direction and distance;
 - reading device position and orientation through Runtime APIs;
 - calculating target coordinates;
 - creating an `Observation`;
@@ -130,6 +130,45 @@ Responsible for:
 - displaying target probability;
 - receiving local observations from Analyzer through IPC;
 - receiving aggregated target updates from the central system.
+
+## Marker recognition
+
+Marker recognition is performed by a separate program, the marker detector, not by `.tc` code on the VM:
+processing camera frames in bytecode is expected to be too slow. The VM and the Runtime are written in C++;
+the detector is written in Go.
+
+```text
+Camera frame
+   ↓
+Marker detector (Go, OpenCV): marker id, angle, distance
+   ↓
+Analyzer (.tc code): Detection → Observation
+```
+
+For every game marker in a frame the detector reports a detection:
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `id` | Int | Marker id, see "Marker format" |
+| `relativeAngle` | Float | Degrees; `0` is the center of the frame, positive is to the right |
+| `distance` | Float | Meters from the camera to the marker center |
+
+The Analyzer `.tc` code only combines these values with the device position and orientation and builds an
+`Observation`. How the detections reach the Analyzer is not decided yet, see `02-open-questions.md` →
+"Runtime".
+
+### Marker format
+
+- ArUco markers, dictionary `DICT_4X4_100`.
+- 6 teams with 12 players each: `id = team * 12 + player`, team `0..5`, player `0..11`, so valid ids are
+  `0..71`. Markers with other ids are ignored.
+- `targetId` of a `Detection` and an `Observation` is the marker `id` as a decimal string.
+
+### Implementation
+
+The detector uses the ArUco detector of OpenCV. The distance is estimated from the four corners of the
+square marker of known physical size, assuming a pinhole camera. The marker size and the camera parameters
+are detector configuration.
 
 ## IPC
 
