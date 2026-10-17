@@ -5,7 +5,7 @@
   Keep this diagram on its own level (see docs/architecture/README.md) and keep labels in Russian:
   the diagrams are embedded in the Russian README.md.
 -->
-<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="330" font-family="IBM Plex Sans, Helvetica, Arial, sans-serif" color="#1f1c26" viewBox="0 0 1000 330" role="img" aria-label="На устройстве игрока два процесса tacvm, в каждом слои: код приложения на .tc, VM, Runtime; рядом процесс Window Manager; все работают поверх Linux.">
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="470" font-family="IBM Plex Sans, Helvetica, Arial, sans-serif" color="#1f1c26" viewBox="0 0 1000 470" role="img" aria-label="На устройстве игрока два процесса tacvm (Analyzer и Map), приватный Marker Detector на Go и Window Manager; все работают поверх Linux.">
 <style>.zone { fill: none; stroke: #d3cfdd; stroke-width: 2; }
 .t-zone { font-family: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 12px; fill: #625d70; letter-spacing: .06em; }
 .proc { fill: #f7f6fa; stroke: #2f2a3a; stroke-width: 1.5; }
@@ -53,11 +53,20 @@
   <text class="t-zone" x="660" y="30">ПРОЦЕСС WINDOW MANAGER</text>
   <rect class="box" x="660" y="44" width="300" height="184" rx="5"/>
   <text class="t-name" x="678" y="72">Window Manager</text>
-  <text class="t-sub" x="678" y="94">системный сервис · Go или Rust</text>
+  <text class="t-sub" x="678" y="94">системный сервис · Go</text>
   <text class="t-sub" x="678" y="114">окна и ввод для всех приложений</text>
 
+  <!-- Private camera helper -->
+  <rect class="box" x="40" y="254" width="260" height="110" rx="5"/>
+  <text class="t-name" x="58" y="282">Marker Detector</text>
+  <text class="t-sub" x="58" y="302">Go + OpenCV, приватный процесс</text>
+  <text class="t-sub" x="58" y="322">захват камеры и ArUco</text>
+  <text class="t-sub" x="58" y="342">через Camera API Runtime</text>
+  <line class="edge" x1="170" y1="228" x2="170" y2="254"/>
+  <text class="t-arrow" x="184" y="244">Unix socket</text>
+
   <!-- Linux -->
-  <rect class="box" x="40" y="246" width="920" height="64" rx="5"/>
-  <text class="t-name" x="58" y="274">Linux</text>
-  <text class="t-sub" x="58" y="294">процессы, сокеты, файлы, камера, экран — готовая ОС, её не пишем</text>
+  <rect class="box" x="40" y="386" width="920" height="64" rx="5"/>
+  <text class="t-name" x="58" y="414">Linux</text>
+  <text class="t-sub" x="58" y="434">процессы, сокеты, файлы, камера, экран — готовая ОС, её не пишем</text>
   </svg>
