@@ -131,6 +131,26 @@ Responsible for:
 - receiving local observations from Analyzer through IPC;
 - receiving aggregated target updates from the central system.
 
+### Map prototype for Sprint 1
+
+The Map owner selected native rendering for #35. `app/map/` is a standalone Go prototype outside the
+VM; the final Map application remains `.tc` code using Runtime. The prototype converts a hardcoded
+list of `Target` records into drawing commands for the existing Go/SDL2 Window Manager.
+WM receives image and circle commands, never geographic coordinates or target business logic.
+The drawing commands are a Map-side contract awaiting the WM owner's implementation, as documented
+in `spec/map-rendering.md`; existing WM window-lifecycle commands are unchanged.
+
+The prototype uses a local 960x640 PNG and a version-1 JSON metadata file containing the image path,
+dimensions and latitude/longitude bounds. North is up and east is right. For the small test rectangle,
+coordinates are interpolated linearly, rounded to integer pixels, with inside east/south boundary
+points placed in the last column/row. Outside targets are omitted. Geographic assumptions, formulas
+and the asset format are specified in `spec/map-rendering.md`.
+
+Probability affects marker opacity; it is not calculated by Map. `spec/data-model.md` is already
+approved by the Tactical Map and Analyzer owners and remains unchanged.
+The prototype has no Analyzer IPC, Broker subscription, WebView or `.tc` code. It includes an offline
+PNG preview and coordinate/frame tests; those do not establish native WM integration.
+
 ## IPC
 
 IPC is used for communication between separate application processes.
@@ -202,6 +222,9 @@ The exact Activity lifecycle is intentionally minimal and is not fixed yet.
 ## WebView
 
 WebView may be used as the rendering layer for the mobile UI.
+
+The Tactical Map prototype uses native drawing commands, not WebView. The WebView model below remains
+an option for a future concrete UI scenario; it is not a dependency of #35.
 
 The intended model is:
 
