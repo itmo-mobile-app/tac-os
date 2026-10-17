@@ -89,7 +89,7 @@ over a local Unix-domain socket. Still unresolved:
 - WebView initialization model.
 - JavaScript bridge API.
 - Direction of communication between `.tc` code and JavaScript.
-- Whether WebView is used for the whole UI or only the tactical map.
+- Whether a future UI scenario beyond the native Tactical Map prototype needs WebView.
 
 ## IPC scenario
 
@@ -168,9 +168,12 @@ The minimal SQL subset is defined in `spec/sql.md` (approved by the SQL DBMS own
 - Exact division between Analyzer and Map responsibilities.
 - Whether Analyzer has its own visible Activity.
 - Whether analysis continues while the Map Activity is active.
-- Exact 2D map coordinate system.
-- Exact map asset format.
 - Behavior when the central server is unavailable.
+
+The Map prototype's north-up coordinate conversion and PNG/JSON asset format are defined in
+`spec/map-rendering.md` and `01-architecture.md` → "Map prototype for Sprint 1". The real playground
+image and its geographic calibration still need to be supplied for deployment. Exact drawing-command
+alignment and native integration with the WM owner's implementation remain pending.
 
 ## Deployment
 

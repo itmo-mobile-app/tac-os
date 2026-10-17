@@ -18,8 +18,9 @@ Create a specification only when the corresponding contract becomes necessary.
 | [`broker-protocol.md`](broker-protocol.md) | Client/Target Service ↔ Broker | approved |
 | [`data-model.md`](data-model.md) | Shared domain structures | approved |
 | [`sql.md`](sql.md) | SQL subset for the DBMS | approved |
+| [`map-rendering.md`](map-rendering.md) | Map coordinates, assets and drawing | Map prototype; native WM integration pending |
 
-Each file was drafted by Architecture & Integration and then reviewed and approved by the owner of the
+The original Sprint 0 contracts were drafted by Architecture & Integration and then reviewed and approved by the owner of the
 corresponding area (see `docs/ai-context/03-team-ownership.md`) during Sprint 0. An approved contract
 changes only through a Pull Request that follows the "Contract changes" rules in `AGENTS.md`.
 
