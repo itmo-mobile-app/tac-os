@@ -91,6 +91,9 @@ The Runtime may be linked into the VM executable and does not need to run as a s
 - On every Pull Request, CI builds the Compiler with Gradle, builds the VM and the Runtime with
   AddressSanitizer and UndefinedBehaviorSanitizer (these sanitizers apply only to the C++ code), and runs
   CTest. CI also checks Go formatting, runs `go vet`, and tests the DBMS with the Go race detector.
+- The marker detector is written in Go (a separate module, built with `go build`) and uses OpenCV through
+  gocv, so building it needs cgo, OpenCV and `pkg-config`; the gocv version must match the OpenCV version.
+  Its packages that do not use OpenCV are built and tested with plain `go test`.
 
 ## Client application
 
@@ -110,11 +113,8 @@ Each process runs its own VM instance.
 
 Responsible for:
 
-- receiving camera frames;
-- detecting a target marker;
-- identifying the target;
-- estimating detection confidence;
-- estimating direction and distance;
+- requesting marker detections through the Runtime Camera API (not accessing detector IPC directly);
+- deriving observation confidence using a policy that still needs to be specified;
 - reading device position and orientation through Runtime APIs;
 - calculating target coordinates;
 - creating an `Observation`;
@@ -150,6 +150,72 @@ Probability affects marker opacity; it is not calculated by Map. `spec/data-mode
 approved by the Tactical Map and Analyzer owners and remains unchanged.
 The prototype has no Analyzer IPC, Broker subscription, WebView or `.tc` code. It includes an offline
 PNG preview and coordinate/frame tests; those do not establish native WM integration.
+
+## Marker recognition
+
+**Architecture decision for #34:** `camera.detectMarkers()` is the public Runtime API for the Analyzer,
+while the marker detector is a private implementation detail of that API. The detector runs as
+a helper Linux process in Go because camera-frame processing does not belong in `.tc` bytecode.
+It is not an independently exposed application service.
+
+The two Tactical App processes remain Analyzer and Map, each running `.tc` on its own VM. The
+detector is an additional internal helper process, not a replacement for Analyzer.
+
+```text
+Linux camera -> Marker Detector (Go + OpenCV)
+                         |
+                         | compact detections over private Unix-domain socket
+                         v
+            Runtime Camera API (C++)
+                         |
+                         | camera.detectMarkers() (conceptual call)
+                         v
+                  Analyzer (.tc / VM)
+                         |
+                         | computes coordinates and builds Observation
+                         v
+                  Map (.tc / VM) via application IPC
+```
+
+The Analyzer calls `camera.detectMarkers()` through the normal VM-to-Runtime call mechanism. Runtime
+owns local IPC to the detector and presents its results without exposing its process or OpenCV
+types to `.tc` code. The detector handles camera capture, ArUco identification, and relative
+angle/distance estimation; raw camera frames are not passed over this IPC channel.
+
+The helper should be launched once and reused rather than spawned for every request. Exact
+startup/shutdown, recovery, IPC framing, payload encoding, and timeout behavior are still open
+and require agreement with the Runtime owner. This decision does not change the independent
+Analyzer-to-Map IPC contract in `spec/ipc.md`.
+
+The Analyzer retains application logic: it obtains device position and orientation, interprets
+team affiliation, computes global target coordinates, builds `Observation` records, and sends
+them to Map. The detector does not know about geolocation, `Observation`, Map, Broker, or
+target aggregation.
+
+For each visible game marker the detector returns a logical detection with these fields:
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `id` | Int | Marker id, see "Marker format" |
+| `relativeAngle` | Float | Degrees; `0` is the center of the frame, positive is to the right |
+| `distance` | Float | Meters from the camera to the marker center |
+
+The prototype does not supply `confidence`; the policy for `Observation.confidence` remains open.
+The exact `.tc` return representation for several detections is also open because the current
+VM and language do not yet define an array/record and floating-point ABI.
+
+### Marker format
+
+- ArUco markers, dictionary `DICT_4X4_100`.
+- 6 teams with 12 players each: `id = team * 12 + player`, team `0..5`, player `0..11`, so valid ids are
+  `0..71`. Markers with other ids are ignored.
+- `targetId` of a `Detection` and an `Observation` is the marker `id` as a decimal string.
+
+### Implementation
+
+The detector uses the ArUco detector of OpenCV. The distance is estimated from the four corners of the
+square marker of known physical size, assuming a pinhole camera. The marker size and the camera parameters
+are detector configuration.
 
 ## IPC
 

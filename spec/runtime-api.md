@@ -32,11 +32,35 @@ Writes `message` followed by a newline (`\n`) to the process's standard output a
 has no meaningful result).
 This is the minimal function needed for the first Compiler → VM → Runtime integration test.
 
+## Planned Camera API (architectural decision; not yet implemented)
+
+Analyzer uses the public Runtime function conceptually named:
+
+```text
+camera.detectMarkers() -> detections
+```
+
+The logical return value is a collection with an `id` (integer ArUco marker id),
+`relativeAngle` (degrees from the camera axis, positive to the right), and `distance`
+(meters). A private Go detector process performs camera capture and OpenCV-based ArUco
+recognition. The C++ Runtime communicates with it using a local Unix-domain socket,
+then exposes the detections to the Analyzer on the VM.
+
+Application `.tc` code does not use detector IPC or OpenCV directly. Analyzer uses device
+position and orientation to convert detections into `Observation` records. Detector IPC
+is distinct from Analyzer-to-Map IPC in `spec/ipc.md`, which is unchanged.
+
+This records an API **design boundary**, not an executable call signature or approved wire
+protocol. The current VM does not yet specify a return ABI for a collection of floating-point
+records. Return encoding, helper IPC framing, exact socket path, failure behavior, and process
+lifecycle must be agreed with the Runtime and VM owners before implementation; see
+`docs/ai-context/02-open-questions.md` → "Runtime".
+
 ## Open questions
 
 Not decided here; see `docs/ai-context/02-open-questions.md` → "Runtime":
 
-- the full Runtime API surface (threads, IPC, camera, location, orientation, networking, files, time,
+- the remaining Runtime API surface (threads, IPC, location, orientation, networking, files, time,
   Activity lifecycle, WebView bridge, Window Manager access) — added incrementally, one concrete
   scenario at a time;
 - error handling for a Runtime call that fails (e.g. camera unavailable).

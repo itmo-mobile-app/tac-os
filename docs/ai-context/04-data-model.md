@@ -13,10 +13,11 @@ Formal shared structures should later be defined in `spec/data-model.md`.
 
 Conceptually it contains:
 
-- `targetId` — identifier of the recognized physical target;
+- `targetId` — identifier of the recognized physical target (the marker id as a decimal string);
 - `confidence` — confidence of the local recognition result;
-- `relativeAngle` — target angle relative to the camera/device direction;
-- `distance` — estimated distance to the target;
+- `relativeAngle` — target angle relative to the camera/device direction (degrees; `0` is the center of the
+  frame, positive is to the right);
+- `distance` — estimated distance to the target (meters, from the camera to the marker center);
 - `timestamp` — detection time.
 
 A `Detection` is local to the client and does not represent the final shared target state.
@@ -59,6 +60,8 @@ Targets are assumed to have recognizable identifiers or markers.
 The initial design intentionally avoids complex target matching by spatial similarity.
 
 If several clients report the same `targetId`, the system treats those reports as observations of the same physical target.
+
+The identifier of a target is the id of its ArUco marker (see `01-architecture.md` → "Marker recognition").
 
 ## Probability
 

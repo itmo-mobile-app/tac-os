@@ -55,7 +55,15 @@ the Runtime owner). Remaining open:
 - Exact Runtime API (beyond `runtime.log`).
 - Linux threading primitive.
 - Thread synchronization primitives.
-- Camera API.
+The camera architecture is decided in `01-architecture.md` → "Marker recognition": Analyzer calls
+`camera.detectMarkers()` through Runtime, which communicates with a private Go detector process
+over a local Unix-domain socket. Still unresolved:
+
+- The `.tc` return representation and VM/Runtime ABI for multiple detections and floating-point values.
+- Private detector IPC wire format, socket path, framing, timeouts, and error responses.
+- Detector lifecycle: startup, reuse, shutdown, crash handling, and reconnection.
+- Camera device selection, unavailable-device behavior, and capture configuration.
+- Approval from the course instructor for OpenCV/gocv usage in the detector.
 - Location API.
 - Orientation API.
 - Networking API.
@@ -141,19 +149,17 @@ The minimal SQL subset is defined in `spec/sql.md` (approved by the SQL DBMS own
 
 ## Domain model
 
-- Exact target identifier format.
 - Exact observation identifier format.
 - Device/client identifier format.
 - Probability representation.
-- Confidence representation.
-- Distance estimation method.
+- Confidence representation, including where the detection `confidence` comes from (the ArUco detector
+  does not provide a score).
+- Physical marker size and camera parameters (field of view or calibration) as detector configuration.
 - Direction and azimuth calculation details.
 - Coordinate precision requirements.
 
 ## Application
 
-- Exact team/opponent affiliation encoding (how a marker identifies which team it belongs to, so a
-  client can tell its own team apart from opponents).
 - Exact "tag"/elimination rule (how many independent observations, within what time, confirm a hit).
 - What happens to a player after being tagged (eliminated for the round vs. respawn after a cooldown).
 - Whether the match history (who observed whom and when) must be kept and viewable after the match.
