@@ -90,7 +90,7 @@ A Runtime function may internally use Linux system calls, system libraries, devi
 A program written in `.tc` may conceptually call:
 
 ```text
-camera.getFrame()
+camera.detectMarkers()
 location.get()
 ipc.send(...)
 thread.start(...)
@@ -116,6 +116,21 @@ Linux / system component
 ```
 
 The exact Runtime call ABI is not fixed yet.
+
+## Camera API and private detector
+
+The planned public platform entry point for Analyzer is `camera.detectMarkers()`. The C++ Runtime
+delegates recognition to a private Go helper process over a local Unix-domain socket. The helper
+owns camera capture and OpenCV-based marker detection; only marker ids, angles, and distances
+cross this IPC boundary, not camera frames.
+
+Runtime hides process management and detector IPC from `.tc`. The helper is reused across requests.
+Its exact lifecycle, failure handling, wire protocol, and the collection/Float representation in
+the VM are pending specification in `spec/runtime-api.md` and `02-open-questions.md`.
+
+The detector is not a third Tactical App process: Analyzer and Map remain independent `.tc`/VM
+processes and exchange application observations via `spec/ipc.md`. The Analyzer computes target
+coordinates and builds observations; no application business logic lives in the detector.
 
 ## Physical deployment
 

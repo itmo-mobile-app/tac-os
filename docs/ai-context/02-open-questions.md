@@ -55,8 +55,15 @@ the Runtime owner). Remaining open:
 - Exact Runtime API (beyond `runtime.log`).
 - Linux threading primitive.
 - Thread synchronization primitives.
-- Camera API: who captures camera frames, and how marker detections reach the Analyzer (a Runtime function
-  backed by the marker detector, or IPC from the detector process).
+The camera architecture is decided in `01-architecture.md` → "Marker recognition": Analyzer calls
+`camera.detectMarkers()` through Runtime, which communicates with a private Go detector process
+over a local Unix-domain socket. Still unresolved:
+
+- The `.tc` return representation and VM/Runtime ABI for multiple detections and floating-point values.
+- Private detector IPC wire format, socket path, framing, timeouts, and error responses.
+- Detector lifecycle: startup, reuse, shutdown, crash handling, and reconnection.
+- Camera device selection, unavailable-device behavior, and capture configuration.
+- Approval from the course instructor for OpenCV/gocv usage in the detector.
 - Location API.
 - Orientation API.
 - Networking API.

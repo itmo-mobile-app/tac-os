@@ -40,17 +40,19 @@ The Analyzer is responsible for producing local target observations.
 
 Its responsibilities include:
 
-- accessing camera frames through the Runtime;
-- detecting a recognizable target marker;
-- determining the target identifier;
-- estimating recognition confidence;
-- estimating target direction;
-- estimating target distance;
-- reading device position;
-- reading device orientation;
-- calculating target coordinates;
+- calling `camera.detectMarkers()` through Runtime for marker ids, angles, and distances;
+- reading device position and orientation through Runtime;
+- determining team affiliation from marker ids;
+- deriving observation confidence once its policy has been agreed;
+- calculating global coordinates from device position, heading, detection angle, and distance;
 - creating an `Observation`;
-- sending local results to the Map process through IPC.
+- sending observations to Map over the separate application IPC.
+
+Camera capture and ArUco recognition are delegated to a private Go helper process behind the
+C++ Runtime Camera API. It is not a third application process and does not replace Analyzer.
+Its outputs are camera-relative; Analyzer calculates global coordinates and builds observations.
+The precise VM return representation and private helper IPC protocol remain open. See
+`01-architecture.md` → "Marker recognition" and `spec/runtime-api.md`.
 
 The Analyzer should not contain shared target aggregation logic.
 

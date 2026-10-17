@@ -113,8 +113,8 @@ Each process runs its own VM instance.
 
 Responsible for:
 
-- receiving marker detections from the marker detector (see "Marker recognition");
-- estimating detection confidence;
+- requesting marker detections through the Runtime Camera API (not accessing detector IPC directly);
+- deriving observation confidence using a policy that still needs to be specified;
 - reading device position and orientation through Runtime APIs;
 - calculating target coordinates;
 - creating an `Observation`;
@@ -133,19 +133,46 @@ Responsible for:
 
 ## Marker recognition
 
-Marker recognition is performed by a separate program, the marker detector, not by `.tc` code on the VM:
-processing camera frames in bytecode is expected to be too slow. The VM and the Runtime are written in C++;
-the detector is written in Go.
+**Architecture decision for #34:** `camera.detectMarkers()` is the public Runtime API for the Analyzer,
+while the marker detector is a private implementation detail of that API. The detector runs as
+a helper Linux process in Go because camera-frame processing does not belong in `.tc` bytecode.
+It is not an independently exposed application service.
+
+The two Tactical App processes remain Analyzer and Map, each running `.tc` on its own VM. The
+detector is an additional internal helper process, not a replacement for Analyzer.
 
 ```text
-Camera frame
-   ↓
-Marker detector (Go, OpenCV): marker id, angle, distance
-   ↓
-Analyzer (.tc code): Detection → Observation
+Linux camera -> Marker Detector (Go + OpenCV)
+                         |
+                         | compact detections over private Unix-domain socket
+                         v
+            Runtime Camera API (C++)
+                         |
+                         | camera.detectMarkers() (conceptual call)
+                         v
+                  Analyzer (.tc / VM)
+                         |
+                         | computes coordinates and builds Observation
+                         v
+                  Map (.tc / VM) via application IPC
 ```
 
-For every game marker in a frame the detector reports a detection:
+The Analyzer calls `camera.detectMarkers()` through the normal VM-to-Runtime call mechanism. Runtime
+owns local IPC to the detector and presents its results without exposing its process or OpenCV
+types to `.tc` code. The detector handles camera capture, ArUco identification, and relative
+angle/distance estimation; raw camera frames are not passed over this IPC channel.
+
+The helper should be launched once and reused rather than spawned for every request. Exact
+startup/shutdown, recovery, IPC framing, payload encoding, and timeout behavior are still open
+and require agreement with the Runtime owner. This decision does not change the independent
+Analyzer-to-Map IPC contract in `spec/ipc.md`.
+
+The Analyzer retains application logic: it obtains device position and orientation, interprets
+team affiliation, computes global target coordinates, builds `Observation` records, and sends
+them to Map. The detector does not know about geolocation, `Observation`, Map, Broker, or
+target aggregation.
+
+For each visible game marker the detector returns a logical detection with these fields:
 
 | Field | Type | Notes |
 | --- | --- | --- |
@@ -153,9 +180,9 @@ For every game marker in a frame the detector reports a detection:
 | `relativeAngle` | Float | Degrees; `0` is the center of the frame, positive is to the right |
 | `distance` | Float | Meters from the camera to the marker center |
 
-The Analyzer `.tc` code only combines these values with the device position and orientation and builds an
-`Observation`. How the detections reach the Analyzer is not decided yet, see `02-open-questions.md` →
-"Runtime".
+The prototype does not supply `confidence`; the policy for `Observation.confidence` remains open.
+The exact `.tc` return representation for several detections is also open because the current
+VM and language do not yet define an array/record and floating-point ABI.
 
 ### Marker format
 
