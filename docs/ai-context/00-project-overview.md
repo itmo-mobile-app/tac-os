@@ -95,12 +95,10 @@ Tactical App
 
 Responsible for:
 
-- camera input;
-- target recognition;
-- target identifier detection;
-- confidence estimation;
-- direction and distance estimation;
-- target coordinate calculation;
+- calling the Runtime Camera API for marker ids, angles, and distances;
+- reading device position and orientation;
+- deriving observation confidence (policy still to be specified);
+- calculating target coordinates using detections and device pose;
 - creating observations.
 
 ### Map
@@ -112,6 +110,11 @@ Responsible for:
 - displaying target probability;
 - receiving local observations through IPC;
 - receiving aggregated updates from the central system.
+
+Camera capture and ArUco recognition are implemented by a private Go helper process
+accessed through the C++ Runtime's conceptual `camera.detectMarkers()` API via a local
+Unix-domain socket. The detector does not run `.tc` business logic and is not a third
+Tactical App process. Its wire protocol and VM return ABI are still to be specified.
 
 Analyzer and Map communicate through the project's custom IPC mechanism.
 
