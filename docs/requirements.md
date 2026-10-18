@@ -28,8 +28,9 @@ of where opponents and teammates were recently seen.
 2. A player points the device camera at another player. The device recognizes the player's marker,
    estimates direction and distance, and combines them with its own position and orientation to
    calculate the player's coordinates.
-3. The device shows the detection on its map immediately and sends it to the central node.
-4. The central node combines detections of the same player from several devices into one target
+3. Analyzer calculates an `Observation` from the local detection, sends it to Map
+   via IPC, and Map shows it immediately and publishes it to the central node.
+4. The central node combines observations of the same player from several devices into one target
    whose probability grows with fresh, independent observations and decays over time.
 5. Every device of the team shows the aggregated targets on a shared 2D map.
 
@@ -41,13 +42,15 @@ of where opponents and teammates were recently seen.
 | Team | A group of players playing together; opponents are players of other teams |
 | Organizer | The person who runs the match and the central node on site |
 | Marker | A visible tag worn by a player that identifies them to the camera |
-| Detection | A local recognition result on one device: marker id, direction, distance, confidence |
+| Detection | A private Go detector result: ArUco marker ID, camera-relative angle and distance; the detector does not output confidence (`spec/camera-detector-protocol.md`) |
+| Observation confidence | Reliability assigned by Analyzer to a single local Observation, distinct from aggregated target probability |
 | Observation | One device's report about a target with calculated coordinates (`spec/data-model.md`) |
 | Target | The aggregated state of one detected player, teammate or opponent: position, probability, last seen time (`spec/data-model.md`) |
 | Probability | The system's confidence that the target is at its current position; decays over time |
 | Tag | An opponent confirmed as hit by the game rules (rule not decided yet) |
 | Central node | The Linux device on site that runs the Broker, the Target Service, and the DBMS |
-| Tactical App | The client application the player uses; internally the Analyzer and Map processes |
+| Tactical App | The client app whose `.tc` logic runs in two separate VM processes, Analyzer and Map |
+| Marker Detector | Private auxiliary Go + OpenCV Linux process behind Runtime Camera API, not a third Tactical App process |
 
 ## Stakeholders
 
@@ -113,12 +116,12 @@ Each requirement lists the components that implement it.
 
 | ID | Requirement | Components |
 | --- | --- | --- |
-| FR-1 | The app reads frames from the device camera | Analyzer, Runtime |
-| FR-2 | The app recognizes a player marker in a frame and reads its identifier (AI-based recognition is optional, C-13) | Analyzer, Runtime |
-| FR-3 | The app estimates the direction (angle from the camera axis) and distance to a recognized marker | Analyzer, Runtime |
+| FR-1 | A Runtime-managed detector reads camera frames for the app | Runtime, Marker Detector |
+| FR-2 | The private detector recognizes player markers and returns identifiers via Runtime Camera API (AI-based recognition is optional, C-13) | Marker Detector, Runtime, Analyzer |
+| FR-3 | The detector estimates the camera-relative angle and distance to a marker and exposes them through Runtime | Marker Detector, Runtime, Analyzer |
 | FR-4 | The app reads the device position and orientation | Analyzer, Runtime |
 | FR-5 | The app calculates the target coordinates and creates an `Observation` with a confidence value | Analyzer |
-| FR-6 | The app tells teammates from opponents by the marker, and the Map shows them differently | Analyzer, Map (team encoding not decided, see open questions → "Application") |
+| FR-6 | The app tells teammates from opponents by the marker, and the Map shows them differently | Analyzer, Map (marker ID encodes team as `id / 12`; which teams participate in a particular match is separate) |
 
 ### Map (client)
 
@@ -177,7 +180,7 @@ Each requirement lists the components that implement it.
 These questions affect the requirements above and are tracked in
 `docs/ai-context/02-open-questions.md`:
 
-- how a marker encodes the team, so that FR-6 can be implemented ("Application");
+- which teams participate in a particular match; marker ID-to-team encoding is already fixed ("Application");
 - the tag rule and what happens to a tagged player ("Application");
 - the client behavior when the central node is unavailable, FR-13 ("Application");
 - probability and time decay formulas, FR-16 ("Target Service");
