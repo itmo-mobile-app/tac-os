@@ -60,6 +60,14 @@ Run with:
 
 The SDL implementation is behind a build tag so headless tests do not require system SDL packages.
 
+The shared [`Go` CI workflow](../.github/workflows/go.yml) runs
+`go vet` and race-enabled headless Go tests for this module on every PR.
+Existing WM files are not yet subject to a required `gofmt` gate; the
+CI consolidation does not introduce a new formatting requirement for WM.
+The same Window Manager job also builds both command-line programs and
+installs `libsdl2-dev` to verify the graphical backend with `-tags sdl`.
+A successful build does not replace manual graphical testing on Linux.
+
 ## Wire protocol (newline-delimited JSON)
 
 Request:

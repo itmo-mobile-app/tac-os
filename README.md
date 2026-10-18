@@ -224,6 +224,24 @@ ctest --test-dir build --output-on-failure
 Сборка VM и Runtime с санитайзерами ASan/UBSan, как в CI: `cmake -S . -B build -DTACOS_SANITIZE=ON`
 (к компилятору на Kotlin санитайзеры не относятся).
 
+### Единые Go-проверки в CI
+
+При каждом PR и обновлении `main` запускается workflow
+[`Go`](.github/workflows/go.yml). Он выполняет `go vet` и `go test -race -count=1` параллельно для
+пяти отдельных Go-модулей: Broker, Window Manager, Map, DBMS и приватного
+Marker Detector. Форматирование проверяется в остальных четырёх модулях;
+проверка `gofmt` для исходников WM пока остаётся вне обязательного CI.
+Для детектора тестируются только `pose` и `marker`, которые не требуют
+нативного OpenCV. Дополнительно в задаче Window Manager собираются сервер,
+клиент и графический backend с SDL2.
+
+Пакеты `detector` и `cmd/marker-detect` требуют gocv и нативного OpenCV:
+их полная сборка, тестирование и работа с камерой **не входят**
+в обязательный CI (см. [инструкции по детектору](prototypes/marker-detect/README.md)).
+Workflow `Build` по-прежнему собирает Compiler, VM, Runtime и Go-прототипы
+через CMake, а `ctest` проверяет их интеграцию. Прямые `go vet`,
+`gofmt` и Go unit-тесты находятся только в общем workflow `Go`.
+
 ## Работа с репозиторием
 
 - `main` должна оставаться рабочей;
