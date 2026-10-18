@@ -145,8 +145,10 @@ The minimal SQL subset is defined in `spec/sql.md` (approved by the SQL DBMS own
 - Table representation.
 - Whether indexes are required.
 - Whether transactions are required.
-- Client protocol between Target Service and DBMS: transport (TCP or Unix socket), request framing, how
-  result rows and errors are returned. The DBMS runs as a separate process (`01-architecture.md` → "DBMS").
+- The client protocol is specified in `spec/dbms-protocol.md`: Unix-domain
+  socket, four-byte little-endian length framing, raw UTF-8 SQL requests and
+  JSON responses with typed SELECT columns and structured errors. Its network
+  server and Target Service client are not yet implemented.
 - How stale Observation records are removed or expired, since `DELETE` is not
   included in the minimal SQL subset.
 

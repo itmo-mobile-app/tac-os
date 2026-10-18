@@ -76,8 +76,9 @@ The following execution rules are proposed for review in the implementation PR:
 - SELECT can project the same column more than once. Row order is unspecified
   without ORDER BY, which is unsupported in this subset.
 
-The persistent storage format, indexes, transactions, client transport, and
-deployment model remain open questions.
+The persistent storage format, indexes, transactions and detailed deployment
+model remain open questions. The Target Service ↔ DBMS transport and framing
+are specified separately in `spec/dbms-protocol.md`.
 
 ## Example
 
@@ -99,8 +100,7 @@ Not decided here; see `docs/ai-context/02-open-questions.md` → "DBMS":
 - whether indexes are required;
 - whether transactions are required;
 - storage format;
-- client protocol between Target Service and DBMS: TCP or Unix socket, how request boundaries are marked,
-  how result rows and errors are encoded.
+- network/IPC implementation is pending; the wire contract is fixed in `spec/dbms-protocol.md`.
 
 The DBMS runs as a separate server process and the Target Service connects to it as a client (see
 `docs/ai-context/01-architecture.md` → "DBMS").

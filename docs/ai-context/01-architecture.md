@@ -387,9 +387,15 @@ It is responsible for:
 
 The DBMS does not understand the target domain and does not interact with the Broker directly.
 
-The DBMS runs as a separate server process on the central node. The Target Service connects to it over a
-socket, sends SQL statements, and receives result rows. The DBMS stores the database in a file on the
-central node's disk, so data survives a restart of either process.
+The DBMS runs as a separate server process on the central node. Target Service
+connects over a local Unix-domain stream socket, sends length-prefixed plain
+UTF-8 SQL statements, and receives length-prefixed JSON query results/errors.
+The framing is a four-byte little-endian payload length followed by the payload;
+see `spec/dbms-protocol.md`. No ORM or remote DBMS TCP port is required.
+
+The intended deployment stores the database in a file on the central node's disk
+so that data survives either process restarting. This persistence is planned,
+but **not yet implemented** in the existing in-memory SQL executor.
 
 ## Database
 
