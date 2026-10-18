@@ -103,11 +103,12 @@ IPC
 Map process
 ```
 
-The transport, message type (`TARGET_DETECTED`), payload format, and delivery behavior (one-way, no
-acknowledgement, message dropped when Map is not connected) are defined in `spec/ipc.md`. Still unresolved:
+The transport, `OBSERVATION` message (finished coordinates), validation,
+and delivery behavior are fixed in `spec/ipc.md`. Still unresolved:
 
-- reconnection behavior after the Map process restarts;
-- whether message types beyond `TARGET_DETECTED` are needed.
+- reconnection behavior after the Map process restarts.
+
+Additional message types are deferred until a concrete scenario requires them.
 
 ## Broker
 

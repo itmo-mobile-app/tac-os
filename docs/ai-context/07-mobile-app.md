@@ -81,14 +81,17 @@ The primary local IPC scenario is:
 ```text
 Analyzer
    ↓
-TARGET_DETECTED / Observation
+OBSERVATION (finished geographic coordinates)
    ↓
 IPC
    ↓
 Map
 ```
 
-The exact message name, payload format, serialization, and delivery behavior are not fixed yet.
+`spec/ipc.md` defines the `"OBSERVATION"` message, a Unix-domain stream
+socket, newline-delimited JSON and at-most-once delivery. Map does not compute
+coordinates; it forwards the same six-field `Observation` to Broker without
+the IPC `type` field.
 
 The purpose of this split is to demonstrate communication between separate processes of one application.
 

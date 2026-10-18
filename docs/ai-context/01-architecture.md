@@ -235,7 +235,11 @@ Runtime IPC API
 Map process
 ```
 
-The exact Linux IPC primitive and serialization format are not fixed yet.
+The Analyzer-to-Map contract is a Unix-domain stream socket carrying
+newline-delimited JSON `OBSERVATION` messages with completed geographic
+coordinates. Map forwards their six domain fields to Broker without the
+IPC `type` envelope. See `spec/ipc.md` and `spec/data-model.md`.
+The private Go detector-to-Runtime IPC is a separate interface.
 
 ## Threads
 
