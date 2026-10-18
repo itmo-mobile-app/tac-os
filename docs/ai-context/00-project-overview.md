@@ -43,9 +43,11 @@ A client device should be able to:
 7. receive aggregated target updates;
 8. display targets on a simple 2D map.
 
-Each target has an identifier and a probability/confidence value.
+Each local `Observation` has a `confidence` assigned by Analyzer, whereas an
+aggregated `Target` has a separate `probability` calculated by Target Service.
+The detector itself does not return `confidence` (`spec/data-model.md`).
 
-Fresh observations from multiple clients increase confidence in the target state.
+Fresh independent observations from multiple clients increase confidence in the aggregated target state.
 Old observations lose weight over time.
 
 ## Application execution model
@@ -111,12 +113,21 @@ Responsible for:
 - receiving local observations through IPC;
 - receiving aggregated updates from the central system.
 
-Camera capture and ArUco recognition are implemented by a private Go helper process
-accessed through the C++ Runtime's conceptual `camera.detectMarkers()` API via a local
-Unix-domain socket. The detector does not run `.tc` business logic and is not a third
-Tactical App process. Its wire protocol and VM return ABI are still to be specified.
+Camera capture and ArUco recognition belong to the **private Go + OpenCV Marker
+Detector Linux process**, accessible only through the C++ Runtime Camera API.
+Runtime starts and manages this auxiliary process. It does not execute `.tc`
+application logic and is not a third Tactical App process.
 
-Analyzer and Map communicate through the project's custom IPC mechanism.
+The agreed initial signature `camera.detectMarkers() -> String` returns a JSON
+array of `id`, `relativeAngle` and `distance` in a String until native `Float`
+and collections are supported. The private Unix-domain socket uses JSON Lines
+(`spec/camera-detector-protocol.md`). These are approved contracts, but the
+socket adapter and end-to-end Camera API are not implemented yet.
+
+Analyzer sends completed coordinate-bearing `Observation` messages to Map over the
+Unix-domain socket defined in `spec/ipc.md`. Map forwards the six domain
+fields to the TCP Broker, where Target Service computes `Target.probability`
+from observations (`spec/broker-protocol.md`).
 
 Each process runs in its own VM instance.
 
@@ -155,13 +166,18 @@ Responsible for:
 
 ### DBMS
 
-A custom minimal SQL database management system.
+A custom minimal SQL database management system implemented in Go.
 
 Responsible for:
 
 - parsing the supported SQL subset;
 - executing queries;
 - storing and retrieving data.
+
+The approved Target Service ↔ DBMS contract is a Unix-domain stream socket
+with a four-byte little-endian length header, raw UTF-8 SQL requests and
+length-prefixed JSON responses (`spec/dbms-protocol.md`). The current DBMS
+executor is in-memory only; socket serving and persistence are not yet implemented.
 
 ### Database
 
