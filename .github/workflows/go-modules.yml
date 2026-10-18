@@ -1,0 +1,48 @@
+name: Go modules (no OpenCV)
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  go-modules:
+    name: OpenCV-free Go checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Marker Detector - pose and marker (no OpenCV)
+        working-directory: prototypes/marker-detect
+        run: |
+          go vet ./pose ./marker
+          go test -race -count=1 ./pose ./marker
+
+      - name: Broker - vet and tests
+        working-directory: broker
+        run: |
+          go vet ./...
+          go test -race -count=1 ./...
+
+      - name: Window Manager - headless vet and tests (no SDL2)
+        working-directory: window-manager
+        run: |
+          go vet ./...
+          go test -race -count=1 ./...
+
+      - name: Map - vet and tests
+        working-directory: app/map
+        run: |
+          go vet ./...
+          go test -race -count=1 ./...
+
+      - name: DBMS - vet and tests
+        working-directory: server/dbms
+        run: |
+          go vet ./...
+          go test -race -count=1 ./...
