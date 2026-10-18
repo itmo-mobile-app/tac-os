@@ -115,7 +115,7 @@ Runtime implementation
 Linux / system component
 ```
 
-The exact Runtime call ABI is not fixed yet.
+The initial Runtime call ABI is fixed in `spec/runtime-api.md`; additional Runtime functions are introduced incrementally.
 
 ## Camera API and private detector
 
@@ -234,7 +234,10 @@ VM
 Map .tc code
 ```
 
-The exact Linux IPC primitive and serialization format are not fixed yet.
+The primary Analyzer-to-Map scenario already has an approved Unix-domain socket
+and newline-delimited JSON `OBSERVATION` message contract (`spec/ipc.md`).
+The private Runtime ↔ Go Marker Detector IPC is a separate Unix-domain socket
+protocol (`spec/camera-detector-protocol.md`).
 
 ## Window Manager access
 

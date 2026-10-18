@@ -1,11 +1,11 @@
 <!--
   tac-os architecture diagram — Process level: machines, OS processes, and transport only (Unix socket, TCP, socket, file). No message semantics.
   Maintained by hand as plain SVG; edit the text and coordinates directly.
-  WHEN TO UPDATE: Update when a transport or protocol is chosen (e.g. Runtime <-> Window Manager, Target Service <-> DBMS), a component language is fixed (replace "Go или Rust"), or processes change (01-architecture.md, spec/).
+  WHEN TO UPDATE: Update when a transport or protocol is chosen (e.g. Runtime <-> Window Manager, Target Service <-> DBMS), a component language is fixed (update language labels), or processes change (01-architecture.md, spec/).
   Keep this diagram on its own level (see docs/architecture/README.md) and keep labels in Russian:
   the diagrams are embedded in the Russian README.md.
 -->
-<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="640" font-family="IBM Plex Sans, Helvetica, Arial, sans-serif" color="#1f1c26" viewBox="0 0 1000 640" role="img" aria-label="На устройстве игрока процессы Analyzer, Map, приватный Marker Detector и Window Manager, на центральном узле процессы Broker, Target Service и СУБД и файл базы данных; стрелки подписаны только транспортом: Unix socket, TCP, сокет, файл.">
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="640" font-family="IBM Plex Sans, Helvetica, Arial, sans-serif" color="#1f1c26" viewBox="0 0 1000 640" role="img" aria-label="На устройстве игрока процессы Analyzer, Map, приватный Marker Detector и Window Manager, на центральном узле процессы Broker, Target Service и СУБД и файл базы данных; стрелки подписаны транспортом: Unix-сокеты, TCP и файл.">
   <defs>
     <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
   </defs>
@@ -52,8 +52,8 @@
   <text class="t-sub" x="218" y="366">Go</text>
   <line class="edge" x1="155" y1="180" x2="270" y2="296" marker-start="url(#a1)" marker-end="url(#a1)"/>
   <line class="edge" x1="475" y1="180" x2="360" y2="296" marker-start="url(#a1)" marker-end="url(#a1)"/>
-  <text class="t-arrow" x="315" y="236" text-anchor="middle">транспорт</text>
-  <text class="t-arrow" x="315" y="251" text-anchor="middle">не выбран</text>
+  <text class="t-arrow" x="315" y="236" text-anchor="middle">Unix-сокеты</text>
+  <text class="t-note" x="315" y="251" text-anchor="middle">команды / события</text>
 
   <rect class="proc" x="40" y="434" width="230" height="104" rx="6"/>
   <path class="proc-head" d="M40 440 a6 6 0 0 1 6 -6 h218 a6 6 0 0 1 6 6 v26 h-230 z"/>
@@ -66,24 +66,23 @@
   <rect class="proc" x="680" y="80" width="280" height="100" rx="6"/>
   <path class="proc-head" d="M680 86 a6 6 0 0 1 6 -6 h268 a6 6 0 0 1 6 6 v26 h-280 z"/>
   <text class="t-head" x="696" y="101">процесс: Broker</text>
-  <text class="t-sub" x="698" y="146">Go или Rust</text>
+  <text class="t-sub" x="698" y="146">Go</text>
   <line class="edge" x1="590" y1="130" x2="676" y2="130" marker-start="url(#a1)" marker-end="url(#a1)"/>
   <text class="t-arrow" x="633" y="118" text-anchor="middle">TCP</text>
 
   <rect class="proc" x="680" y="260" width="280" height="100" rx="6"/>
   <path class="proc-head" d="M680 266 a6 6 0 0 1 6 -6 h268 a6 6 0 0 1 6 6 v26 h-280 z"/>
   <text class="t-head" x="696" y="281">процесс: Target Service</text>
-  <text class="t-sub" x="698" y="326">Go или Rust</text>
+  <text class="t-sub" x="698" y="326">Go (план)</text>
   <line class="edge" x1="820" y1="180" x2="820" y2="256" marker-start="url(#a1)" marker-end="url(#a1)"/>
   <text class="t-arrow" x="828" y="222">TCP</text>
 
   <rect class="proc" x="680" y="420" width="280" height="90" rx="6"/>
   <path class="proc-head" d="M680 426 a6 6 0 0 1 6 -6 h268 a6 6 0 0 1 6 6 v26 h-280 z"/>
   <text class="t-head" x="696" y="441">процесс: СУБД</text>
-  <text class="t-sub" x="698" y="484">Go или Rust</text>
+  <text class="t-sub" x="698" y="484">Go</text>
   <line class="edge" x1="820" y1="360" x2="820" y2="416" marker-start="url(#a1)" marker-end="url(#a1)"/>
-  <text class="t-arrow" x="828" y="388">сокет</text>
-  <text class="t-note" x="812" y="388" text-anchor="end">какой — не выбран</text>
+  <text class="t-arrow" x="828" y="388">Unix-сокет</text>
 
   <line class="edge" x1="820" y1="510" x2="820" y2="540" marker-start="url(#a1)" marker-end="url(#a1)"/>
   <text class="t-arrow" x="828" y="530">файл</text>

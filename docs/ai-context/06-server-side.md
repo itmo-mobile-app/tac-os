@@ -73,7 +73,9 @@ Broker
 Clients
 ```
 
-The exact transport, framing, serialization format, and delivery guarantees are not fixed yet.
+The approved Broker wire contract (`spec/broker-protocol.md`) is plain TCP
+with one UTF-8 command per line and `PUB`/`SUB`/`MSG` messages, at-most-once
+delivery and no broker message persistence.
 
 ## Target Service
 
@@ -115,6 +117,11 @@ The DBMS should not know:
 
 It operates on generic tables, rows, and SQL statements.
 
+Target Service connects to DBMS through the approved private Unix-domain stream
+protocol: 4-byte little-endian length + raw UTF-8 SQL request; response is
+4-byte length + JSON containing typed SELECT columns, rows or an error
+(`spec/dbms-protocol.md`). The socket server and client still require implementation.
+
 ## Database
 
 The Database is the persistent data managed by the DBMS.
@@ -131,7 +138,7 @@ DBMS
 persistent data
 ```
 
-The exact on-disk storage format is not fixed yet.
+The on-disk storage format is still open. The current Go executor stores tables only in memory; persistence remains planned work.
 
 ## Broker and DBMS are independent
 
@@ -208,7 +215,7 @@ The project must implement the required components itself instead of replacing t
 
 ## Process model
 
-The current preferred model is to run server components as separate Linux processes:
+The agreed architecture runs server components as separate Linux processes:
 
 ```text
 central Linux node
@@ -218,7 +225,7 @@ central Linux node
     └── database storage
 ```
 
-This process separation is a current architectural preference, not yet a finalized low-level deployment specification.
+Process separation is fixed; deployment configuration, startup supervision and persistent storage details remain open.
 
 ## Client interaction
 
