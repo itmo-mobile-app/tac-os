@@ -12,6 +12,8 @@ func TestRun(t *testing.T) {
 		name, input, output, errorText string
 		status                         int
 	}{
+		{"update", "CREATE TABLE t(x TEXT);INSERT INTO t(x)VALUES('old');UPDATE t SET x = 'O''Reilly; yes' WHERE x = 'old';SELECT * FROM t;", "OK\nOK\nOK\nx\n'O''Reilly; yes'\n1 row(s)\n", "", 0},
+		{"update-recovery", "CREATE TABLE t(x INTEGER);INSERT INTO t(x)VALUES(1);UPDATE t SET x = 'wrong' WHERE x = 1;SELECT * FROM t;UPDATE t SET x = 2 WHERE x = 1;SELECT * FROM t;", "OK\nOK\nx\n1\n1 row(s)\nOK\nx\n2\n1 row(s)\n", "Type mismatch for column: x", 1},
 		{"empty", " \t\r\n", "", "", 0},
 		{"multiple", "CREATE TABLE t (x INTEGER);INSERT INTO t(x)VALUES(7);SELECT * FROM t;", "OK\nOK\nx\n7\n1 row(s)\n", "", 0},
 		{"recovery", "CREATE TABLE t (x INTEGER);DELETE FROM t;INSERT INTO t(x)VALUES(7);SELECT * FROM t;", "OK\nOK\nx\n7\n1 row(s)\n", "ERROR at position 1:", 1},

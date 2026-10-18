@@ -1,4 +1,4 @@
-// Package dbms implements the in-memory SQL subset used in issue #31.
+// Package dbms implements the minimal in-memory SQL subset from spec/sql.md.
 package dbms
 
 import "fmt"

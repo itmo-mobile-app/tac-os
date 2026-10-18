@@ -56,8 +56,8 @@ per frame. Empty text and invalid UTF-8 produce a `BAD_REQUEST` response if a
 complete, valid-size frame was received. Invalid SQL produces `SQL_ERROR`.
 
 The initial SQL grammar is `CREATE TABLE`, `INSERT`, `SELECT` and `UPDATE` as
-defined in `spec/sql.md`. The in-memory executor initially lacks `UPDATE`
-and will gain it in issue #67. There is no new `JOIN`, `DELETE`, transaction,
+defined in `spec/sql.md`. The in-memory executor supports all four statements,
+including `UPDATE` (issue #67). There is no new `JOIN`, `DELETE`, transaction,
 `UPSERT` or prepared-statement syntax in this protocol.
 
 Target Service is responsible for producing valid SQL and escaping apostrophes

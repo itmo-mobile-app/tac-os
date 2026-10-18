@@ -28,6 +28,7 @@ const (
 	create operation = iota
 	insert
 	selectRows
+	updateRows
 )
 
 type statement struct {
@@ -142,8 +143,10 @@ func parse(source string) (statement, error) {
 		s, err = p.insert()
 	case p.takeKeyword("SELECT"):
 		s, err = p.selectStatement()
+	case p.takeKeyword("UPDATE"):
+		s, err = p.updateStatement()
 	default:
-		err = p.fail("Expected CREATE, INSERT or SELECT; statement is unsupported")
+		err = p.fail("Expected CREATE, INSERT, SELECT or UPDATE; statement is unsupported")
 	}
 	if err != nil {
 		return statement{}, err
@@ -253,5 +256,51 @@ func (p *parser) selectStatement() (statement, error) {
 		}
 		s.predicate = &predicate{id, v}
 	}
+	return s, nil
+}
+
+func (p *parser) updateStatement() (statement, error) {
+	s := statement{operation: updateRows}
+	var err error
+	s.table, err = p.identifier()
+	if err != nil {
+		return s, err
+	}
+	if err = p.requireKeyword("SET"); err != nil {
+		return s, err
+	}
+	for {
+		id, err := p.identifier()
+		if err != nil {
+			return s, err
+		}
+		if err = p.require(equal, "Expected '=' after UPDATE column"); err != nil {
+			return s, err
+		}
+		v, err := p.literal()
+		if err != nil {
+			return s, err
+		}
+		s.columns = append(s.columns, id)
+		s.values = append(s.values, v)
+		if !p.take(comma) {
+			break
+		}
+	}
+	if err = p.requireKeyword("WHERE"); err != nil {
+		return s, err
+	}
+	id, err := p.identifier()
+	if err != nil {
+		return s, err
+	}
+	if err = p.require(equal, "Only a single WHERE column = value condition is supported"); err != nil {
+		return s, err
+	}
+	v, err := p.literal()
+	if err != nil {
+		return s, err
+	}
+	s.predicate = &predicate{id, v}
 	return s, nil
 }
