@@ -227,9 +227,10 @@ ctest --test-dir build --output-on-failure
 ### Единые Go-проверки в CI
 
 При каждом PR и обновлении `main` запускается workflow
-[`Go`](.github/workflows/go.yml). Он проверяет форматирование, выполняет
-`go vet` и `go test -race -count=1` параллельно для пяти отдельных
-Go-модулей: Broker, Window Manager, Map, DBMS и приватного Marker Detector.
+[`Go`](.github/workflows/go.yml). Он выполняет `go vet` и `go test -race -count=1` параллельно для
+пяти отдельных Go-модулей: Broker, Window Manager, Map, DBMS и приватного
+Marker Detector. Форматирование проверяется в остальных четырёх модулях;
+проверка `gofmt` для исходников WM пока остаётся вне обязательного CI.
 Для детектора тестируются только `pose` и `marker`, которые не требуют
 нативного OpenCV. Дополнительно в задаче Window Manager собираются сервер,
 клиент и графический backend с SDL2.

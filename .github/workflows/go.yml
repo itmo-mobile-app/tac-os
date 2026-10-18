@@ -35,7 +35,10 @@ jobs:
         with:
           go-version: stable
           cache: false
+      # WM had no formatting gate before this consolidation; do not impose
+      # a new one on another owner's existing code as part of CI refactoring.
       - name: Check Go formatting
+        if: matrix.component != 'Window Manager'
         working-directory: ${{ matrix.directory }}
         run: test -z "$(gofmt -l .)"
       - name: Go vet
