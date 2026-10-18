@@ -51,8 +51,11 @@ Its responsibilities include:
 Camera capture and ArUco recognition are delegated to a private Go helper process behind the
 C++ Runtime Camera API. It is not a third application process and does not replace Analyzer.
 Its outputs are camera-relative; Analyzer calculates global coordinates and builds observations.
-The precise VM return representation and private helper IPC protocol remain open. See
-`01-architecture.md` → "Marker recognition" and `spec/runtime-api.md`.
+The initial VM call is `camera.detectMarkers() -> String`, returning a JSON
+array of detections; a full typed `Detection[]` interface is deferred until
+the VM supports Float and collections. The private helper wire protocol is
+specified in `spec/camera-detector-protocol.md` and is not accessible from
+`.tc` code. The Camera API implementation is still pending.
 
 The Analyzer should not contain shared target aggregation logic.
 

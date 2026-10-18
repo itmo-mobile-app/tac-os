@@ -55,14 +55,16 @@ the Runtime owner). Remaining open:
 - Exact Runtime API (beyond `runtime.log`).
 - Linux threading primitive.
 - Thread synchronization primitives.
-The camera architecture is decided in `01-architecture.md` → "Marker recognition": Analyzer calls
-`camera.detectMarkers()` through Runtime, which communicates with a private Go detector process
-over a local Unix-domain socket. Still unresolved:
+The camera architecture and the **initial** `camera.detectMarkers() -> String`
+API are fixed in `spec/runtime-api.md`; the private Unix-domain socket
+protocol, timeout and helper lifecycle are fixed in
+`spec/camera-detector-protocol.md`. Still unresolved:
 
-- The `.tc` return representation and VM/Runtime ABI for multiple detections and floating-point values.
-- Private detector IPC wire format, socket path, framing, timeouts, and error responses.
-- Detector lifecycle: startup, reuse, shutdown, crash handling, and reconnection.
-- Camera device selection, unavailable-device behavior, and capture configuration.
+- Adding native `Float` and collections/`Detection[]` in the language, compiler,
+  bytecode and VM; the initial JSON `String` is temporary.
+- A recoverable error mechanism visible to `.tc` beyond an initial Runtime failure.
+- Production camera configuration and device-calibration strategy; initial
+  defaults are only for the prototype.
 - Approval from the course instructor for OpenCV/gocv usage in the detector.
 - Location API.
 - Orientation API.
