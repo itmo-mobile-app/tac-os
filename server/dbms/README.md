@@ -7,8 +7,11 @@ It supports `CREATE TABLE`, `INSERT INTO ... VALUES`, and
 `UPDATE` belongs to the overall contract but is outside this increment.
 
 Tables exist only in memory. Closing `tacdb` discards them. The CLI is a development
-entry point, not the Target Service wire protocol. Persistence and socket communication
-are deferred to subsequent increments. The local Go API is not a deployment decision.
+entry point, **not** the Target Service wire protocol. The planned socket client/server
+contract is fixed in `spec/dbms-protocol.md`: a Unix-domain stream socket with
+four-byte little-endian length-prefixed UTF-8 SQL requests and JSON responses.
+Neither persistence nor the socket server is implemented in this CLI increment.
+The local Go API is not a deployment decision.
 
 ## Build and test only this component
 
