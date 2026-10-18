@@ -9,16 +9,17 @@ Formal shared structures should later be defined in `spec/data-model.md`.
 
 ## Detection
 
-`Detection` is a local result produced by the Analyzer before it becomes a shared observation.
+`Detection` is produced by the private Go marker detector, received through
+Runtime and converted by Analyzer into a shared `Observation`.
 
-Conceptually it contains:
+The current detector returns:
 
-- `targetId` — identifier of the recognized physical target (the marker id as a decimal string);
-- `confidence` — confidence of the local recognition result;
-- `relativeAngle` — target angle relative to the camera/device direction (degrees; `0` is the center of the
-  frame, positive is to the right);
-- `distance` — estimated distance to the target (meters, from the camera to the marker center);
-- `timestamp` — detection time.
+- `id` — integer ArUco marker ID; Analyzer converts it to the decimal-string `targetId`;
+- `relativeAngle` — angle relative to the camera center, in degrees, positive to the right;
+- `distance` — estimated distance to the marker, in meters.
+
+The prototype does not return `confidence`. Analyzer supplies `Observation.confidence`
+according to a policy still to be decided, and creates the observation timestamp.
 
 A `Detection` is local to the client and does not represent the final shared target state.
 
@@ -37,7 +38,7 @@ Conceptually it contains:
 - `confidence` — confidence of the local detection;
 - `timestamp` — observation time.
 
-The exact field set is still open and may change when the application scenario is finalized.
+The exact field set is already defined in `spec/data-model.md`.
 
 ## Target
 
@@ -69,7 +70,7 @@ The identifier of a target is the id of its ArUco marker (see `01-architecture.m
 
 ### Detection confidence
 
-Represents how confident the Analyzer is in one specific recognition result.
+Represents the reliability of one local Observation, assigned by Analyzer; it is not an aggregated score across devices. Its estimation policy is not yet defined.
 
 ### Target probability
 
@@ -99,12 +100,14 @@ The intended flow is:
 ```text
 Camera frame
    ↓
-Detection
-   ↓
-device position + orientation
-   ↓
+Go Marker Detector → Detection
+   ↓ Runtime Camera API
+Analyzer: device position + orientation
+   ↓ compute global coordinates
 Observation
-   ↓
+   ↓ IPC
+Map
+   ↓ publish Observation
 Broker
    ↓
 Target Service
@@ -116,12 +119,13 @@ The resulting `Target` state is persisted through the DBMS and published back to
 
 ## Ownership of data
 
+### Marker Detector
+
+Creates local `Detection` records.
+
 ### Analyzer
 
-Creates:
-
-- `Detection`;
-- `Observation`.
+Consumes detections through Runtime and creates `Observation` records.
 
 ### Map
 
