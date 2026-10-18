@@ -64,12 +64,12 @@ from the one gocv expects. Install the version named in the gocv README (the goc
 
 ### Required CI checks (no native OpenCV)
 
-The [`Go modules (no OpenCV)`](../../.github/workflows/go-modules.yml)
-workflow runs on **every pull request and push to `main`**. Inside this
-module it runs `go vet ./pose ./marker` and
+The shared [`Go`](../../.github/workflows/go.yml) workflow runs on
+**every pull request and push to `main`**. Its independent Marker Detector job
+checks formatting and runs `go vet ./pose ./marker` and
 `go test -race -count=1 ./pose ./marker`. These two packages use only Go's
-standard library and can be checked on GitHub-hosted Linux runners **without**
-OpenCV, gocv, a camera, or the SDL2 development libraries.
+standard library and can be tested **without** OpenCV, gocv or a camera.
+The separate Window Manager job installs SDL2 only to build its graphical backend.
 
 The `detector` and `cmd/marker-detect` packages **are not covered** by
 this lightweight required check. Full OpenCV/gocv builds, detection tests and

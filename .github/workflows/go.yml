@@ -1,0 +1,61 @@
+name: Go
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  modules:
+    name: Go / ${{ matrix.component }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: Marker Detector core
+            directory: prototypes/marker-detect
+            packages: ./pose ./marker
+          - component: Broker
+            directory: broker
+            packages: ./...
+          - component: Window Manager
+            directory: window-manager
+            packages: ./...
+          - component: Map
+            directory: app/map
+            packages: ./...
+          - component: DBMS
+            directory: server/dbms
+            packages: ./...
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+          cache: false
+      - name: Check Go formatting
+        working-directory: ${{ matrix.directory }}
+        run: test -z "$(gofmt -l .)"
+      - name: Go vet
+        working-directory: ${{ matrix.directory }}
+        run: go vet ${{ matrix.packages }}
+      - name: Go tests (race detector)
+        working-directory: ${{ matrix.directory }}
+        run: go test -race -count=1 ${{ matrix.packages }}
+
+      - name: Build Window Manager server and client
+        if: matrix.component == 'Window Manager'
+        working-directory: window-manager
+        run: |
+          go build -o "$RUNNER_TEMP/wm-server-headless" ./cmd/wm-server
+          go build -o "$RUNNER_TEMP/wm-client" ./cmd/wm-client
+
+      - name: Build Window Manager SDL2 backend
+        if: matrix.component == 'Window Manager'
+        working-directory: window-manager
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-dev
+          go build -tags sdl -o "$RUNNER_TEMP/wm-server-sdl" ./cmd/wm-server

@@ -14,14 +14,6 @@ jobs:
         with:
           go-version: stable
           cache: false
-      - name: Check Go formatting
-        working-directory: server/dbms
-        run: test -z "$(gofmt -l .)"
-      - name: Vet and test DBMS with race detector
-        working-directory: server/dbms
-        run: |
-          go vet ./...
-          go test -race -count=1 ./...
       - uses: actions/setup-java@v4
         if: hashFiles('compiler/gradlew') != ''
         with:
