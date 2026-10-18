@@ -124,9 +124,17 @@ delegates recognition to a private Go helper process over a local Unix-domain so
 owns camera capture and OpenCV-based marker detection; only marker ids, angles, and distances
 cross this IPC boundary, not camera frames.
 
-Runtime hides process management and detector IPC from `.tc`. The helper is reused across requests.
-Its exact lifecycle, failure handling, wire protocol, and the collection/Float representation in
-the VM are pending specification in `spec/runtime-api.md` and `02-open-questions.md`.
+Runtime starts the private Go helper lazily, reuses its socket connection, and owns
+its shutdown. For each `DETECT` request the helper returns a JSON array of
+`id`, `relativeAngle` and `distance` in a success envelope, or a distinct
+camera/processing error. See `spec/camera-detector-protocol.md` for JSONL
+framing, error codes, bounded timeouts and lifecycle.
+
+The initial public call `camera.detectMarkers() -> String` returns only the
+JSON array (or reports a Runtime error). This temporarily avoids changing
+the current VM value layout. Native `Float` and a typed `Detection[]`
+return type remain later work; neither the public function nor its IPC
+implementation is present in the current executable yet.
 
 The detector is not a third Tactical App process: Analyzer and Map remain independent `.tc`/VM
 processes and exchange application observations via `spec/ipc.md`. The Analyzer computes target

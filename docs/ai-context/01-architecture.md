@@ -182,10 +182,18 @@ owns local IPC to the detector and presents its results without exposing its pro
 types to `.tc` code. The detector handles camera capture, ArUco identification, and relative
 angle/distance estimation; raw camera frames are not passed over this IPC channel.
 
-The helper should be launched once and reused rather than spawned for every request. Exact
-startup/shutdown, recovery, IPC framing, payload encoding, and timeout behavior are still open
-and require agreement with the Runtime owner. This decision does not change the independent
-Analyzer-to-Map IPC contract in `spec/ipc.md`.
+Runtime starts one private Go helper lazily and reuses a persistent Unix-domain socket
+connection. The initial protocol is newline-delimited JSON: `{"command":"DETECT"}`
+requests one frame, and responses contain either an array of detections or
+an explicit error. Runtime uses a bounded startup/request timeout and owns
+helper shutdown; the initial implementation has no automatic retry.
+See `spec/camera-detector-protocol.md` for the exact wire format and lifecycle.
+
+At the VM boundary, `camera.detectMarkers()` initially returns a `String` containing
+only the JSON detection array (or reports a Runtime error). This temporary
+representation works with the current String-capable ABI; a typed `Detection[]`
+result awaits later `Float`/collection support. No raw frames cross the IPC
+boundary. This decision does not change Analyzer-to-Map IPC in `spec/ipc.md`.
 
 The Analyzer retains application logic: it obtains device position and orientation, interprets
 team affiliation, computes global target coordinates, builds `Observation` records, and sends
@@ -200,9 +208,10 @@ For each visible game marker the detector returns a logical detection with these
 | `relativeAngle` | Float | Degrees; `0` is the center of the frame, positive is to the right |
 | `distance` | Float | Meters from the camera to the marker center |
 
-The prototype does not supply `confidence`; the policy for `Observation.confidence` remains open.
-The exact `.tc` return representation for several detections is also open because the current
-VM and language do not yet define an array/record and floating-point ABI.
+The detector prototype does not supply `confidence`; the policy for
+`Observation.confidence` remains open. The initial VM representation for
+detections is JSON in a `String`, as specified above. Native `Float` values,
+typed collections and an appropriate final `Detection[]` ABI are deferred.
 
 ### Marker format
 

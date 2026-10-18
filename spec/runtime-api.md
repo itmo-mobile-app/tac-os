@@ -32,29 +32,48 @@ Writes `message` followed by a newline (`\n`) to the process's standard output a
 has no meaningful result).
 This is the minimal function needed for the first Compiler → VM → Runtime integration test.
 
-## Planned Camera API (architectural decision; not yet implemented)
+## Camera API contract (approved design; implementation pending)
 
-Analyzer uses the public Runtime function conceptually named:
+The initial VM-facing call is:
 
 ```text
-camera.detectMarkers() -> detections
+camera.detectMarkers() -> String
 ```
 
-The logical return value is a collection with an `id` (integer ArUco marker id),
-`relativeAngle` (degrees from the camera axis, positive to the right), and `distance`
-(meters). A private Go detector process performs camera capture and OpenCV-based ArUco
-recognition. The C++ Runtime communicates with it using a local Unix-domain socket,
-then exposes the detections to the Analyzer on the VM.
+The call takes zero arguments and returns exactly one `String` value, consistent
+with the existing VM/Runtime call ABI. On success, that String is a compact
+JSON array of detections: `id` (Int, ArUco ID 0..71), `relativeAngle`
+(finite number in degrees; right positive), and `distance` (finite number
+in meters, greater than 0). Example:
 
-Application `.tc` code does not use detector IPC or OpenCV directly. Analyzer uses device
-position and orientation to convert detections into `Observation` records. Detector IPC
-is distinct from Analyzer-to-Map IPC in `spec/ipc.md`, which is unchanged.
+```json
+[{"id":17,"relativeAngle":12.5,"distance":3.2}]
+```
 
-This records an API **design boundary**, not an executable call signature or approved wire
-protocol. The current VM does not yet specify a return ABI for a collection of floating-point
-records. Return encoding, helper IPC framing, exact socket path, failure behavior, and process
-lifecycle must be agreed with the Runtime and VM owners before implementation; see
-`docs/ai-context/02-open-questions.md` → "Runtime".
+No recognized marker is the successful return value `"[]"`. Camera failure,
+timeout, malformed helper response or terminated helper is a Runtime error,
+not `"[]"` and not a JSON error object returned to application code.
+
+This is a **temporary String ABI**, not the eventual typed detection API.
+Current `.tc` and VM have no `Float` or collection representation and the
+Compiler cannot yet call every zero-argument Runtime function in an expression.
+The final `Detection[]` interface, geographic calculations in `.tc`, and
+VM-level recoverable error handling require later language/VM work. Sprint 2
+may verify the C++ Runtime directly with synthetic detector responses;
+no `.tc` JSON parser is introduced by this decision.
+
+The Runtime implementation is a client of the private Go/OpenCV detector over
+a Unix-domain stream socket; Runtime starts and reuses the helper process.
+The complete private wire format (`DETECT`, JSONL framing, success/error
+envelopes, socket path, timeouts and lifecycle) is defined in
+`spec/camera-detector-protocol.md`. Application code cannot open this socket
+directly. Analyzer will eventually combine detector results with device
+position and orientation to create `Observation` records sent to Map via
+the **separate** `spec/ipc.md` contract.
+
+This section fixes the Camera API design but does not claim that
+`camera.detectMarkers` is already registered or executable in the current
+C++ Runtime or compiled `.tc` applications.
 
 ## Open questions
 
@@ -63,4 +82,4 @@ Not decided here; see `docs/ai-context/02-open-questions.md` → "Runtime":
 - the remaining Runtime API surface (threads, IPC, location, orientation, networking, files, time,
   Activity lifecycle, WebView bridge, Window Manager access) — added incrementally, one concrete
   scenario at a time;
-- error handling for a Runtime call that fails (e.g. camera unavailable).
+- how recoverable Runtime call errors are represented inside `.tc` programs beyond the initial failure-reporting behavior.
