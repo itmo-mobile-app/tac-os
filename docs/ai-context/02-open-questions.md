@@ -177,8 +177,10 @@ The minimal SQL subset is defined in `spec/sql.md` (approved by the SQL DBMS own
 
 The Map prototype's north-up coordinate conversion and PNG/JSON asset format are defined in
 `spec/map-rendering.md` and `01-architecture.md` → "Map prototype for Sprint 1". The real playground
-image and its geographic calibration still need to be supplied for deployment. Exact drawing-command
-alignment and native integration with the WM owner's implementation remain pending.
+image and its geographic calibration still need to be supplied for deployment. Drawing-field
+compatibility and native Linux SDL2 integration were verified against WM #80; see
+`docs/testing/map-wm.md`. Agreement with the WM owner on the final frame and command fields was
+confirmed by the Map owner. Merging the WM dependency is still required.
 
 ## Deployment
 

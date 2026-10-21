@@ -137,8 +137,10 @@ The Map owner selected native rendering for #35. `app/map/` is a standalone Go p
 VM; the final Map application remains `.tc` code using Runtime. The prototype converts a hardcoded
 list of `Target` records into drawing commands for the existing Go/SDL2 Window Manager.
 WM receives image and circle commands, never geographic coordinates or target business logic.
-The drawing commands are a Map-side contract awaiting the WM owner's implementation, as documented
-in `spec/map-rendering.md`; existing WM window-lifecycle commands are unchanged.
+The drawing commands in `spec/map-rendering.md` match the WM implementation in #80. Cross-component
+headless tests and an actual Linux SDL2/X11 capture are documented in `docs/testing/map-wm.md`.
+Agreement with the WM owner on the final frame and command fields was confirmed by the Map owner;
+merging #80 is still required. Existing lifecycle commands are unchanged.
 
 The prototype uses a local 960x640 PNG and a version-1 JSON metadata file containing the image path,
 dimensions and latitude/longitude bounds. North is up and east is right. For the small test rectangle,
@@ -148,8 +150,9 @@ and the asset format are specified in `spec/map-rendering.md`.
 
 Probability affects marker opacity; it is not calculated by Map. `spec/data-model.md` is already
 approved by the Tactical Map and Analyzer owners and remains unchanged.
-The prototype has no Analyzer IPC, Broker subscription, WebView or `.tc` code. It includes an offline
-PNG preview and coordinate/frame tests; those do not establish native WM integration.
+The prototype has no Analyzer IPC, Broker subscription, WebView or `.tc` code. Its existing PNG
+preview and coordinate/frame tests are supplemented by a real Map CLI to WM/headless E2E test and
+recorded Linux SDL2 display/close verification; the PNG preview alone is not native evidence.
 
 ## Marker recognition
 
