@@ -22,9 +22,21 @@ constexpr std::uint16_t kSupportedVersion = 1;
 
 enum class Opcode : std::uint8_t {
     PushConst = 0x01,
+    Load = 0x02,
+    Store = 0x03,
+    Add = 0x04,
+    Sub = 0x05,
+    Mul = 0x06,
+    Div = 0x07,
+    CmpEq = 0x08,
+    CmpLt = 0x09,
+    Jmp = 0x0A,
+    JmpIfFalse = 0x0B,
+    Call = 0x0C,
     CallRuntime = 0x0D,
     Ret = 0x0E,
     Pop = 0x0F,
+    Not = 0x10,
 };
 
 class VmError : public std::runtime_error {
@@ -210,49 +222,80 @@ Program load_program(const std::string& path, Runtime& runtime) {
                       std::to_string(program.entry_function));
     }
 
-    // Resolve Runtime calls at load time, as required by spec/runtime-api.md.
+    if (program.functions[program.entry_function].param_count != 0) {
+        throw VmError("entry function must have no parameters");
+    }
+    // Decode every function, including unreachable instructions. Jump targets must
+    // be instruction boundaries, never operands or the end of the code array.
     for (const auto& function : program.functions) {
-        for (std::size_t ip = 0; ip < function.code.size();) {
-            const auto opcode_offset = ip;
-            const auto opcode = function.code[ip++];
+        std::vector<bool> boundaries(function.code.size(), false);
+        std::vector<std::uint32_t> targets;
+        Reader code(function.code);
+        while (code.offset() < function.code.size()) {
+            const auto offset = code.offset();
+            boundaries[offset] = true;
+            const auto opcode = static_cast<Opcode>(code.u8("opcode"));
             switch (opcode) {
-            case static_cast<std::uint8_t>(Opcode::PushConst):
-                if (ip + 2 > function.code.size()) {
-                    throw VmError("truncated PUSH_CONST operand at offset " +
-                                  std::to_string(opcode_offset));
+            case Opcode::PushConst:
+                if (code.u16("PUSH_CONST") >= program.constants.size()) {
+                    throw VmError("PUSH_CONST constant index is out of range");
                 }
-                ip += 2;
                 break;
-            case static_cast<std::uint8_t>(Opcode::CallRuntime): {
-                if (ip + 3 > function.code.size()) {
-                    throw VmError("truncated CALL_RUNTIME operand at offset " +
-                                  std::to_string(opcode_offset));
+            case Opcode::Load:
+            case Opcode::Store:
+                if (code.u8("local index") >=
+                    static_cast<unsigned>(function.param_count) + function.local_count) {
+                    throw VmError("local index is out of range");
                 }
-                const auto name_index = static_cast<std::uint16_t>(
-                    function.code[ip] | (function.code[ip + 1] << 8));
-                const auto arg_count = function.code[ip + 2];
-                ip += 3;
-                if (name_index >= program.constants.size()) {
-                    throw VmError("CALL_RUNTIME constant index is out of range at offset " +
-                                  std::to_string(opcode_offset));
+                break;
+            case Opcode::Jmp:
+            case Opcode::JmpIfFalse:
+                targets.push_back(code.u32("jump target"));
+                break;
+            case Opcode::Call: {
+                const auto index = code.u16("CALL function");
+                const auto argc = code.u8("CALL arguments");
+                if (index >= program.functions.size()) {
+                    throw VmError("CALL function index is out of range");
                 }
-                const auto& name = program.constants[name_index].value;
-                if (name.kind != ValueKind::String) {
-                    throw VmError("CALL_RUNTIME name is not a String at offset " +
-                                  std::to_string(opcode_offset));
-                }
-                if (!runtime.has_function(name.string_value, arg_count)) {
-                    throw VmError("unknown Runtime function '" + name.string_value +
-                                  "' at offset " + std::to_string(opcode_offset));
+                if (argc != program.functions[index].param_count) {
+                    throw VmError("CALL argument count mismatch");
                 }
                 break;
             }
-            case static_cast<std::uint8_t>(Opcode::Ret):
-            case static_cast<std::uint8_t>(Opcode::Pop):
+            case Opcode::CallRuntime: {
+                const auto index = code.u16("CALL_RUNTIME name");
+                const auto argc = code.u8("CALL_RUNTIME arguments");
+                if (index >= program.constants.size()) {
+                    throw VmError("CALL_RUNTIME constant index is out of range");
+                }
+                const auto& name = program.constants[index].value;
+                if (name.kind != ValueKind::String) {
+                    throw VmError("CALL_RUNTIME name is not a String");
+                }
+                if (!runtime.has_function(name.string_value, argc)) {
+                    throw VmError("unknown Runtime function '" + name.string_value + "'");
+                }
+                break;
+            }
+            case Opcode::Add:
+            case Opcode::Sub:
+            case Opcode::Mul:
+            case Opcode::Div:
+            case Opcode::CmpEq:
+            case Opcode::CmpLt:
+            case Opcode::Not:
+            case Opcode::Ret:
+            case Opcode::Pop:
                 break;
             default:
-                throw VmError("unknown opcode " + hex_byte(opcode) + " at offset " +
-                              std::to_string(opcode_offset));
+                throw VmError("unknown opcode " + hex_byte(static_cast<std::uint8_t>(opcode)) +
+                              " at offset " + std::to_string(offset));
+            }
+        }
+        for (const auto target : targets) {
+            if (target >= boundaries.size() || !boundaries[target]) {
+                throw VmError("invalid jump target " + std::to_string(target));
             }
         }
     }
@@ -266,101 +309,178 @@ public:
         : program_(std::move(program)), runtime_(runtime) {}
 
     Value run() {
-        return execute(program_.functions[program_.entry_function]);
+        frames_.push_back(make_frame(program_.entry_function, {}));
+        while (!frames_.empty()) {
+            auto& frame = frames_.back();
+            const auto& function = program_.functions[frame.function];
+            if (frame.ip >= function.code.size()) {
+                throw VmError("function '" + function.name + "' ended without RET");
+            }
+            const auto opcode = static_cast<Opcode>(function.code[frame.ip++]);
+            // Instructions and operands were validated at load time.
+            auto operand = [&](unsigned width) {
+                std::uint32_t value = 0;
+                for (unsigned i = 0; i < width; ++i) {
+                    value |= static_cast<std::uint32_t>(function.code[frame.ip++]) << (8 * i);
+                }
+                return value;
+            };
+            switch (opcode) {
+            case Opcode::PushConst:
+                push(program_.constants[operand(2)].value);
+                break;
+            case Opcode::Load: {
+                const auto index = operand(1);
+                if (!frame.initialized[index]) throw VmError("LOAD of uninitialized local");
+                push(frame.locals[index]);
+                break;
+            }
+            case Opcode::Store: {
+                const auto index = operand(1);
+                frame.locals[index] = pop();
+                frame.initialized[index] = true;
+                break;
+            }
+            case Opcode::Add:
+            case Opcode::Sub:
+            case Opcode::Mul:
+            case Opcode::Div:
+            case Opcode::CmpLt: {
+                const auto rhs = integer(pop());
+                const auto lhs = integer(pop());
+                std::int64_t result = 0;
+                bool overflow = false;
+                switch (opcode) {
+                case Opcode::Add: overflow = __builtin_add_overflow(lhs, rhs, &result); break;
+                case Opcode::Sub: overflow = __builtin_sub_overflow(lhs, rhs, &result); break;
+                case Opcode::Mul: overflow = __builtin_mul_overflow(lhs, rhs, &result); break;
+                case Opcode::Div:
+                    if (rhs == 0) throw VmError("division by zero");
+                    if (lhs == std::numeric_limits<std::int64_t>::min() && rhs == -1) {
+                        overflow = true;
+                    } else {
+                        result = lhs / rhs;
+                    }
+                    break;
+                case Opcode::CmpLt: result = lhs < rhs; break;
+                default: break;
+                }
+                if (overflow) throw VmError("integer overflow");
+                push(Value::int_value_of(result));
+                break;
+            }
+            case Opcode::CmpEq: {
+                const auto rhs = pop();
+                const auto lhs = pop();
+                if (lhs.kind != rhs.kind) throw VmError("CMP_EQ requires matching types");
+                const bool equal = lhs.kind == ValueKind::Int
+                    ? lhs.int_value == rhs.int_value : lhs.string_value == rhs.string_value;
+                push(Value::int_value_of(equal));
+                break;
+            }
+            case Opcode::Not:
+                push(Value::int_value_of(!boolean(pop())));
+                break;
+            case Opcode::Jmp:
+                frame.ip = operand(4);
+                break;
+            case Opcode::JmpIfFalse: {
+                const auto target = operand(4);
+                if (!boolean(pop())) frame.ip = target;
+                break;
+            }
+            case Opcode::Call: {
+                const auto index = operand(2);
+                const auto argc = operand(1);
+                auto args = arguments(argc);
+                if (frames_.size() >= kMaxFrames) throw VmError("call stack overflow");
+                frames_.push_back(make_frame(index, args));
+                break;
+            }
+            case Opcode::CallRuntime: {
+                const auto index = operand(2);
+                const auto argc = operand(1);
+                const auto args = arguments(argc);
+                push(runtime_.call(program_.constants[index].value.string_value, args));
+                break;
+            }
+            case Opcode::Pop:
+                (void)pop();
+                break;
+            case Opcode::Ret: {
+                auto result = pop();
+                stack_.resize(frame.base);
+                frames_.pop_back();
+                if (frames_.empty()) return result;
+                push(std::move(result));
+                break;
+            }
+            default:
+                throw VmError("invalid decoded opcode");
+            }
+        }
+        throw VmError("missing entry frame");
     }
 
 private:
-    Value execute(const Function& function) {
+    // Iterative frames avoid exhausting the host C++ call stack on recursion.
+    static constexpr std::size_t kMaxFrames = 1024;
+    static constexpr std::size_t kMaxStack = 65536;
+    struct Frame {
+        std::size_t function;
         std::size_t ip = 0;
-        while (ip < function.code.size()) {
-            const auto opcode_offset = ip;
-            const auto opcode = function.code[ip++];
-            switch (opcode) {
-            case static_cast<std::uint8_t>(Opcode::PushConst): {
-                const auto index = read_u16(function, ip, opcode_offset, "PUSH_CONST");
-                if (index >= program_.constants.size()) {
-                    throw VmError("PUSH_CONST constant index is out of range at offset " +
-                                  std::to_string(opcode_offset));
-                }
-                stack_.push_back(program_.constants[index].value);
-                break;
-            }
-            case static_cast<std::uint8_t>(Opcode::CallRuntime): {
-                const auto name_index = read_u16(function, ip, opcode_offset, "CALL_RUNTIME");
-                const auto arg_count = read_u8(function, ip, opcode_offset, "CALL_RUNTIME");
-                if (name_index >= program_.constants.size()) {
-                    throw VmError("CALL_RUNTIME constant index is out of range at offset " +
-                                  std::to_string(opcode_offset));
-                }
-                const auto& name = program_.constants[name_index].value;
-                if (name.kind != ValueKind::String) {
-                    throw VmError("CALL_RUNTIME name is not a String at offset " +
-                                  std::to_string(opcode_offset));
-                }
-                if (stack_.size() < arg_count) {
-                    throw VmError("stack underflow in CALL_RUNTIME at offset " +
-                                  std::to_string(opcode_offset));
-                }
-                std::vector<Value> args(arg_count);
-                for (std::size_t i = arg_count; i > 0; --i) {
-                    args[i - 1] = stack_.back();
-                    stack_.pop_back();
-                }
-                stack_.push_back(runtime_.call(name.string_value, args));
-                break;
-            }
-            case static_cast<std::uint8_t>(Opcode::Pop):
-                if (stack_.empty()) {
-                    throw VmError("stack underflow in POP at offset " +
-                                  std::to_string(opcode_offset));
-                }
-                stack_.pop_back();
-                break;
-            case static_cast<std::uint8_t>(Opcode::Ret):
-                if (stack_.empty()) {
-                    throw VmError("stack underflow in RET at offset " +
-                                  std::to_string(opcode_offset));
-                }
-                return stack_.back();
-            default:
-                throw VmError("unknown opcode " + hex_byte(opcode) + " at offset " +
-                              std::to_string(opcode_offset));
-            }
-        }
+        std::size_t base;
+        std::vector<Value> locals;
+        std::vector<bool> initialized;
+    };
 
-        throw VmError("function '" + function.name + "' ended without RET");
+    Frame make_frame(std::size_t index, const std::vector<Value>& args) const {
+        const auto& fn = program_.functions[index];
+        const auto count = static_cast<std::size_t>(fn.param_count) + fn.local_count;
+        Frame frame{index, 0, stack_.size(),
+                    std::vector<Value>(count, Value::int_value_of(0)),
+                    std::vector<bool>(count, false)};
+        for (std::size_t i = 0; i < args.size(); ++i) {
+            frame.locals[i] = args[i];
+            frame.initialized[i] = true;
+        }
+        return frame;
     }
 
-    static std::uint8_t read_u8(
-        const Function& function,
-        std::size_t& ip,
-        std::size_t opcode_offset,
-        const std::string& instruction) {
-        if (ip >= function.code.size()) {
-            throw VmError("truncated " + instruction + " operand at offset " +
-                          std::to_string(opcode_offset));
-        }
-        return function.code[ip++];
+    void push(Value value) {
+        if (stack_.size() >= kMaxStack) throw VmError("operand stack overflow");
+        stack_.push_back(std::move(value));
     }
 
-    static std::uint16_t read_u16(
-        const Function& function,
-        std::size_t& ip,
-        std::size_t opcode_offset,
-        const std::string& instruction) {
-        if (ip + 2 > function.code.size()) {
-            throw VmError("truncated " + instruction + " operand at offset " +
-                          std::to_string(opcode_offset));
-        }
-        const auto value = static_cast<std::uint16_t>(
-            function.code[ip] | (function.code[ip + 1] << 8));
-        ip += 2;
+    Value pop() {
+        if (stack_.size() <= frames_.back().base) throw VmError("stack underflow");
+        auto value = std::move(stack_.back());
+        stack_.pop_back();
         return value;
+    }
+
+    std::vector<Value> arguments(std::size_t count) {
+        if (count > stack_.size() - frames_.back().base) throw VmError("stack underflow in call");
+        std::vector<Value> args(count);
+        for (std::size_t i = count; i > 0; --i) args[i - 1] = pop();
+        return args;
+    }
+
+    static std::int64_t integer(const Value& value) {
+        if (value.kind != ValueKind::Int) throw VmError("expected Int operand");
+        return value.int_value;
+    }
+
+    static bool boolean(const Value& value) {
+        const auto number = integer(value);
+        if (number != 0 && number != 1) throw VmError("expected Bool 0 or 1");
+        return number != 0;
     }
 
     Program program_;
     Runtime& runtime_;
     std::vector<Value> stack_;
+    std::vector<Frame> frames_;
 };
 
 } // namespace

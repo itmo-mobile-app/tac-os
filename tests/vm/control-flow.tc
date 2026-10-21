@@ -1,0 +1,41 @@
+// Locals, arithmetic, if/else and while in one function.
+// Uses only the instructions from #62 (no CALL between .tc functions).
+fun main() {
+    let count = 0;
+    const limit: Int = 3;
+    while (count < limit) {
+        count = count + 1;
+    }
+    if (count == limit) {
+        runtime.log("loop done");
+    } else {
+        runtime.log("loop wrong");
+    }
+
+    let n = 5;
+    let fact = 1;
+    while (n > 1) {
+        fact = fact * n;
+        n = n - 1;
+    }
+    if (fact == 120) {
+        runtime.log("factorial ok");
+    } else {
+        runtime.log("factorial wrong");
+    }
+
+    let x = -7 + 10 * 2 / 4;      // -7 + 5 = -2
+    if (x < 0) {
+        runtime.log("negative");
+    } else if (x == 0) {
+        runtime.log("zero");
+    } else {
+        runtime.log("positive");
+    }
+
+    const ready: Bool = !(x >= 0) != false;
+    if (ready) {
+        let x = "inner scope";
+        runtime.log(x);
+    }
+}

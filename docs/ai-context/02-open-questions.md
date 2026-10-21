@@ -44,7 +44,9 @@ Runtime calls are defined in `spec/bytecode.md` (approved by the VM Core owner).
 - Garbage collection requirements.
 - Object representation.
 - String interning and string object lifetime.
-- Error handling during bytecode execution, including stack overflow/underflow and `DIV` by zero.
+- Approval of VM error handling (stack limits/underflow, integer overflow and `DIV` by zero):
+  issue #62 implements controlled failures; the proposed rules are documented in
+  `spec/bytecode.md` and still require Compiler owner review.
 
 ## Runtime
 
