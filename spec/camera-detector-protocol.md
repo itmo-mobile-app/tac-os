@@ -1,6 +1,7 @@
 # Private Camera Detector protocol
 
-Status: approved design for issue #60; implementation pending.
+Status: approved design for issue #60; the Go detector side is implemented (issue #69), the C++ Runtime
+client is pending.
 
 This is the **private** interface between the C++ Runtime in the Analyzer VM process and
 its Go/OpenCV marker-detector helper. It is not an application IPC interface, a
@@ -27,6 +28,38 @@ public service, or a replacement for Analyzer. The separate Analyzer-to-Map
 The detector may run in an explicitly configured test mode that provides
 deterministic synthetic detections without opening a physical camera. This mode
 uses **the same** request and response format.
+
+## Helper command line
+
+Runtime starts the helper as
+
+```text
+marker-detect -socket /tmp/tac-os-detector-<analyzer-pid>.sock [-camera N] [-hfov DEG] [-marker-size M]
+```
+
+- `-socket PATH` selects this server mode. The helper creates the socket, accessible only to the
+  current user, and listens at once. It opens the camera on the first `DETECT` and not at startup, so a missing
+  camera is reported as `CAMERA_UNAVAILABLE` and the next `DETECT` tries to open it again. A leftover socket
+  file of a dead process is replaced. A socket that another process still listens on, and a file that is not
+  a socket, are never removed: the helper exits with status 1.
+- `-camera`, `-hfov` and `-marker-size` are the prototype camera parameters from "Timeouts, failure handling
+  and lifecycle" (defaults: camera 0, 60 degrees, 0.10 meters).
+- Diagnostics go to standard error; standard output is not used.
+- On `SIGTERM` or `SIGINT` the helper stops accepting connections, closes the open ones, releases the camera,
+  removes its socket file and exits with status 0. It waits at most 3 seconds for a request in progress.
+- Exit status: 0 after a signal, 1 on a startup or runtime failure, 2 for an invalid command line.
+
+### Test mode
+
+`-fake MODE` (only together with `-socket`) answers every `DETECT` without opening a camera. The modes are the
+shared fixtures for the Go and C++ contract tests:
+
+| Mode | Response line |
+| --- | --- |
+| `two` | `{"ok":true,"detections":[{"id":17,"relativeAngle":12.5,"distance":3.2},{"id":23,"relativeAngle":-8.4,"distance":5.7}]}` |
+| `empty` | `{"ok":true,"detections":[]}` |
+| `camera-unavailable` | `{"ok":false,"error":"CAMERA_UNAVAILABLE"}` |
+| `detection-failed` | `{"ok":false,"error":"DETECTION_FAILED"}` |
 
 ## Framing
 
