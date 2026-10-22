@@ -29,6 +29,9 @@ jobs:
           - component: DBMS
             directory: server/dbms
             packages: ./...
+          - component: Target Service
+            directory: target-service
+            packages: ./...
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v6
