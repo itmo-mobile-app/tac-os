@@ -3,14 +3,9 @@ package tacc
 import java.io.ByteArrayOutputStream
 
 /**
- * Lowers the AST to a [BytecodeModule].
- *
- * Per spec/language.md -> "Compilation notes" -> "Return values" and spec/runtime-api.md: every
- * call, including CALL_RUNTIME, leaves exactly one value on the operand stack (a Runtime function
- * that conceptually returns nothing, such as `runtime.log`, pushes `Int 0`), so a call used as a
- * statement is followed by POP. A function with no declared return type (every function in this
- * increment, since return types are not parsed yet) implicitly returns `Int 0`: the compiler
- * emits `PUSH_CONST 0` followed by `RET` at the end of the function body.
+ * Serializes a [BytecodeModule] into the `.bc` file format defined in spec/bytecode.md:
+ * magic "TACB", version, constant pool, function table, entry function index.
+ * All multi-byte integers are written little-endian.
  */
 object BytecodeWriter {
     private const val MAGIC = "TACB"

@@ -166,6 +166,31 @@ fun main() {
 }
 ```
 
+## Semantic rules
+
+Checked by the compiler; a program that breaks any of them is rejected with a compile-time error.
+
+- **Types**: `+ - * /`, unary `-`, and `< <= > >=` take `Int` operands; `!` takes `Bool`; `==` and
+  `!=` take two operands of the same type. There are no implicit conversions: the condition of `if`
+  and `while` must be `Bool`, and an `Int` is not accepted there.
+- **Variables**: an annotated type must equal the type of the initializer; an assignment must keep
+  the variable's type. Only `let` variables can be assigned; `const` variables and function
+  parameters cannot.
+- **Scopes**: every `{ ... }` of `if`, `else`, and `while` opens a new scope; a variable is visible from
+  its declaration to the end of its block. A name cannot be declared twice in the same scope.
+  Function parameters and the top level of the function body are one scope. A variable in a nested
+  block may shadow a variable of an enclosing block. A variable is not visible in its own
+  initializer.
+- **Functions**: function names are unique; a function can be called before its declaration. A call
+  must pass as many arguments as the function has parameters, with matching types.
+- **Return values**: a function with `: <type>` returns a value of that type, and every path through
+  its body must end in `return <expression>;` (a `while` body does not count, since it may not run).
+  A function without `: <type>` uses only `return;`, and a call to it is a statement, not a value.
+- **Runtime calls**: the compiler accepts only Runtime functions listed in `spec/runtime-api.md`, with
+  their argument types. `runtime.log(message: String)` has no result usable as a value.
+- **Limits** (from `spec/bytecode.md`): at most 255 parameters and 255 `let`/`const` variables per
+  function, and at most 65 536 distinct constants and functions per file.
+
 ## Compilation notes
 
 Confirmed with the VM Core owner against `spec/bytecode.md`. These notes describe how language-level

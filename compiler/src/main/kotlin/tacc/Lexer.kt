@@ -1,21 +1,33 @@
 package tacc
 
 /**
- * Minimal lexer for the `.tc` language.
- *
- * Covers only what is needed for the first Compiler -> VM integration
- * scenario (see spec/language.md): `fun`, identifiers, `( ) { } . ; ,`,
- * and string literals. Variables, arithmetic, control flow, and comments
- * other than `//` line comments are out of scope for this increment, even
- * though spec/language.md now defines the full grammar for them.
+ * Lexer for the `.tc` language: turns source text into tokens per spec/language.md -> "Grammar"
+ * -> "Lexical tokens".
  */
 
 data class Token(val type: TokenType, val text: String, val line: Int)
 
 enum class TokenType {
-    FUN,
+    // Literals and names.
     IDENT,
+    INT,
     STRING,
+
+    // Keywords.
+    FUN,
+    LET,
+    CONST,
+    IF,
+    ELSE,
+    WHILE,
+    RETURN,
+    TRUE,
+    FALSE,
+    TYPE_INT,
+    TYPE_BOOL,
+    TYPE_STRING,
+
+    // Punctuation.
     LPAREN,
     RPAREN,
     LBRACE,
@@ -23,10 +35,29 @@ enum class TokenType {
     DOT,
     SEMI,
     COMMA,
+    COLON,
+
+    // Operators.
+    ASSIGN,
+    PLUS,
+    MINUS,
+    STAR,
+    SLASH,
+    BANG,
+    EQ,
+    NE,
+    LT,
+    LE,
+    GT,
+    GE,
+
     EOF,
 }
 
-class LexError(message: String, val line: Int) : Exception("line $line: $message")
+/** Base class for every error reported as `<file>:<line>: error: <message>`. */
+open class CompileError(message: String, val line: Int) : Exception(message)
+
+class LexError(message: String, line: Int) : CompileError(message, line)
 
 class Lexer(private val source: String) {
     private var pos = 0
@@ -38,23 +69,18 @@ class Lexer(private val source: String) {
             skipWhitespaceAndComments()
             if (pos >= source.length) {
                 tokens.add(Token(TokenType.EOF, "", line))
-                break
+                return tokens
             }
             val c = source[pos]
-            when {
-                c == '(' -> { tokens.add(Token(TokenType.LPAREN, "(", line)); pos++ }
-                c == ')' -> { tokens.add(Token(TokenType.RPAREN, ")", line)); pos++ }
-                c == '{' -> { tokens.add(Token(TokenType.LBRACE, "{", line)); pos++ }
-                c == '}' -> { tokens.add(Token(TokenType.RBRACE, "}", line)); pos++ }
-                c == '.' -> { tokens.add(Token(TokenType.DOT, ".", line)); pos++ }
-                c == ';' -> { tokens.add(Token(TokenType.SEMI, ";", line)); pos++ }
-                c == ',' -> { tokens.add(Token(TokenType.COMMA, ",", line)); pos++ }
-                c == '"' -> tokens.add(readString())
-                c.isLetter() || c == '_' -> tokens.add(readIdentOrKeyword())
-                else -> throw LexError("unexpected character '$c'", line)
-            }
+            tokens.add(
+                when {
+                    c == '"' -> readString()
+                    isDigit(c) -> readInt()
+                    isLetter(c) || c == '_' -> readIdentOrKeyword()
+                    else -> readOperator()
+                },
+            )
         }
-        return tokens
     }
 
     private fun skipWhitespaceAndComments() {
@@ -62,13 +88,65 @@ class Lexer(private val source: String) {
             val c = source[pos]
             when {
                 c == '\n' -> { line++; pos++ }
-                c.isWhitespace() -> pos++
-                c == '/' && pos + 1 < source.length && source[pos + 1] == '/' -> {
+                c == ' ' || c == '\t' || c == '\r' -> pos++
+                c == '/' && peekNext() == '/' -> {
                     while (pos < source.length && source[pos] != '\n') pos++
                 }
                 else -> return
             }
         }
+    }
+
+    private fun readOperator(): Token {
+        val c = source[pos]
+        if (peekNext() == '=') {
+            val twoCharType = when (c) {
+                '=' -> TokenType.EQ
+                '!' -> TokenType.NE
+                '<' -> TokenType.LE
+                '>' -> TokenType.GE
+                else -> null
+            }
+            if (twoCharType != null) {
+                pos += 2
+                return Token(twoCharType, "$c=", line)
+            }
+        }
+        val type = when (c) {
+            '(' -> TokenType.LPAREN
+            ')' -> TokenType.RPAREN
+            '{' -> TokenType.LBRACE
+            '}' -> TokenType.RBRACE
+            '.' -> TokenType.DOT
+            ';' -> TokenType.SEMI
+            ',' -> TokenType.COMMA
+            ':' -> TokenType.COLON
+            '=' -> TokenType.ASSIGN
+            '+' -> TokenType.PLUS
+            '-' -> TokenType.MINUS
+            '*' -> TokenType.STAR
+            '/' -> TokenType.SLASH
+            '!' -> TokenType.BANG
+            '<' -> TokenType.LT
+            '>' -> TokenType.GT
+            else -> throw LexError("unexpected character '$c'", line)
+        }
+        pos++
+        return Token(type, c.toString(), line)
+    }
+
+    private fun readInt(): Token {
+        val start = pos
+        while (pos < source.length && isDigit(source[pos])) pos++
+        if (pos < source.length && (isLetter(source[pos]) || source[pos] == '_')) {
+            throw LexError("invalid integer literal '${source.substring(start, pos + 1)}'", line)
+        }
+        val text = source.substring(start, pos)
+        // Must fit in a signed 64-bit integer (spec/language.md -> "Lexical tokens").
+        if (text.toLongOrNull() == null) {
+            throw LexError("integer literal $text does not fit in a signed 64-bit integer", line)
+        }
+        return Token(TokenType.INT, text, line)
     }
 
     private fun readString(): Token {
@@ -80,6 +158,17 @@ class Lexer(private val source: String) {
             val c = source[pos]
             if (c == '"') { pos++; break }
             if (c == '\n') throw LexError("unterminated string literal", startLine)
+            if (c == '\\') {
+                if (pos + 1 >= source.length) throw LexError("unterminated string literal", startLine)
+                when (val e = source[pos + 1]) {
+                    '"' -> sb.append('"')
+                    '\\' -> sb.append('\\')
+                    'n' -> sb.append('\n')
+                    else -> throw LexError("invalid escape sequence '\\$e'", line)
+                }
+                pos += 2
+                continue
+            }
             sb.append(c)
             pos++
         }
@@ -88,10 +177,32 @@ class Lexer(private val source: String) {
 
     private fun readIdentOrKeyword(): Token {
         val start = pos
-        val startLine = line
-        while (pos < source.length && (source[pos].isLetterOrDigit() || source[pos] == '_')) pos++
+        while (pos < source.length && (isLetter(source[pos]) || isDigit(source[pos]) || source[pos] == '_')) pos++
         val text = source.substring(start, pos)
-        val type = if (text == "fun") TokenType.FUN else TokenType.IDENT
-        return Token(type, text, startLine)
+        return Token(KEYWORDS[text] ?: TokenType.IDENT, text, line)
+    }
+
+    private fun peekNext(): Char? = if (pos + 1 < source.length) source[pos + 1] else null
+
+    // ASCII only, per spec/language.md -> "Lexical tokens" (`letter`, `digit`).
+    private fun isLetter(c: Char): Boolean = c in 'a'..'z' || c in 'A'..'Z'
+
+    private fun isDigit(c: Char): Boolean = c in '0'..'9'
+
+    private companion object {
+        val KEYWORDS = mapOf(
+            "fun" to TokenType.FUN,
+            "let" to TokenType.LET,
+            "const" to TokenType.CONST,
+            "if" to TokenType.IF,
+            "else" to TokenType.ELSE,
+            "while" to TokenType.WHILE,
+            "return" to TokenType.RETURN,
+            "true" to TokenType.TRUE,
+            "false" to TokenType.FALSE,
+            "Int" to TokenType.TYPE_INT,
+            "Bool" to TokenType.TYPE_BOOL,
+            "String" to TokenType.TYPE_STRING,
+        )
     }
 }

@@ -1,25 +1,42 @@
 # tacc — `.tc` compiler
 
-Minimal compiler for the first Compiler → VM integration scenario: compiles a program that
-calls a single Runtime function (e.g. `runtime.log("hello")`) into a `.bc` file per
-`spec/bytecode.md`.
+Compiles a `.tc` program into a `.bc` file per `spec/bytecode.md`.
 
-## Scope (this increment)
+## Scope
 
-`spec/language.md` defines the full `.tc` grammar (variables, arithmetic, `if`/`while`,
-parameters, typed return values). This compiler still only implements the strict subset needed
-for the first Compiler → VM scenario — the rest is the remainder of Sprint 1:
+The whole grammar of `spec/language.md`:
 
-- One function `main`, no parameters, no declared return type.
-- Function body: a sequence of single-argument Runtime calls, `ns.func("text");`.
-- No variables, arithmetic, control flow, or calls between `.tc` functions yet.
+- functions with parameters and an optional return type, calls between `.tc` functions (`CALL`);
+- `let` / `const` local variables of type `Int`, `Bool`, `String`, and assignment;
+- arithmetic, comparison, equality, and logical negation with the precedence from the spec;
+- `if` / `else if` / `else`, `while`, `return`;
+- Runtime calls `ns.func(...)` to the functions in `spec/runtime-api.md`.
 
-Per `spec/language.md` → "Compilation notes" → "Return values", every call leaves exactly one
-value on the stack, so:
+The semantic checks (types, scopes, `const`, return paths) are listed in `spec/language.md` →
+"Semantic rules". Classes, structs, and a standard library are not part of the language yet.
 
-- each statement-level call is followed by `POP`;
-- a function with no declared return type implicitly returns `Int 0`, so the compiler emits
-  `PUSH_CONST 0` + `RET` at the end of the function body.
+## Structure
+
+| File | Stage |
+| --- | --- |
+| `Lexer.kt` | source text → tokens |
+| `Parser.kt`, `Ast.kt` | tokens → AST (recursive descent, one function per grammar rule) |
+| `Checker.kt` | semantic analysis: names, scopes, types, local slots |
+| `CodeGen.kt`, `Bytecode.kt` | AST → instructions and constant pool |
+| `BytecodeWriter.kt` | module → `.bc` bytes |
+| `Main.kt` | command line |
+
+Code generation follows `spec/language.md` → "Compilation notes":
+
+- parameters occupy locals `0 .. param_count-1`, `let`/`const` variables the following slots in
+  order of declaration (one slot per declaration);
+- `a > b` is `b < a`, `a <= b` is `!(b < a)`, `a >= b` is `!(a < b)`, `a != b` is `!(a == b)`,
+  `-x` is `0 - x`; the operands of `>` and `<=` are therefore evaluated right to left;
+- every call leaves one value on the stack, so a call used as a statement is followed by `POP`;
+- a function without a return type returns `Int 0` (`PUSH_CONST 0` + `RET`) on `return;` and at the
+  end of its body;
+- `if` and `while` use `JMP` / `JMP_IF_FALSE` with absolute offsets inside the function's code; a
+  branch that always returns is not followed by a jump, so no jump targets the end of the code.
 
 ## Build and run
 
@@ -37,32 +54,29 @@ Usage: `tacc <input.tc> <output.bc>`. Write the output under `build/` (ignored b
 
 ## Testing
 
-The CTest test `hello_e2e` (see `tests/hello/README.md`) compiles `tests/hello/hello.tc` with
-`tacc`, runs the result with `tacvm`, and compares standard output with `expected.txt`. The output
-is not compared with `tests/hello/hello.bc` byte for byte: `spec/bytecode.md` does not fix the
-order of constant-pool entries.
+`./gradlew test` runs the unit tests in `src/test/kotlin`:
 
-## Example
+- `LexerTest`, `ParserTest` — tokens, precedence and associativity, syntax errors;
+- `CheckerTest` — positive and negative tests of types, scopes, `const`, calls, and returns;
+- `CodeGenTest` — exact instruction sequences, `hello.tc` byte for byte against
+  `tests/hello/hello.bc`, and the behavior of compiled programs.
 
-Input (`tests/hello/hello.tc`):
+Program behavior is checked with a small reference interpreter in `TestSupport.kt`. It is a test
+oracle for the compiler only, written against `spec/bytecode.md`; `tacvm` remains the VM.
 
-```text
-fun main() {
-    runtime.log("hello");
-}
-```
+CTest runs the full chain `.tc` → `tacc` → `.bc` → `tacvm` and compares standard output with
+`expected.txt`:
 
-Compiles to (per `spec/language.md` → "Compilation notes"):
+| Test | Program | Needs in the VM |
+| --- | --- | --- |
+| `hello_e2e` | `tests/hello` | `PUSH_CONST`, `CALL_RUNTIME`, `POP`, `RET` |
+| `control_flow_e2e` | `tests/control-flow` | locals, arithmetic, comparisons, jumps (#62) |
+| `language_example_e2e` | `tests/language-example` (example from `spec/language.md`) | the above and `CALL` |
 
-```text
-PUSH_CONST   "hello"
-CALL_RUNTIME "runtime.log", 1
-POP
-PUSH_CONST   0
-RET
-```
+`control_flow_e2e` and `language_example_e2e` are disabled (`DISABLED` in their `CMakeLists.txt`)
+until the VM supports those instructions; remove the property to enable them.
 
 ## Error reporting
 
-Lexer, parser, and codegen errors are reported as `<file>:<line>: error: <message>` on stderr,
-with exit code 1.
+Errors are reported as `<file>:<line>: error: <message>` on stderr, with exit code 1. Compilation
+stops at the first error.
