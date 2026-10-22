@@ -1,0 +1,26 @@
+fun factorial(n: Int): Int {
+    if (n < 2) {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
+
+fun difference(a: Int, b: Int): Int {
+    return a - b;
+}
+
+fun main() {
+    let saved = 7;
+    if (factorial(5) == 120) {
+        if (difference(9, 4) == 5) {
+            if (saved == 7) {
+                runtime.log("calls ok");
+            }
+        }
+    }
+    const first = "same";
+    const second = "same";
+    if (first == second) {
+        runtime.log("strings ok");
+    }
+}

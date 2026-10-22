@@ -1,0 +1,19 @@
+// The variables/loop example from spec/language.md -> "Examples", verbatim.
+fun add(a: Int, b: Int): Int {
+    return a + b;
+}
+
+fun main() {
+    let count = 0;            // mutable, type inferred as Int
+    const limit: Int = 3;     // immutable, explicit type
+
+    while (count < limit) {
+        count = add(count, 1);
+    }
+
+    if (count == limit) {
+        runtime.log("done");
+    } else {
+        runtime.log("unexpected");
+    }
+}

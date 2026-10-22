@@ -140,7 +140,7 @@ WM receives image and circle commands, never geographic coordinates or target bu
 The drawing commands in `spec/map-rendering.md` match the WM implementation in #80. Cross-component
 headless tests and an actual Linux SDL2/X11 capture are documented in `docs/testing/map-wm.md`.
 Agreement with the WM owner on the final frame and command fields was confirmed by the Map owner;
-merging #80 is still required. Existing lifecycle commands are unchanged.
+WM #80 has been merged. Existing lifecycle commands are unchanged.
 
 The prototype uses a local 960x640 PNG and a version-1 JSON metadata file containing the image path,
 dimensions and latitude/longitude bounds. North is up and east is right. For the small test rectangle,

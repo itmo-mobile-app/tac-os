@@ -19,11 +19,15 @@ endif()
 execute_process(COMMAND "${DBMS}"
     INPUT_FILE "${OUTPUT_DIR}/cli-input/cli-errors.sql"
     OUTPUT_VARIABLE actual ERROR_VARIABLE error RESULT_VARIABLE status)
-if(NOT status EQUAL 1 OR NOT actual STREQUAL "OK\nOK\nx\n7\n1 row(s)\n")
+if(NOT status EQUAL 1 OR NOT actual STREQUAL "OK\nOK\nx\n7\n1 row(s)\nOK\nx\n8\n1 row(s)\n")
     message(FATAL_ERROR "CLI error recovery failed: status=${status}\nstdout=${actual}\nstderr=${error}")
 endif()
 if(NOT error MATCHES "ERROR at position [0-9]+:.*unsupported")
     message(FATAL_ERROR "CLI did not report the unsupported statement position: ${error}")
+endif()
+
+if(NOT error MATCHES "Type mismatch for column: x")
+    message(FATAL_ERROR "CLI did not report failed UPDATE: ${error}")
 endif()
 
 execute_process(COMMAND "${DBMS}"

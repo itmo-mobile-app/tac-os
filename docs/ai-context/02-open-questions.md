@@ -44,7 +44,9 @@ Runtime calls are defined in `spec/bytecode.md` (approved by the VM Core owner).
 - Garbage collection requirements.
 - Object representation.
 - String interning and string object lifetime.
-- Error handling during bytecode execution, including stack overflow/underflow and `DIV` by zero.
+- Approval of VM error handling (stack limits/underflow, integer overflow and `DIV` by zero):
+  issue #62 implements controlled failures; the proposed rules are documented in
+  `spec/bytecode.md` and still require Compiler owner review.
 
 ## Runtime
 
@@ -180,7 +182,7 @@ The Map prototype's north-up coordinate conversion and PNG/JSON asset format are
 image and its geographic calibration still need to be supplied for deployment. Drawing-field
 compatibility and native Linux SDL2 integration were verified against WM #80; see
 `docs/testing/map-wm.md`. Agreement with the WM owner on the final frame and command fields was
-confirmed by the Map owner. Merging the WM dependency is still required.
+confirmed by the Map owner. WM #80 has been merged.
 
 ## Deployment
 

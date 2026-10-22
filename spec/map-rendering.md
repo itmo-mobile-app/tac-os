@@ -3,7 +3,7 @@
 Status: wire compatibility and native Linux SDL2 integration verified against WM #80
 (`425fd8f857af13b95b62a4a7cd006d9e9c3e5a16`). The Map owner reported approval of the final frame and
 command fields by the WM owner following their discussion on 2026-10-21.
-Merging the WM dependency is still required.
+WM #80 has been merged.
 
 ## Scope
 

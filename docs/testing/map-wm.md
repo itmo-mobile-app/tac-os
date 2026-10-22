@@ -2,7 +2,7 @@
 
 The Map from #57 is reused unchanged. This increment tests it against the drawing implementation
 from WM #80 (`425fd8f857af13b95b62a4a7cd006d9e9c3e5a16`, based on main `448a8a6`).
-That dependency must be merged before this integration can be merged into main.
+That dependency has been merged into main.
 The wire fields and frame below were verified in code and in execution. On 2026-10-21 the Map owner
 reported that the WM owner had approved the final frame and command fields in their discussion.
 

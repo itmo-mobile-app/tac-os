@@ -17,8 +17,8 @@ import (
 
 type receivedRequest struct {
 	conn net.Conn
-	req protocol.Request
-	err error
+	req  protocol.Request
+	err  error
 }
 
 type Server struct {
@@ -362,6 +362,123 @@ func (s *Server) handleRequest(conn net.Conn, req protocol.Request, readErr erro
 
 		return nil
 
+	case "BEGIN_FRAME":
+		if s.window == nil {
+			return protocol.WriteResponse(conn, protocol.Response{
+				OK: false, Message: "no window; send CREATE first",
+			})
+		}
+		drawing, ok := s.window.(backend.DrawingWindow)
+		if !ok {
+			return protocol.WriteResponse(conn, protocol.Response{
+				OK: false, Message: "drawing is not supported",
+			})
+		}
+		if req.Color == nil {
+			return protocol.WriteResponse(conn, protocol.Response{
+				OK: false, Message: "color is required",
+			})
+		}
+
+		err := drawing.BeginFrame(backend.Color{
+			R: req.Color.R, G: req.Color.G,
+			B: req.Color.B, A: req.Color.A,
+		})
+		if err != nil {
+			return protocol.WriteResponse(conn, protocol.Response{
+				OK: false, Message: err.Error(),
+			})
+		}
+		return protocol.WriteResponse(conn, protocol.Response{
+			OK: true, Message: "frame started",
+		})
+
+	case "DRAW_IMAGE":
+		if s.window == nil {
+			return protocol.WriteResponse(conn, protocol.Response{
+				OK: false, Message: "no window; send CREATE first",
+			})
+		}
+		drawing, ok := s.window.(backend.DrawingWindow)
+		if !ok {
+			return protocol.WriteResponse(conn, protocol.Response{
+				OK: false, Message: "drawing is not supported",
+			})
+		}
+		if req.ImagePath == "" || req.Width <= 0 || req.Height <= 0 ||
+			req.X == nil || req.Y == nil {
+			return protocol.WriteResponse(conn, protocol.Response{
+				OK: false, Message: "image_path, x, y, width and height are required",
+			})
+		}
+
+		err := drawing.DrawImage(
+			req.ImagePath, *req.X, *req.Y, req.Width, req.Height,
+		)
+		if err != nil {
+			return protocol.WriteResponse(conn, protocol.Response{
+				OK: false, Message: err.Error(),
+			})
+		}
+		return protocol.WriteResponse(conn, protocol.Response{
+			OK: true, Message: "image drawn",
+		})
+
+	case "DRAW_CIRCLE":
+		if s.window == nil {
+			return protocol.WriteResponse(conn, protocol.Response{
+				OK: false, Message: "no window; send CREATE first",
+			})
+		}
+		drawing, ok := s.window.(backend.DrawingWindow)
+		if !ok {
+			return protocol.WriteResponse(conn, protocol.Response{
+				OK: false, Message: "drawing is not supported",
+			})
+		}
+		if req.X == nil || req.Y == nil || req.Radius <= 0 || req.Color == nil {
+			return protocol.WriteResponse(conn, protocol.Response{
+				OK: false, Message: "x, y, positive radius and color are required",
+			})
+		}
+
+		err := drawing.DrawCircle(
+			*req.X, *req.Y, req.Radius,
+			backend.Color{
+				R: req.Color.R, G: req.Color.G,
+				B: req.Color.B, A: req.Color.A,
+			},
+		)
+		if err != nil {
+			return protocol.WriteResponse(conn, protocol.Response{
+				OK: false, Message: err.Error(),
+			})
+		}
+		return protocol.WriteResponse(conn, protocol.Response{
+			OK: true, Message: "circle drawn",
+		})
+
+	case "PRESENT":
+		if s.window == nil {
+			return protocol.WriteResponse(conn, protocol.Response{
+				OK: false, Message: "no window; send CREATE first",
+			})
+		}
+		drawing, ok := s.window.(backend.DrawingWindow)
+		if !ok {
+			return protocol.WriteResponse(conn, protocol.Response{
+				OK: false, Message: "drawing is not supported",
+			})
+		}
+
+		if err := drawing.Present(); err != nil {
+			return protocol.WriteResponse(conn, protocol.Response{
+				OK: false, Message: err.Error(),
+			})
+		}
+		return protocol.WriteResponse(conn, protocol.Response{
+			OK: true, Message: "frame presented",
+		})
 	default:
 		return protocol.WriteResponse(conn, protocol.Response{
 			OK:      false,

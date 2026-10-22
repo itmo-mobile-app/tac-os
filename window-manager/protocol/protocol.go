@@ -8,14 +8,26 @@ import (
 	"io"
 )
 
+type Color struct {
+	R uint8 `json:"r"`
+	G uint8 `json:"g"`
+	B uint8 `json:"b"`
+	A uint8 `json:"a"`
+}
+
 type Request struct {
 	Command  string `json:"command"`
 	WindowID string `json:"window_id,omitempty"`
 	Title    string `json:"title,omitempty"`
 	Width    int    `json:"width,omitempty"`
 	Height   int    `json:"height,omitempty"`
-}
 
+	ImagePath string `json:"image_path,omitempty"`
+	X         *int   `json:"x,omitempty"`
+	Y         *int   `json:"y,omitempty"`
+	Radius    int    `json:"radius,omitempty"`
+	Color     *Color `json:"color,omitempty"`
+}
 type Response struct {
 	OK       bool   `json:"ok"`
 	Message  string `json:"message,omitempty"`

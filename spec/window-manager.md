@@ -35,19 +35,19 @@ Command messages and event messages use newline-delimited JSON (one JSON object 
 A command request contains the following fields:
 
 | Field | Type | Description |
-| --- | --- | --- |
+|---|---|---|
 | `command` | string | Command to execute. |
 | `window_id` | string | Window identifier. Defaults to `map` when omitted. |
 | `title` | string | Window title. Defaults to `Tactical Map` when omitted. |
-| `width` | integer | Drawing-area width for CREATE (default `960`); destination image width for DRAW_IMAGE. |
-| `height` | integer | Drawing-area height for CREATE (default `640`); destination image height for DRAW_IMAGE. |
+| `width` | integer | Window width for `CREATE` (default `960`); image width for `DRAW_IMAGE`. |
+| `height` | integer | Window height for `CREATE` (default `640`); image height for `DRAW_IMAGE`. |
 | `image_path` | string | Path to the image file used by `DRAW_IMAGE`. |
 | `x` | integer | Horizontal coordinate for drawing operations. |
 | `y` | integer | Vertical coordinate for drawing operations. |
 | `radius` | integer | Circle radius in pixels for `DRAW_CIRCLE`. |
 | `color` | object | RGBA color with integer `r`, `g`, `b`, and `a` components in the range 0–255. Used by `BEGIN_FRAME` and `DRAW_CIRCLE`. |
 
-`title` is used by CREATE; `width` and `height` are used by CREATE and DRAW_IMAGE.
+`title` is used by `CREATE`; `width` and `height` are used by both `CREATE` and `DRAW_IMAGE`.
 
 ### Commands
 
@@ -74,7 +74,7 @@ The prototype supports one window at a time. It does not define multi-window beh
 A response contains:
 
 | Field | Type | Description |
-| --- | --- | --- |
+|---|---|---|
 | `ok` | boolean | Indicates whether the operation succeeded. |
 | `message` | string | Result information or an error description. |
 | `event` | string | Event name when the response carries an event; otherwise omitted or empty. |
