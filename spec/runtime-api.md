@@ -165,4 +165,3 @@ Not decided here; see `docs/ai-context/02-open-questions.md` → "Runtime":
   Activity lifecycle, WebView bridge, Window Manager access) — added incrementally, one concrete
   scenario at a time;
 - how recoverable Runtime call errors are represented inside `.tc` programs beyond the initial failure-reporting behavior.
-
