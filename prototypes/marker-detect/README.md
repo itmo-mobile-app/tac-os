@@ -3,16 +3,18 @@
 Prototype of marker recognition for the Analyzer (issue #34). It is a separate program outside the VM,
 written in Go. It reads frames from the laptop camera (or one image file), recognizes game markers and
 prints, for each of them, the id, the team, the player, the angle relative to the center of the frame and
-the distance.
+the distance. With `-socket` it is the private helper of the Runtime (issue #69): it answers `DETECT`
+requests on a Unix-domain socket instead of printing, see "Runtime helper mode".
 
 ```text
 marker/        marker format (ids, teams, players) and the Detection type; plain Go
 pose/          position of a square marker from the pixels of its four corners; plain Go
 detector/      recognition: the ArUco detector of OpenCV (through gocv) + pose/; renders markers
+ipc/           private Unix-socket protocol of the Runtime helper (spec/camera-detector-protocol.md); plain Go
 cmd/marker-detect/  command-line tool
 ```
 
-`marker` and `pose` do not depend on OpenCV: they build and are tested anywhere. Only `detector` and
+`marker`, `pose` and `ipc` do not depend on OpenCV: they build and are tested anywhere. Only `detector` and
 `cmd` need OpenCV.
 
 ## Requirements
@@ -66,8 +68,8 @@ from the one gocv expects. Install the version named in the gocv README (the goc
 
 The shared [`Go`](../../.github/workflows/go.yml) workflow runs on
 **every pull request and push to `main`**. Its independent Marker Detector job
-checks formatting and runs `go vet ./pose ./marker` and
-`go test -race -count=1 ./pose ./marker`. These two packages use only Go's
+checks formatting and runs `go vet ./pose ./marker ./ipc` and
+`go test -race -count=1 ./pose ./marker ./ipc`. These three packages use only Go's
 standard library and can be tested **without** OpenCV, gocv or a camera.
 The separate Window Manager job installs SDL2 only to build its graphical backend.
 
@@ -80,7 +82,7 @@ run as proof that camera recognition works.
 ### Run locally
 
 ```bash
-go vet ./pose ./marker && go test ./pose ./marker   # no OpenCV needed
+go vet ./pose ./marker ./ipc && go test ./pose ./marker ./ipc   # no OpenCV needed
 go test ./...                                       # everything; needs OpenCV
 go test -race ./detector                            # the detector can be shared by goroutines
 go build -o marker-detect ./cmd/marker-detect
@@ -90,6 +92,11 @@ The tests of `detector` draw frames with markers of a known size at known angles
 a ray through every pixel; the drawing does not use OpenCV or the code under test. They check the id, the
 angle (within 1°) and the distance (within 5%), several markers in one frame, ignoring of ids outside
 0..71, empty and invalid input, closing and concurrent use.
+
+The tests of `ipc` run a real server on a Unix-domain socket with synthetic detections and need no camera:
+two requests over one connection, an empty list, `CAMERA_UNAVAILABLE`, `DETECTION_FAILED`, malformed and
+oversized requests, closing the socket, a stale or busy socket file. The tests of `cmd/marker-detect` check
+the camera source with a fake camera.
 
 ## Run
 
@@ -123,6 +130,32 @@ System Settings → Privacy & Security → Camera.
 ```bash
 ./marker-detect -gen-marker 17 -out marker-17.png
 ./marker-detect -image marker-17.png -marker-size 0.10
+```
+
+## Runtime helper mode
+
+The C++ Runtime starts the detector with `-socket`; the wire format, the timeouts and the lifecycle are
+fixed in [`spec/camera-detector-protocol.md`](../../spec/camera-detector-protocol.md).
+
+```bash
+./marker-detect -socket /tmp/tac-os-detector-test.sock -marker-size 0.10
+```
+
+Each line `{"command":"DETECT"}` captures one camera frame and is answered by one line with the detections
+(`id`, `relativeAngle`, `distance`; no frames) or with an error code. The camera is opened by the first
+request. The program stops on `SIGTERM` or Ctrl+C and removes the socket file.
+
+To try it by hand, in a second terminal (on macOS `nc` supports Unix sockets as well):
+
+```bash
+printf '{"command":"DETECT"}\n' | nc -U /tmp/tac-os-detector-test.sock
+```
+
+`-fake MODE` replaces the camera with fixed answers (`two`, `empty`, `camera-unavailable`,
+`detection-failed`), which lets the Runtime tests run without a camera:
+
+```bash
+./marker-detect -socket /tmp/tac-os-detector-test.sock -fake two
 ```
 
 ## Markers

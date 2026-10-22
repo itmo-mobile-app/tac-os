@@ -1,7 +1,10 @@
-// Command marker-detect is the command-line prototype of marker recognition for the Analyzer (issue #34).
+// Command marker-detect is the marker detector for the Analyzer (issues #34 and #69).
 //
-// It reads frames from the laptop camera (or one image file), recognizes game markers and prints, for each
-// of them: id, team, player, the angle relative to the center of the frame and the distance.
+// By default it reads frames from the laptop camera (or one image file), recognizes game markers and prints,
+// for each of them: id, team, player, the angle relative to the center of the frame and the distance.
+//
+// With -socket it is the private helper of the Runtime instead: it listens on a Unix-domain socket and answers
+// DETECT requests (see spec/camera-detector-protocol.md).
 package main
 
 import (
@@ -18,6 +21,7 @@ import (
 	"gocv.io/x/gocv"
 
 	"tac-os/marker-detect/detector"
+	"tac-os/marker-detect/ipc"
 	"tac-os/marker-detect/marker"
 	"tac-os/marker-detect/pose"
 )
@@ -30,6 +34,8 @@ type options struct {
 	imagePath   string
 	genID       int
 	genPath     string
+	socket      string
+	fake        string
 }
 
 func main() { os.Exit(run()) }
@@ -43,6 +49,8 @@ func run() int {
 	flag.StringVar(&opt.imagePath, "image", "", "recognize one image file and exit")
 	flag.IntVar(&opt.genID, "gen-marker", -1, "write a printable marker with this id (0..71) to the file given by -out and exit")
 	flag.StringVar(&opt.genPath, "out", "marker.png", "output file for -gen-marker")
+	flag.StringVar(&opt.socket, "socket", "", "serve DETECT requests of the Runtime on this Unix-domain socket (spec/camera-detector-protocol.md)")
+	flag.StringVar(&opt.fake, "fake", "", fmt.Sprintf("with -socket: answer with synthetic detections and do not open the camera; one of %v", ipc.FakeModes))
 	flag.Parse()
 
 	if !(opt.hfovDeg > 10 && opt.hfovDeg < 170) || !(opt.markerSizeM > 0) {
@@ -50,7 +58,18 @@ func run() int {
 		return 2
 	}
 
+	if opt.fake != "" && opt.socket == "" {
+		fmt.Fprintln(os.Stderr, "-fake can only be used together with -socket")
+		return 2
+	}
+	if opt.socket != "" && (opt.show || opt.imagePath != "" || opt.genID >= 0) {
+		fmt.Fprintln(os.Stderr, "-socket cannot be combined with -show, -image or -gen-marker")
+		return 2
+	}
+
 	switch {
+	case opt.socket != "":
+		return runServe(opt)
 	case opt.genID >= 0:
 		return generateMarker(opt.genID, opt.genPath)
 	case opt.imagePath != "":
