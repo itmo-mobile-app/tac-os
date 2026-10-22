@@ -23,6 +23,10 @@ jobs:
         if: hashFiles('compiler/gradlew') != ''
         working-directory: compiler
         run: bash ./gradlew --no-daemon installDist
+      - name: Test compiler
+        if: hashFiles('compiler/gradlew') != ''
+        working-directory: compiler
+        run: bash ./gradlew --no-daemon test
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DTACOS_SANITIZE=ON
       - name: Build

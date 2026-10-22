@@ -3,8 +3,8 @@ add_test(NAME vm_instructions
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_vm.py $<TARGET_FILE:tacvm>)
 set_tests_properties(vm_instructions PROPERTIES TIMEOUT 60)
 
-# Enable against Compiler #63 (PR #82); main's minimal compiler cannot parse these yet.
-option(TACOS_VM_LANGUAGE_E2E "Test VM with the Compiler #63 language features" OFF)
+# Both compiler and VM language features are integrated; enable E2E by default.
+option(TACOS_VM_LANGUAGE_E2E "Test VM with the Compiler #63 language features" ON)
 if(TACOS_VM_LANGUAGE_E2E)
     foreach(scenario control-flow language-example recursion)
         add_test(NAME vm_${scenario}_e2e

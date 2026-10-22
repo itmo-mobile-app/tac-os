@@ -22,8 +22,8 @@ ctest --test-dir build-vm --output-on-failure
 
 `control-flow.tc` and `language-example.tc` mirror the integration fixtures in
 Compiler #63. `recursion.tc` additionally checks recursive frames, argument order,
-caller locals and string equality. The advanced tests are opt-in until #63 lands;
-the normal `hello_e2e` and `vm_instructions` remain enabled on the current main.
+caller locals and string equality. The advanced tests run by default now that Compiler #63 and VM #62 are integrated;
+`hello_e2e` and `vm_instructions` also remain enabled.
 Safety semantics proposed for Compiler owner review are in `spec/bytecode.md`.
 
 ## Verified integration snapshot

@@ -19,6 +19,7 @@ object Opcode {
     const val CALL_RUNTIME: Int = 0x0D
     const val RET: Int = 0x0E
     const val POP: Int = 0x0F
+    const val NOT: Int = 0x10
 }
 
 sealed class Constant {
@@ -47,35 +48,62 @@ class ConstantPool {
     fun all(): List<Constant> = constants
 }
 
+/** Emits the code of one function. Multi-byte operands are little-endian (spec/bytecode.md). */
 class CodeBuilder {
     private val bytes = mutableListOf<Byte>()
 
-    fun pushConst(constIndex: Int): CodeBuilder {
-        bytes.add(Opcode.PUSH_CONST.toByte())
-        appendU16(constIndex)
+    /** Current offset from the start of the function's code: the target of a jump emitted next. */
+    val offset: Int get() = bytes.size
+
+    fun op(opcode: Int): CodeBuilder {
+        bytes.add(opcode.toByte())
         return this
     }
 
-    fun callRuntime(nameConstIndex: Int, argCount: Int): CodeBuilder {
-        bytes.add(Opcode.CALL_RUNTIME.toByte())
-        appendU16(nameConstIndex)
-        bytes.add(argCount.toByte())
+    fun pushConst(constIndex: Int): CodeBuilder = op(Opcode.PUSH_CONST).u16(constIndex)
+
+    fun load(slot: Int): CodeBuilder = op(Opcode.LOAD).u8(slot)
+
+    fun store(slot: Int): CodeBuilder = op(Opcode.STORE).u8(slot)
+
+    fun call(functionIndex: Int, argCount: Int): CodeBuilder = op(Opcode.CALL).u16(functionIndex).u8(argCount)
+
+    fun callRuntime(nameConstIndex: Int, argCount: Int): CodeBuilder =
+        op(Opcode.CALL_RUNTIME).u16(nameConstIndex).u8(argCount)
+
+    /** Jump to an already known (backward) [target]. */
+    fun jump(opcode: Int, target: Int): CodeBuilder = op(opcode).u32(target)
+
+    /**
+     * Forward jump whose target is not known yet: emits a placeholder offset and returns its
+     * position for [patch].
+     */
+    fun jumpForward(opcode: Int): Int {
+        op(opcode)
+        val operandPos = bytes.size
+        u32(0)
+        return operandPos
+    }
+
+    /** Writes [target] into the jump operand at [operandPos] returned by [jumpForward]. */
+    fun patch(operandPos: Int, target: Int) {
+        for (i in 0 until 4) bytes[operandPos + i] = ((target shr (8 * i)) and 0xFF).toByte()
+    }
+
+    private fun u8(value: Int): CodeBuilder {
+        bytes.add(value.toByte())
         return this
     }
 
-    fun ret(): CodeBuilder {
-        bytes.add(Opcode.RET.toByte())
-        return this
-    }
-
-    fun pop(): CodeBuilder {
-        bytes.add(Opcode.POP.toByte())
-        return this
-    }
-
-    private fun appendU16(value: Int) {
+    private fun u16(value: Int): CodeBuilder {
         bytes.add((value and 0xFF).toByte())
         bytes.add(((value shr 8) and 0xFF).toByte())
+        return this
+    }
+
+    private fun u32(value: Int): CodeBuilder {
+        for (i in 0 until 4) bytes.add(((value shr (8 * i)) and 0xFF).toByte())
+        return this
     }
 
     fun toByteArray(): ByteArray = bytes.toByteArray()

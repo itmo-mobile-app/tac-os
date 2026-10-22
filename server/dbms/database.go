@@ -45,6 +45,9 @@ func (db *Database) Execute(source string) (Result, error) {
 	if s.operation == insert {
 		return t.insert(s)
 	}
+	if s.operation == updateRows {
+		return t.updateRows(s)
+	}
 	return t.selectRows(s)
 }
 func (t *table) columnIndex(id identifier) (int, error) {
@@ -127,4 +130,40 @@ func (t *table) selectRows(s statement) (Result, error) {
 		result.Rows = append(result.Rows, projected)
 	}
 	return result, nil
+}
+
+func (t *table) updateRows(s statement) (Result, error) {
+	indices := make([]int, len(s.columns))
+	seen := make(map[int]bool)
+	for i, c := range s.columns {
+		index, err := t.columnIndex(c)
+		if err != nil {
+			return Result{}, err
+		}
+		if seen[index] {
+			return Result{}, queryError(c.position, "Duplicate UPDATE column: %s", c.name)
+		}
+		seen[index] = true
+		if err = t.checkType(index, s.values[i]); err != nil {
+			return Result{}, err
+		}
+		indices[i] = index
+	}
+	filter, err := t.columnIndex(s.predicate.column)
+	if err != nil {
+		return Result{}, err
+	}
+	if err = t.checkType(filter, s.predicate.literal); err != nil {
+		return Result{}, err
+	}
+	// All validation finishes before the first write, even when no rows match.
+	for _, row := range t.rows {
+		if row[filter] != s.predicate.literal.value {
+			continue
+		}
+		for i, index := range indices {
+			row[index] = s.values[i].value
+		}
+	}
+	return Result{}, nil
 }
