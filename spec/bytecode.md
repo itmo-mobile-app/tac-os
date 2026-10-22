@@ -101,3 +101,28 @@ Not decided here; see `docs/ai-context/02-open-questions.md` → "Bytecode" and 
 - metadata (debug info, source locations);
 - stack overflow / underflow behaviour;
 - behaviour of `DIV` when the divisor is zero.
+
+## VM safety behavior (proposed in issue #62; Compiler owner review pending)
+
+The implementation in #62 uses the following explicit failure behavior. These rules
+are proposed for joint Compiler/VM review, not recorded as owner-approved decisions.
+The file format and opcode values remain unchanged.
+
+- Binary instructions pop the right operand first, then the left operand.
+- Signed integer division truncates toward zero. Division by zero and signed i64
+  overflow (including `INT64_MIN / -1`) terminate execution with a VM error.
+- Arithmetic and `CMP_LT` require Int operands. `CMP_EQ` requires matching runtime
+  kinds and compares strings by content. `NOT` and `JMP_IF_FALSE` require Int 0/1.
+- Each call has independent locals and an operand-stack base. Arguments are consumed
+  in declaration order; a callee cannot pop caller operands. `RET` consumes the
+  result, discards any remaining callee operands and pushes one result to the caller.
+- Entry functions must take no parameters. Calls must match `param_count`.
+  Reading an additional local before `STORE` is an error.
+- The loader checks all instructions, even unreachable code: operand completeness,
+  constant/local/function indices, call arity and Runtime function resolution.
+  Jump targets must point to an instruction in the same function, never an operand
+  byte or `code_length`. Falling through the end of a function is an execution error.
+- Stack underflow, exceeding 65,536 operand values or 1,024 active function frames
+  terminates execution with a VM error. These limits are implementation limits,
+  not additional fields in the bytecode format.
+- Errors produce a `tacvm:` diagnostic on stderr and a nonzero exit status.

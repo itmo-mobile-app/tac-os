@@ -10,5 +10,3 @@ add_test(NAME control_flow_e2e
         -DEXPECTED=${CONTROL_FLOW_DIR}/expected.txt
         -P ${CMAKE_SOURCE_DIR}/tests/run_program.cmake)
 
-# Disabled until the VM executes LOAD/STORE, arithmetic, comparisons and jumps (#62).
-set_tests_properties(control_flow_e2e PROPERTIES DISABLED TRUE)
