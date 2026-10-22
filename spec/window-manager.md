@@ -39,17 +39,15 @@ A command request contains the following fields:
 | `command` | string | Command to execute. |
 | `window_id` | string | Window identifier. Defaults to `map` when omitted. |
 | `title` | string | Window title. Defaults to `Tactical Map` when omitted. |
-| `width` | integer | Drawing-area width in pixels. Defaults to `960`. |
-| `height` | integer | Drawing-area height in pixels. Defaults to `640`. |
+| `width` | integer | Window width for `CREATE` (default `960`); image width for `DRAW_IMAGE`. |
+| `height` | integer | Window height for `CREATE` (default `640`); image height for `DRAW_IMAGE`. |
 | `image_path` | string | Path to the image file used by `DRAW_IMAGE`. |
 | `x` | integer | Horizontal coordinate for drawing operations. |
 | `y` | integer | Vertical coordinate for drawing operations. |
-| `width` | integer | Image width in pixels for `DRAW_IMAGE`. |
-| `height` | integer | Image height in pixels for `DRAW_IMAGE`. |
 | `radius` | integer | Circle radius in pixels for `DRAW_CIRCLE`. |
 | `color` | object | RGBA color with integer `r`, `g`, `b`, and `a` components in the range 0–255. Used by `BEGIN_FRAME` and `DRAW_CIRCLE`. |
 
-The `title`, `width`, and `height` fields are primarily used when creating a window.
+`title` is used by `CREATE`; `width` and `height` are used by both `CREATE` and `DRAW_IMAGE`.
 
 ### Commands
 
