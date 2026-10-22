@@ -81,9 +81,13 @@ func (w *window) Close() error {
 		return nil
 	}
 	w.closed = true
-	err := w.win.Destroy()
+	// SDL_DestroyWindow has no failure result. go-sdl2's Destroy nevertheless returns any SDL error
+	// text set during teardown, e.g. "Parameter 'texture' is invalid" from a texture-backed window
+	// surface (Wayland), although the window has been destroyed. That is not a close failure, and
+	// returning it made WM exit after the native close control instead of staying alive.
+	_ = w.win.Destroy()
 	sdl.Quit()
-	return err
+	return nil
 }
 
 func (w *window) PollEvents() ([]string, error) {
