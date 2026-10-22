@@ -117,6 +117,12 @@ up to 64 KiB.
 Connection state is retained for subsequent
 messages.
 
+Waiting for a connection or the next message has no idle timeout: observations
+may arrive infrequently. Once a partial message has arrived, five seconds
+without further bytes causes a RuntimeError. A connection closed between
+messages (including an empty listener probe) is discarded and the listener
+continues waiting. EOF within an incomplete message remains an error.
+
 ### runtime.ipc_send(message: String)
 
 Connects to Map if not already connected.
@@ -126,8 +132,11 @@ trailing newline.
 
 Returns Int 0 on successful local transmission.
 
-Reports a RuntimeError if Map is unavailable
-or sending fails.
+Returns Int -1 and writes a diagnostic to standard error if Map is unavailable,
+sending fails, or message framing is invalid. Analyzer continues executing and
+can inspect the result; no message is retried automatically. A wrong argument
+type remains a RuntimeError. Successful local transmission does not guarantee
+that Map accepted the message.
 
 The current send deadline is 1000 milliseconds.
 
@@ -156,3 +165,4 @@ Not decided here; see `docs/ai-context/02-open-questions.md` → "Runtime":
   Activity lifecycle, WebView bridge, Window Manager access) — added incrementally, one concrete
   scenario at a time;
 - how recoverable Runtime call errors are represented inside `.tc` programs beyond the initial failure-reporting behavior.
+

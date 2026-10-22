@@ -2,6 +2,7 @@
 #include "window_manager_client.hpp"
 
 #include <ostream>
+#include <iostream>
 #include <unordered_map>
 #include <utility>
 #include <cerrno>
@@ -340,7 +341,13 @@ Value ipc_send_handler(
         );
     }
 
-    runtime.ipc_send(args[0].string_value);
+    try {
+        runtime.ipc_send(args[0].string_value);
+    } catch (const RuntimeError& error) {
+        // Sending is best-effort: .tc can inspect the status and keep running.
+        std::cerr << "runtime.ipc_send: " << error.what() << '\n';
+        return Value::int_value_of(-1);
+    }
     return Value::int_value_of(0);
 }
 
@@ -466,7 +473,7 @@ void Runtime::ipc_listen() {
         }
 
         // Не удаляем сокет работающего Map.
-        int probe = ::socket(AF_UNIX, SOCK_STREAM, 0);
+        int probe = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC | SOCK_NONBLOCK, 0);
         if (probe == -1) {
             throw RuntimeError("IPC probe socket failed");
         }
@@ -750,7 +757,8 @@ return message;
         pfd.fd = ipc_connection_fd_;
         pfd.events = POLLIN;
 
-        int ready = ::poll(&pfd, 1, 5000);
+        // Silence between observations is normal. Bound only a partial frame.
+        int ready = ::poll(&pfd, 1, ipc_buffer_.empty() ? -1 : 5000);
 
         if (ready == 0) {
             disconnect();
@@ -789,8 +797,13 @@ return message;
         }
 
         if (count == 0) {
+            const bool partial_message = !ipc_buffer_.empty();
             disconnect();
-            throw RuntimeError("IPC Analyzer disconnected");
+            if (partial_message) {
+                throw RuntimeError("IPC Analyzer disconnected during a message");
+            }
+            // Includes the empty connection used to probe an existing listener.
+            continue;
         }
 
         if (errno == EINTR ||
@@ -811,3 +824,4 @@ return message;
 
 
 } // namespace tacos::runtime
+

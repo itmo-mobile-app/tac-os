@@ -1,6 +1,7 @@
 
 import json
 import os
+import socket
 from pathlib import Path
 import stat
 import subprocess
@@ -132,6 +133,78 @@ def check_rejected_message(
 
     print(f"PASS: {name}")
 
+def check_persistent_listener(tacc, tacvm, directory):
+    source = directory / "persistent-map.tc"
+    bytecode = directory / "persistent-map.bc"
+    source.write_text(
+        'fun main() {\n'
+        '    runtime.ipc_listen();\n'
+        '    runtime.log(runtime.ipc_receive());\n'
+        '    runtime.log(runtime.ipc_receive());\n'
+        '}\n',
+        encoding="utf-8",
+    )
+    compile_program(tacc, source, bytecode)
+    process = subprocess.Popen(
+        [tacvm, str(bytecode)], stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, text=True,
+    )
+    try:
+        wait_for_map(process)
+        # The duplicate must fail without killing or unlinking the first Map.
+        duplicate = subprocess.run(
+            [tacvm, str(bytecode)], capture_output=True, text=True, timeout=5,
+        )
+        assert duplicate.returncode == 1, duplicate.stderr
+        assert "IPC socket is already in use" in duplicate.stderr
+        assert SOCKET_PATH.exists(), "Duplicate Map removed the live socket"
+
+        message = (json.dumps(EXPECTED) + "\n").encode("utf-8")
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
+            client.settimeout(3)
+            client.connect(str(SOCKET_PATH))
+            client.sendall(message)
+            # Keep the same connection open beyond the old five-second timeout.
+            time.sleep(6)
+            assert process.poll() is None, (
+                "Map exited after an empty probe or an idle interval"
+            )
+            client.sendall(message)
+        stdout, stderr = process.communicate(timeout=5)
+        assert process.returncode == 0, stderr
+        assert [json.loads(line) for line in stdout.splitlines()] == [EXPECTED, EXPECTED]
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.communicate(timeout=3)
+    assert not os.path.lexists(SOCKET_PATH), "Listener socket was not cleaned"
+    print("PASS: duplicate listener and idle persistent connection")
+
+
+def check_send_status(tacc, tacvm, directory):
+    source = directory / "send-status.tc"
+    bytecode = directory / "send-status.bc"
+    source.write_text(
+        'fun main() {\n'
+        f'    let status = runtime.ipc_send({json.dumps(json.dumps(EXPECTED))});\n'
+        '    if (status == -1) { runtime.log("send failed; continuing"); }\n'
+        '    else { runtime.log("unexpected success"); }\n'
+        '    runtime.log("Analyzer still running");\n'
+        '}\n',
+        encoding="utf-8",
+    )
+    compile_program(tacc, source, bytecode)
+    result = subprocess.run(
+        [tacvm, str(bytecode)], capture_output=True, text=True, timeout=4,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.splitlines() == [
+        "send failed; continuing", "Analyzer still running",
+    ]
+    assert "IPC Map unavailable" in result.stderr, result.stderr
+    print("PASS: unavailable Map returns a status and Analyzer continues")
+
+
 def main():
     tacc, tacvm = sys.argv[1:3]
     source_dir = Path(__file__).resolve().parent
@@ -209,7 +282,7 @@ def main():
             "Map did not clean up its IPC socket"
         )
 
-        # No Map: Analyzer must fail without hanging.
+        # No Map: report the failed send without terminating Analyzer.
         unavailable = subprocess.run(
             [tacvm, str(analyzer_bc)],
             capture_output=True,
@@ -217,12 +290,15 @@ def main():
             timeout=4,
         )
 
-        assert unavailable.returncode == 1, (
-            "Analyzer did not report a Runtime error"
+        assert unavailable.returncode == 0, (
+            "Analyzer terminated instead of returning a send status"
         )
         assert "IPC Map unavailable" in unavailable.stderr, (
             f"Unexpected error: {unavailable.stderr}"
         )
+
+        check_send_status(tacc, tacvm, directory)
+        check_persistent_listener(tacc, tacvm, directory)
 
         
         invalid_cases = [
@@ -314,3 +390,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
