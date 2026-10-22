@@ -7,7 +7,7 @@ import kotlin.test.assertFailsWith
  * function code, and execute a module with a small reference interpreter.
  *
  * The interpreter is a test oracle for the compiler only. It follows spec/bytecode.md so that
- * compiled control flow can be checked before the VM supports these instructions (#62); it is
+ * compiled programs can be checked by `./gradlew test` alone, without building the C++ VM; it is
  * not a replacement for tacvm and is not used outside tests.
  */
 

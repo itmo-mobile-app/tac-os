@@ -7,7 +7,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNull
 
 class ParserTest {
-    private fun parse(source: String): Program = Parser(Lexer(source).tokenize()).parseProgram()
+    private fun parse(source: String): Program = parseProgram(source)
 
     /** Parses `fun main() { let x = <expr>; }` and renders the initializer with explicit parentheses. */
     private fun expr(source: String): String {
@@ -87,16 +87,19 @@ class ParserTest {
     @Test
     fun syntaxErrors() {
         assertEquals("expected ';', found '}'", parseError("fun main() { let x = 1 }").message)
-        assertEquals("expected '=' and an initializer, found ';'", parseError("fun main() { let x; }").message)
-        assertEquals("expected ':' and parameter type, found ')'", parseError("fun f(a) { }").message)
-        assertEquals("expected a statement, found '1'", parseError("fun main() { 1 + 2; }").message)
-        assertEquals("expected '}', found end of file", parseError("fun main() { let x = 1;").message)
+        assertEquals("expected ':' or '=', found ';'", parseError("fun main() { let x; }").message)
+        assertEquals("expected ':', found ')'", parseError("fun f(a) { }").message)
+        assertEquals("expected a statement or '}', found '1'", parseError("fun main() { 1 + 2; }").message)
+        assertEquals("expected a statement or '}', found end of file", parseError("fun main() { let x = 1;").message)
+        assertEquals("expected an expression, found ';'", parseError("fun main() { let x = ; }").message)
+        assertEquals("expected ';', found ')'", parseError("fun main() { let x = 1); }").message)
+        assertEquals("expected 'fun' or end of file, found 'let'", parseError("let x = 1;").message)
         assertEquals(
             "expected type 'Int', 'Bool' or 'String', found 'Float'",
             parseError("fun main() { let x: Float = 1; }").message,
         )
         // A bare block is not a statement in spec/language.md -> "Grammar".
-        assertEquals("expected a statement, found '{'", parseError("fun main() { { } }").message)
+        assertEquals("expected a statement or '}', found '{'", parseError("fun main() { { } }").message)
     }
 
     @Test

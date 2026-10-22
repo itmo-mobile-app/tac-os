@@ -5,7 +5,7 @@ import kotlin.system.exitProcess
 
 /** Compiles `.tc` source text into the bytes of a `.bc` file. Throws [CompileError] on invalid input. */
 fun compile(source: String): ByteArray {
-    val program = Parser(Lexer(source).tokenize()).parseProgram()
+    val program = parseProgram(source)
     Checker().check(program)
     return BytecodeWriter.write(CodeGen().generate(program))
 }
