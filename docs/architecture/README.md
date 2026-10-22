@@ -23,6 +23,7 @@ in details of other levels. The diagrams are embedded in the root `README.md`.
 | White box | A platform component written by the team |
 | Purple box | Application code in `.tc` (runs inside the VM) |
 | Small grey box | A function or data structure inside a component (level 6 only) |
+| Parallelogram | Input data used by a scenario step (level 1 only) |
 | Rounded pill | An actor outside the system: player, team (level 1 only) |
 | Sheet with a folded corner | A file |
 | Solid arrow | Data flows from start to end; the label says how and what |
