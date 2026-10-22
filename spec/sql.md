@@ -53,26 +53,34 @@ UPDATE <table> SET <column> = <value>, ... WHERE <column> = <value>;
   this minimal version.
 - No `JOIN`, no `DELETE`, no indexes, no transactions.
 
-## Sprint 0 executor behavior
+## In-memory executor behavior
 
-The first implementation (issue #31) supports `CREATE TABLE`, `INSERT`, and
-`SELECT` in memory. `UPDATE` remains part of the overall SQL contract and is
-deferred to a later increment. Data is discarded when the executor is closed.
+The executor supports `CREATE TABLE`, `INSERT`, `SELECT`, and `UPDATE` in memory
+(issues #31 and #67). Data is discarded when the executor is closed.
 The command-line entry point does not settle the Target Service client protocol.
 
-The following execution rules are proposed for review in the implementation PR:
+The executor follows these execution rules:
 
 - Unquoted table and column identifiers follow `[A-Za-z_][A-Za-z0-9_]*`. Their
   spelling and case are preserved; identifier lookup is case-sensitive.
 - A table name must be unique. Column names must be unique within their table.
 - INSERT lists every declared column exactly once, in any order, and supplies
   one value per listed column. There are no NULL literals or default values.
-- INSERT values and WHERE literals must have the exact column type. There is no
+- INSERT values, UPDATE assignments and WHERE literals must have the exact column type. There is no
   implicit INTEGER-to-REAL conversion: `30.0` is required for a REAL column.
 - REAL values use finite double-precision floating-point values. Overflow is an
   error. WHERE uses equality of the stored typed values.
 - Unknown tables, unknown columns, and unsupported SQL produce errors. Errors
   in parsing or validation leave table contents unchanged.
+- UPDATE requires a nonempty SET list and a single WHERE equality condition.
+  Each SET column must appear only once; duplicate assignments are errors.
+  Zero, one, or multiple matching rows may be updated. A valid UPDATE with no
+  matching rows succeeds and does not insert any rows.
+- All UPDATE assignments and the WHERE column/literal are validated before any
+  row changes, including on an empty table or when no rows match. An error leaves
+  every row unchanged. The predicate uses each row's values before that row is
+  updated, including when SET changes the WHERE column. This statement-level
+  guarantee does not add multi-statement transactions or concurrent access.
 - SELECT can project the same column more than once. Row order is unspecified
   without ORDER BY, which is unsupported in this subset.
 

@@ -152,7 +152,6 @@ func TestSyntax(t *testing.T) {
 		{"SELECT * FROM sample WHERE id > 1;", "Unsupported character", 30},
 		{"SELECT * FROM sample WHERE id = 1 AND name = 'x';", "Expected ';'", 34},
 		{"SELECT * FROM sample JOIN other;", "Expected ';'", 21},
-		{"UPDATE sample SET id = 2 WHERE id = 1;", "unsupported", 0},
 		{"DELETE FROM sample;", "unsupported", 0},
 		{"INSERT INTO sample (id, score, name) VALUES (+1, 1.0, 'x');", "Unsupported character", -1},
 		{"INSERT INTO sample (id, score, name) VALUES (1, .5, 'x');", "Unsupported character", -1},

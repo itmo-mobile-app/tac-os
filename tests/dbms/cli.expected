@@ -7,3 +7,7 @@ id	text
 2 row(s)
 id	text	score
 0 row(s)
+OK
+id	text	score
+2	'new; O''Reilly'	0.9
+1 row(s)
