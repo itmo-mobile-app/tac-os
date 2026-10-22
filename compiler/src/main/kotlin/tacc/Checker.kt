@@ -15,9 +15,25 @@ object RuntimeFunctions {
     /** `returnType == null`: the function has no result usable as a value (it pushes `Int 0`). */
     data class Signature(val params: List<Type>, val returnType: Type?)
 
-    val all: Map<String, Signature> = mapOf(
-        "runtime.log" to Signature(listOf(Type.STRING), null),
-    )
+    
+val all: Map<String, Signature> = mapOf(
+    "runtime.log" to Signature(
+        listOf(Type.STRING), null
+    ),
+
+    "runtime.ipc_listen" to Signature(
+        emptyList(), Type.INT
+    ),
+
+    "runtime.ipc_receive" to Signature(
+        emptyList(), Type.STRING
+    ),
+
+    "runtime.ipc_send" to Signature(
+        listOf(Type.STRING), Type.INT
+    ),
+)
+
 }
 
 class Checker {
