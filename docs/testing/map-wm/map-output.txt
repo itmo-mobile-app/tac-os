@@ -1,0 +1,6 @@
+t1: lat 59.9505, lon 30.3095 -> (240, 160), probability 90%
+t2: lat 59.9500, lon 30.3110 -> (480, 320), probability 55%
+t3: lat 59.9495, lon 30.3125 -> (720, 480), probability 20%
+3 visible, 1 outside map
+Map shown. Close the window or press Ctrl+C to exit.
+Map window closed.

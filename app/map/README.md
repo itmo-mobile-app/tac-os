@@ -12,7 +12,8 @@ go run ./cmd/map-demo -preview /tmp/map-preview.png
 The three visible targets have probability 90%, 55%, and 20%; their marker opacity decreases.
 A fourth target is outside the image and is skipped. Edit `DemoTargets()` in `model.go` to change
 the hardcoded list. PNG generation interprets the same drawing commands as the WM mode.
-It is provided to inspect this prototype while native drawing integration is pending.
+It is provided for local inspection. Native drawing integration is verified against WM #80;
+see `../../docs/testing/map-wm.md` for the actual Linux SDL2 capture and E2E command.
 
 With the WM drawing commands implemented, open the actual window:
 
@@ -20,8 +21,8 @@ With the WM drawing commands implemented, open the actual window:
 go run ./cmd/map-demo
 ```
 
-WM must implement the fields in `../../spec/map-rendering.md`. The supplied original WM does not
-yet support these commands. Use `-socket` and `-events` to change the default Unix socket paths.
+WM must include the drawing implementation from #80, with the fields in `../../spec/map-rendering.md`.
+Use `-socket` and `-events` to change the default Unix socket paths.
 Closing the window exits Map; Ctrl+C closes Map's window without stopping the WM service.
 
 The map uses `assets/test-map.png` and its geographic bounds in `assets/test-map.json`.
@@ -36,4 +37,7 @@ go test ./...
 ```
 
 The shared CMake build includes target `tacos_map` and tests `map_unit` and `map_preview`.
-Native Linux/SDL operation must still be checked with the WM owner's implementation.
+The cross-component test `map_wm_e2e` builds the real Map CLI and connects it to the production WM
+server/headless renderer. Linux SDL2 operation and native close are recorded in
+`../../docs/testing/map-wm.md`. Agreement with the WM owner on the final frame and command fields
+was confirmed by the Map owner; the WM dependency still needs to be merged.

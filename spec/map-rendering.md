@@ -1,7 +1,9 @@
 # Map rendering for #35
 
-Status: native rendering selected by the Map owner; exact drawing fields and native integration
-must be checked with the WM owner. The supplied original WM does not yet implement drawing.
+Status: wire compatibility and native Linux SDL2 integration verified against WM #80
+(`425fd8f857af13b95b62a4a7cd006d9e9c3e5a16`). The Map owner reported approval of the final frame and
+command fields by the WM owner following their discussion on 2026-10-21.
+WM #80 has been merged.
 
 ## Scope
 
@@ -71,6 +73,9 @@ a second CLOSE. On cancellation or a drawing failure Map attempts CLOSE, never Q
 
 ## Verification
 
-The included tests verify coordinate orientation, boundaries, invalid targets, frame construction
-and opacity. Local PNG rendering provides visual inspection of the same command list.
-Actual display in SDL remains to be checked against the WM owner's drawing implementation.
+The Map unit tests verify coordinate orientation, boundaries, invalid targets, frame construction
+and opacity. `TestMapClientWindowManagerE2E` additionally runs the real Map executable against the
+production WM server and headless renderer over Unix sockets, including successful CLOSE.
+Native SDL2/X11 display, opacity and native window-close events were verified on Linux.
+The reproducible commands, exact environment, screenshots and measured results are recorded in
+`docs/testing/map-wm.md`. PNG-preview alone is not the native integration evidence.

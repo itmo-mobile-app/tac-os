@@ -1,0 +1,82 @@
+{
+  "issue": 66,
+  "captured_at_utc": "2026-10-21T17:45:23.193320+00:00",
+  "main_commit": "448a8a67264191fe9144667d199a16b5fadd0137",
+  "wm_dependency_pr": 80,
+  "wm_dependency_commit": "425fd8f857af13b95b62a4a7cd006d9e9c3e5a16",
+  "platform": "Debian 12, Linux arm64, Docker on macOS; real SDL2 X11 backend with Xvfb and Openbox",
+  "go": "go1.22.12 linux/arm64",
+  "sdl2": "2.26.5",
+  "map_invocation": "map-demo -config /repo/app/map/assets/test-map.json (no -preview flag)",
+  "wm_invocation": "wm-server -backend sdl",
+  "client_dimensions": [
+    960,
+    640
+  ],
+  "markers": [
+    {
+      "target": "t1",
+      "position": [
+        240,
+        160
+      ],
+      "probability": 0.9,
+      "rgba": [
+        200,
+        85,
+        63,
+        255
+      ]
+    },
+    {
+      "target": "t2",
+      "position": [
+        480,
+        320
+      ],
+      "probability": 0.55,
+      "rgba": [
+        215,
+        133,
+        117,
+        255
+      ]
+    },
+    {
+      "target": "t3",
+      "position": [
+        720,
+        480
+      ],
+      "probability": 0.2,
+      "rgba": [
+        231,
+        181,
+        172,
+        255
+      ]
+    }
+  ],
+  "comparison": {
+    "reference": "PNG generated separately from the unchanged Map CLI",
+    "max_channel_difference": 1,
+    "differing_pixels": 951,
+    "total_pixels": 614400
+  },
+  "shutdown": {
+    "trigger": "native window close via Openbox Alt+F4",
+    "map_exit_code": 0,
+    "map_log_contains_window_closed": true,
+    "wm_remained_running": true
+  },
+  "map_owner_decision": {
+    "date": "2026-10-21",
+    "accepted_frame_and_wire_fields": true
+  },
+  "wm_owner_confirmation": "approved in discussion with the Map owner, as reported by the Map owner on 2026-10-21",
+  "sha256": {
+    "linux-sdl2-client.png": "13f8a21ddf844328b3b561b4d2eac8ae10ea95ae998c911f021a59a8b1a61dbf",
+    "linux-sdl2-desktop.png": "b7432cb586b0aecb6e46ece4603473664c348a4d0be4b10994f5ac2f55330e1f",
+    "map-output.txt": "0ba2d2536eb5a5b539e35bb818d9995382583fb4cf2fe1d6e110ca9cc686e6a3"
+  }
+}

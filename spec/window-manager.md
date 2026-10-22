@@ -125,3 +125,12 @@ The protocol is an initial integration contract and may require alignment with t
 `CLOSE` releases the resources associated with the requested window. `QUIT` requests process shutdown and closes any current window.
 
 WM should clean up its socket resources when it exits. Clients should not assume that a command succeeded until they receive a successful response.
+
+## 8. Map integration evidence
+
+`docs/testing/map-wm.md` records the real Map CLI to WM headless E2E command and an actual Linux
+SDL2/X11 run against #80. The Map sends a complete hidden frame before SHOW. Closing through the
+native control destroys the window before `window_close` is delivered; Map must not send a duplicate
+CLOSE for that event. The Map owner confirmed that the final frame and command fields had been
+discussed with and approved by the WM owner; the source of that confirmation is recorded in the
+integration report.
