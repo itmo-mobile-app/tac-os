@@ -75,6 +75,79 @@ This section fixes the Camera API design but does not claim that
 `camera.detectMarkers` is already registered or executable in the current
 C++ Runtime or compiled `.tc` applications.
 
+## IPC API: Analyzer to Map
+
+The Runtime provides IPC between two independent VM
+processes using a Unix-domain stream socket.
+
+The Runtime is embedded in each VM process.
+No separate Runtime process is required.
+
+### Functions
+
+```text
+runtime.ipc_listen() -> Int
+runtime.ipc_receive() -> String
+runtime.ipc_send(message: String) -> Int
+```
+
+### runtime.ipc_listen()
+
+Creates a Unix-domain stream socket at:
+
+`/tmp/tac-os-analyzer-map.sock`
+
+Map uses this function to start listening for
+Analyzer connections.
+
+Returns Int 0 on success.
+Throws RuntimeError on failure.
+
+### runtime.ipc_receive()
+
+Accepts an Analyzer connection if necessary and
+receives one newline-terminated message.
+
+Returns the message as a String without the
+trailing newline.
+
+The current implementation supports messages
+up to 64 KiB.
+
+Connection state is retained for subsequent
+messages.
+
+### runtime.ipc_send(message: String)
+
+Connects to Map if not already connected.
+
+Sends the given String as UTF-8 JSONL with a
+trailing newline.
+
+Returns Int 0 on successful local transmission.
+
+Reports a RuntimeError if Map is unavailable
+or sending fails.
+
+The current send deadline is 1000 milliseconds.
+
+### Lifecycle
+
+Runtime owns the socket descriptors.
+
+The Runtime destructor closes open descriptors
+and removes the listener socket file on
+normal shutdown.
+
+### Delivery semantics
+
+Messages use at-most-once delivery.
+
+There is no acknowledgement, automatic retry,
+or offline queue.
+
+The wire schema is defined in spec/ipc.md.
+
 ## Open questions
 
 Not decided here; see `docs/ai-context/02-open-questions.md` → "Runtime":

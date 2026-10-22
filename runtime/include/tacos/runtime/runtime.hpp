@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <cstdint>
@@ -31,8 +32,17 @@ class Runtime {
 public:
     explicit Runtime(
         std::ostream& output,
-        std::string wm_socket_path = "/tmp/tacos-wm.sock"
+        std::string wm_socket_path = "/tmp/tacos-wm.sock",
+        std::string ipc_socket_path =
+            "/tmp/tac-os-analyzer-map.sock"
     );
+
+    // Деструктор: освобождает ресурсы сокетов
+    ~Runtime();
+
+    // Запрещаем копирование Runtime
+    Runtime(const Runtime&) = delete;
+    Runtime& operator=(const Runtime&) = delete;
 
     bool has_function(
         const std::string& name,
@@ -45,10 +55,27 @@ public:
     );
 
     const std::string& wm_socket_path() const;
+    const std::string& ipc_socket_path() const;
+
+    // IPC: Map
+    void ipc_listen();
+    std::string ipc_receive();
+
+    // IPC: Analyzer
+    void ipc_send(const std::string& json);
+
 
 private:
     std::ostream& output_;
     std::string wm_socket_path_;
+    std::string ipc_socket_path_;
+
+    // -1 означает, что сокет ещё не открыт.
+    int ipc_listen_fd_ = -1;
+    int ipc_connection_fd_ = -1;
+
+    // Данные, полученные после очередного '\n'.
+    std::string ipc_buffer_;
 };
 
 } // namespace tacos::runtime

@@ -1,0 +1,9 @@
+
+fun main() {
+    let message: String =
+        "{\"type\":\"OBSERVATION\",\"targetId\":\"17\",\"observerId\":\"device-1\",\"latitude\":59.9505,\"longitude\":30.311,\"confidence\":0.85,\"timestamp\":1792255200000}";
+
+    runtime.ipc_send(message);
+
+    runtime.log("Analyzer: message sent");
+}

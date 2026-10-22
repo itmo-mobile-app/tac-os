@@ -3,6 +3,21 @@ add_library(tacos_runtime STATIC
     src/runtime.cpp
     src/window_manager_client.cpp)
 
+
+include(FetchContent)
+
+FetchContent_Declare(
+    nlohmann_json
+    URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
+)
+
+FetchContent_MakeAvailable(nlohmann_json)
+
+target_link_libraries(
+    tacos_runtime
+    PRIVATE nlohmann_json::nlohmann_json
+)
+
 target_include_directories(tacos_runtime PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include)
 

@@ -1,0 +1,10 @@
+
+fun main() {
+    runtime.ipc_listen();
+
+    runtime.log("Map: waiting for Analyzer");
+
+    let message: String = runtime.ipc_receive();
+
+    runtime.log(message);
+}
