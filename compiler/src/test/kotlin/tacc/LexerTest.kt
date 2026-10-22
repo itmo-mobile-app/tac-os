@@ -4,80 +4,84 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
+/** The lexer generated from `Tc.g4`, plus the token checks in `Parse.kt`. */
 class LexerTest {
-    private fun types(source: String): List<TokenType> = Lexer(source).tokenize().map { it.type }
+    private fun types(source: String): List<String> =
+        tokenize(source).tokens.map { TcLexer.VOCABULARY.getSymbolicName(it.type) }
 
     @Test
     fun keywordsIdentifiersAndLiterals() {
         assertEquals(
-            listOf(
-                TokenType.LET, TokenType.IDENT, TokenType.COLON, TokenType.TYPE_INT, TokenType.ASSIGN,
-                TokenType.INT, TokenType.SEMI, TokenType.CONST, TokenType.IDENT, TokenType.ASSIGN,
-                TokenType.TRUE, TokenType.SEMI, TokenType.EOF,
-            ),
+            listOf("LET", "IDENT", "COLON", "INT_TYPE", "ASSIGN", "INT", "SEMI", "CONST", "IDENT", "ASSIGN", "TRUE", "SEMI", "EOF"),
             types("let count: Int = 42; const ok = true;"),
         )
     }
 
     @Test
     fun keywordPrefixIsAnIdentifier() {
-        assertEquals(listOf(TokenType.IDENT, TokenType.IDENT, TokenType.EOF), types("letter fun_name"))
+        assertEquals(listOf("IDENT", "IDENT", "EOF"), types("letter fun_name"))
     }
 
     @Test
     fun oneAndTwoCharacterOperators() {
         assertEquals(
-            listOf(
-                TokenType.EQ, TokenType.NE, TokenType.LE, TokenType.GE, TokenType.LT, TokenType.GT,
-                TokenType.ASSIGN, TokenType.BANG, TokenType.PLUS, TokenType.MINUS, TokenType.STAR,
-                TokenType.SLASH, TokenType.EOF,
-            ),
+            listOf("EQ", "NE", "LE", "GE", "LT", "GT", "ASSIGN", "BANG", "PLUS", "MINUS", "STAR", "SLASH", "EOF"),
             types("== != <= >= < > = ! + - * /"),
         )
     }
 
     @Test
     fun commentsAndWindowsLineEndingsAreSkipped() {
-        val tokens = Lexer("// comment\r\nlet x = 1; // trailing\r\n").tokenize()
-        assertEquals(TokenType.LET, tokens[0].type)
+        val tokens = tokenize("// comment\r\nlet x = 1; // trailing\r\n").tokens
+        assertEquals(TcLexer.LET, tokens[0].type)
         assertEquals(2, tokens[0].line)
         assertEquals(3, tokens.last().line)
     }
 
     @Test
     fun stringEscapes() {
-        val token = Lexer("\"a\\\"b\\\\c\\nd\"").tokenize()[0]
-        assertEquals(TokenType.STRING, token.type)
-        assertEquals("a\"b\\c\nd", token.text)
+        val token = tokenize("\"a\\\"b\\\\c\\nd\"").tokens[0]
+        assertEquals(TcLexer.STRING, token.type)
+        assertEquals("a\"b\\c\nd", stringValue(token))
     }
 
     @Test
     fun invalidEscapeIsAnError() {
-        val e = assertFailsWith<LexError> { Lexer("\"a\\tb\"").tokenize() }
+        val e = assertFailsWith<LexError> { tokenize("\"a\\tb\"") }
         assertEquals("invalid escape sequence '\\t'", e.message)
     }
 
     @Test
     fun unterminatedString() {
-        assertFailsWith<LexError> { Lexer("\"abc").tokenize() }
-        assertFailsWith<LexError> { Lexer("\"abc\ndef\"").tokenize() }
+        assertEquals("unterminated string literal", assertFailsWith<LexError> { tokenize("\"abc") }.message)
+        assertFailsWith<LexError> { tokenize("\"abc\ndef\"") }
+        assertFailsWith<LexError> { tokenize("\"abc\\\"") }
     }
 
     @Test
     fun integerLiteralMustFitIn64Bits() {
-        assertEquals("9223372036854775807", Lexer("9223372036854775807").tokenize()[0].text)
-        assertFailsWith<LexError> { Lexer("9223372036854775808").tokenize() }
+        assertEquals(Long.MAX_VALUE, intValue(tokenize("9223372036854775807").tokens[0]))
+        assertFailsWith<LexError> { tokenize("9223372036854775808") }
     }
 
     @Test
     fun digitsFollowedByLettersAreAnError() {
-        assertFailsWith<LexError> { Lexer("123abc").tokenize() }
+        assertEquals("invalid integer literal '123abc'", assertFailsWith<LexError> { tokenize("123abc") }.message)
     }
 
     @Test
     fun nonAsciiAndUnknownCharactersAreErrors() {
-        val e = assertFailsWith<LexError> { Lexer("let x = 1;\nlet й = 2;").tokenize() }
+        val e = assertFailsWith<LexError> { tokenize("let x = 1;\nlet й = 2;") }
+        assertEquals("unexpected character 'й'", e.message)
         assertEquals(2, e.line)
-        assertFailsWith<LexError> { Lexer("a & b").tokenize() }
+        assertFailsWith<LexError> { tokenize("a & b") }
+    }
+
+    @Test
+    fun lexicalErrorsAreReportedBeforeSyntaxErrors() {
+        // Line 1 is a syntax error, line 2 a lexical one: the whole input is lexed first.
+        val e = compileError("fun main() { let = 1; }\nlet y = \"open")
+        assertEquals("unterminated string literal", e.message)
+        assertEquals(2, e.line)
     }
 }
