@@ -154,6 +154,36 @@ The minimal SQL subset is defined in `spec/sql.md` (approved by the SQL DBMS own
 - How stale Observation records are removed or expired, since `DELETE` is not
   included in the minimal SQL subset.
 
+## AI target recognition (instructor update, October 2026)
+
+The instructor now requires AI-based visual recognition of players/targets during the final
+demonstration; ArUco-only detection is insufficient. The instructor suggested OpenRouter as
+one possible provider for a vision-capable model. This **does not** approve a model, public API,
+data schema or replacement for the existing private ArUco detector.
+
+Before implementation, resolve the following with the architecture, Analyzer and Runtime owners:
+
+- Define what the model must identify: player presence, target class or region, versus an actual
+  stable player identity. A vision model's free-form answer is not automatically an ArUco marker ID.
+- Choose and evaluate a vision model, sample images, deterministic/invalid-response test fixtures,
+  and a measurable recognition criterion; never invent coordinates from an unverified model answer.
+- Decide which process obtains image bytes and calls the model. The existing `DETECT` JSONL IPC
+  contains only `id`, `relativeAngle` and `distance`; it must not silently be extended to
+  transmit frames. Any new Runtime/Analyzer API requires a separate reviewed `spec/` contract.
+- Decide how AI recognition relates to ArUco detections, `Observation.confidence`,
+  `targetId`, and the existing six-field Observation schema. Preserve Analyzer as owner of
+  world-coordinate calculations and leave Target probability aggregation in Target Service.
+- Explicitly resolve the conflict with offline requirement NFR-1, constraint C-8 on ready-made
+  servers and the exclusion of external internet services. OpenRouter requires internet access
+  and a provider account/API key; seek instructor confirmation or choose an offline inference
+  path before declaring a final solution.
+- Set limits for image sharing, allowed images/consent, secrets (environment configuration,
+  never checked into git), latency, cost, rate limits, model failures and offline fallback.
+  Offline ArUco recognition remains functional but does not replace the required AI demo.
+
+The approved `spec/camera-detector-protocol.md` and `spec/runtime-api.md` keep their
+existing ArUco contracts until a separate interface change is reviewed.
+
 ## Domain model
 
 - Exact observation identifier format.
