@@ -122,7 +122,7 @@ Each requirement lists the components that implement it.
 | ID | Requirement | Components |
 | --- | --- | --- |
 | FR-1 | A Runtime-managed detector reads camera frames for the app | Runtime, Marker Detector |
-| FR-2 | The demonstration includes AI visual recognition of players/targets (C-13); the existing private ArUco detector continues returning marker identifiers, angles and distances via the approved Runtime Camera API. The AI integration and result contract remain to be defined. | Analyzer, Runtime, Marker Detector; AI provider integration pending |
+| FR-2 | Demonstrate AI recognition of visible players/targets (C-13); retain ArUco marker IDs, angles and distances via Runtime. AI interface pending. | Analyzer, Runtime, Marker Detector |
 | FR-3 | The detector estimates the camera-relative angle and distance to a marker and exposes them through Runtime | Marker Detector, Runtime, Analyzer |
 | FR-4 | The app reads the device position and orientation | Analyzer, Runtime |
 | FR-5 | The app calculates the target coordinates and creates an `Observation` with a confidence value | Analyzer |
