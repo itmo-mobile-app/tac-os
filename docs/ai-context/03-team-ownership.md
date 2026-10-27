@@ -21,11 +21,11 @@ It does not change architectural boundaries: components remain separate even whe
 | 7   | Broker and Target Service       | Ника      | nika877             | Publish/subscribe Broker, target aggregation, probability/time decay, DBMS interaction                              |
 | 8   | Analyzer                        | Алиса     | slutswarming        | Camera processing, target identification, confidence, direction, distance, target coordinates, Observation creation |
 | 9   | Tactical Map / application UI   | Матвей С. | mattthewww          | 2D map, markers, probability display, IPC input, remote target updates, application shell                           |
-| 10  | Linux system smoke-testing      | Никита К. | rept1l0id           | Reproducible Linux integration smoke tests, isolated ports/sockets, process cleanup and CI checks                   |
+| 10  | Linux system smoke-testing      | Никита К. | reptil01d           | Reproducible Linux integration smoke tests, isolated ports/sockets, process cleanup and CI checks                   |
 
 Not everyone has accepted the GitHub organization invite yet. Until a person joins, they cannot be set as an Issue/PR
 assignee in this repository, even though their ownership area is already fixed above.
-The invitation for @rept1l0id has been sent; Issue #100 can be assigned when GitHub permits it.
+@reptil01d is assigned to Issue #100 for Sprint 3 Linux smoke-testing.
 
 ## Notes
 
