@@ -25,9 +25,10 @@ of where opponents and teammates were recently seen.
 ### How the system is used
 
 1. Every player wears a visible marker that identifies them.
-2. A player points the device camera at another player. The device recognizes the player's marker,
-   estimates direction and distance, and combines them with its own position and orientation to
-   calculate the player's coordinates.
+2. A player points the device camera at another player. The application must also demonstrate
+   AI-based visual recognition of a player/target in a camera image. Existing ArUco marker recognition
+   remains responsible for marker identity, relative direction and estimated distance; Analyzer
+   combines measurements and device pose to calculate target coordinates.
 3. Analyzer calculates an `Observation` from the local detection, sends it to Map
    via IPC, and Map shows it immediately and publishes it to the central node.
 4. The central node combines observations of the same player from several devices into one target
@@ -51,6 +52,7 @@ of where opponents and teammates were recently seen.
 | Central node | The Linux device on site that runs the Broker, the Target Service, and the DBMS |
 | Tactical App | The client app whose `.tc` logic runs in two separate VM processes, Analyzer and Map |
 | Marker Detector | Private auxiliary Go + OpenCV Linux process behind Runtime Camera API, not a third Tactical App process |
+| AI recognition | Vision-model analysis of camera imagery to recognize visible players/targets; output and interface are not yet approved |
 
 ## Stakeholders
 
@@ -82,8 +84,11 @@ content to the requirements but cannot remove a required platform component.
   other components; Markdown or PDF for documentation; git for project management.
 - C-12. The map shows both own and enemy targets. Target reliability grows with the number of players who see
   the target and decreases with the time since it was last seen.
-- C-13. Target identification by AI (a recognition model) is optional; recognition by a visible marker is
-  acceptable.
+- C-13. Updated instructor requirement (October 2026): the demonstration must include AI-based visual
+  recognition of players/targets, not just ArUco marker recognition. Marker identification and geometry
+  remain useful but alone no longer satisfy this requirement. OpenRouter was suggested as a possible
+  vision-model API, not approved as the final architecture or model. The relationship to C-8, offline
+  operation and the exact recognition output must be agreed before implementation.
 
 ### Players
 
@@ -117,7 +122,7 @@ Each requirement lists the components that implement it.
 | ID | Requirement | Components |
 | --- | --- | --- |
 | FR-1 | A Runtime-managed detector reads camera frames for the app | Runtime, Marker Detector |
-| FR-2 | The private detector recognizes player markers and returns identifiers via Runtime Camera API (AI-based recognition is optional, C-13) | Marker Detector, Runtime, Analyzer |
+| FR-2 | The demonstration includes AI visual recognition of players/targets (C-13); the existing private ArUco detector continues returning marker identifiers, angles and distances via the approved Runtime Camera API. The AI integration and result contract remain to be defined. | Analyzer, Runtime, Marker Detector; AI provider integration pending |
 | FR-3 | The detector estimates the camera-relative angle and distance to a marker and exposes them through Runtime | Marker Detector, Runtime, Analyzer |
 | FR-4 | The app reads the device position and orientation | Analyzer, Runtime |
 | FR-5 | The app calculates the target coordinates and creates an `Observation` with a confidence value | Analyzer |
@@ -167,13 +172,21 @@ Each requirement lists the components that implement it.
 | NFR-7 | Implementation languages follow C-11: the VM and the Runtime in C++17, the compiler in Kotlin, the Window Manager, Broker, Target Service, and DBMS in Go or Rust |
 | NFR-8 | Every pull request is checked by CI: build, integration tests, Markdown lint |
 
+**Open requirement conflict:** NFR-1 and the exclusion of internet services below describe the
+existing offline platform. An OpenRouter vision API would require an internet connection and an
+external model provider. It may be suitable for the mandatory AI demonstration, but it cannot be
+presented as part of the offline path until the instructor explicitly approves the exception or
+an offline AI alternative is chosen. The 1-second local feedback goal must not assume cloud-model latency.
+
 ## Out of scope
 
 - Own kernel, drivers, or TCP/IP stack.
 - Real phones and mobile operating systems; client devices are Linux machines.
 - Hit detection by the replica guns themselves; "tag" is a game rule on top of observations.
 - Accounts, authentication, and security of the local network.
-- Internet services, maps downloaded from the internet, and cloud storage.
+- Internet services, maps downloaded from the internet, and cloud storage remain outside the
+  offline platform. The instructor-proposed external AI recognition service is a candidate exception
+  requiring an explicit decision; it is not currently an approved dependency.
 
 ## Not decided yet
 
@@ -186,4 +199,7 @@ These questions affect the requirements above and are tracked in
 - probability and time decay formulas, FR-16 ("Target Service");
 - whether the match history (who saw whom and when) must be kept after the match ("Application");
 - the number of teams in a match and whether every team runs its own central node ("Application");
-- the map coordinate system and the source of the map image ("Application").
+- the map coordinate system and the source of the map image ("Application");
+- whether OpenRouter or an offline vision model will satisfy C-13; what constitutes recognition,
+  who sends camera images, model/output contract, privacy, cost, response time and failure behavior,
+  and explicit instructor approval for the NFR-1/C-8 exception ("AI target recognition").
