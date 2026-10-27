@@ -35,7 +35,8 @@ The project is intended to demonstrate and study the core ideas behind a mobile 
 A client device should be able to:
 
 1. receive a camera frame;
-2. detect and identify a target (an opposing player wearing a marker) using a visible marker;
+2. demonstrate AI-based recognition of a visible player/target in camera imagery, while using
+   the ArUco marker as the existing identity and geometry source;
 3. estimate target direction and distance;
 4. calculate target coordinates using the device position and orientation;
 5. create an observation;
@@ -97,7 +98,8 @@ Tactical App
 
 Responsible for:
 
-- calling the Runtime Camera API for marker ids, angles, and distances;
+- calling the Runtime Camera API for ArUco marker ids, angles, and distances;
+- supporting the required AI recognition demonstration (vision-model integration pending review);
 - reading device position and orientation;
 - deriving observation confidence (policy still to be specified);
 - calculating target coordinates using detections and device pose;
@@ -120,7 +122,12 @@ application logic and is not a third Tactical App process.
 
 The agreed initial signature `camera.detectMarkers() -> String` returns a JSON
 array of `id`, `relativeAngle` and `distance` in a String until native `Float`
-and collections are supported. The private Unix-domain socket uses JSON Lines
+and collections are supported.
+
+The instructor now requires AI-based visual recognition of players/targets in the
+final demonstration. OpenRouter was suggested as one possible vision provider,
+but the image/API interface and cloud-versus-offline requirement conflict are
+still unresolved. The existing ArUco helper and Runtime ABI remain unchanged. The private Unix-domain socket uses JSON Lines
 (`spec/camera-detector-protocol.md`). These are approved contracts, but the
 socket adapter and end-to-end Camera API are not implemented yet.
 
