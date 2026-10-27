@@ -2,27 +2,30 @@
 
 Status: draft
 
-This document defines the current ownership model for the 9-person `tac-os` team.
+This document defines the current ownership model for the 10-person `tac-os` team.
+The nine core component areas retain their existing owners; the tenth member focuses on integration verification.
 
 Ownership describes responsibility for a component or area.
 It does not change architectural boundaries: components remain separate even when one person owns several related areas.
 
 ## Ownership model
 
-| # | Area                            | Person    | GitHub              | Main responsibilities                                                                                               |
-|---|---------------------------------|-----------|---------------------|---------------------------------------------------------------------------------------------------------------------|
-| 1 | Architecture and integration    | Максим    | TheGeniusOfEternity | Requirements, architecture, shared contracts, integration, CI, end-to-end scenarios                                 |
-| 2 | Language and compiler           | Маруся    | m4shustik-s         | Custom language, grammar, parsing, semantic analysis, `.tc` → `.bc` compilation                                     |
-| 3 | VM Core                         | Никита    | pypynyaa            | Bytecode loading, interpreter, stack, heap, function calls, branching, Runtime call mechanism                       |
-| 4 | Runtime                         | Андрей    | pateWY              | Threads, IPC, camera, location, orientation, network, files, time, Activity framework, WebView bridge               |
-| 5 | Window Manager and UI framework | Настя     | khamitova-prog      | Window Manager, window lifecycle, input dispatch, Activity integration, WebView integration                         |
-| 6 | SQL DBMS                        | Матвей К. | chatty-king         | SQL parser, executor, tables, persistent storage, supported SQL subset                                              |
-| 7 | Broker and Target Service       | Ника      | nika877             | Publish/subscribe Broker, target aggregation, probability/time decay, DBMS interaction                              |
-| 8 | Analyzer                        | Алиса     | slutswarming        | Camera processing, target identification, confidence, direction, distance, target coordinates, Observation creation |
-| 9 | Tactical Map / application UI   | Матвей С. | mattthewww          | 2D map, markers, probability display, IPC input, remote target updates, application shell                           |
+| #   | Area                            | Person    | GitHub              | Main responsibilities                                                                                               |
+| --- | ------------------------------- | --------- | ------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| 1   | Architecture and integration    | Максим    | TheGeniusOfEternity | Requirements, architecture, shared contracts, integration, CI, end-to-end scenarios                                 |
+| 2   | Language and compiler           | Маруся    | m4shustik-s         | Custom language, grammar, parsing, semantic analysis, `.tc` → `.bc` compilation                                     |
+| 3   | VM Core                         | Никита    | pypynyaa            | Bytecode loading, interpreter, stack, heap, function calls, branching, Runtime call mechanism                       |
+| 4   | Runtime                         | Андрей    | pateWY              | Threads, IPC, camera, location, orientation, network, files, time, Activity framework, WebView bridge               |
+| 5   | Window Manager and UI framework | Настя     | khamitova-prog      | Window Manager, window lifecycle, input dispatch, Activity integration, WebView integration                         |
+| 6   | SQL DBMS                        | Матвей К. | chatty-king         | SQL parser, executor, tables, persistent storage, supported SQL subset                                              |
+| 7   | Broker and Target Service       | Ника      | nika877             | Publish/subscribe Broker, target aggregation, probability/time decay, DBMS interaction                              |
+| 8   | Analyzer                        | Алиса     | slutswarming        | Camera processing, target identification, confidence, direction, distance, target coordinates, Observation creation |
+| 9   | Tactical Map / application UI   | Матвей С. | mattthewww          | 2D map, markers, probability display, IPC input, remote target updates, application shell                           |
+| 10  | Linux system smoke-testing      | Никита К. | rept1l0id           | Reproducible Linux integration smoke tests, isolated ports/sockets, process cleanup and CI checks                   |
 
 Not everyone has accepted the GitHub organization invite yet. Until a person joins, they cannot be set as an Issue/PR
 assignee in this repository, even though their ownership area is already fixed above.
+The invitation for @rept1l0id has been sent; Issue #100 can be assigned when GitHub permits it.
 
 ## Notes
 
@@ -37,6 +40,12 @@ Responsibilities include:
 - maintaining integration scenarios;
 - preventing incompatible component changes;
 - keeping the system buildable and testable as components evolve.
+
+### Linux system smoke-testing
+
+This role is responsible for black-box checks of already implemented components, reproducible Linux
+startup, isolated test ports and sockets, and reliable process cleanup. The first task is #100.
+This role does not take over the implementation or architecture ownership of any existing component.
 
 ### Language and compiler
 
