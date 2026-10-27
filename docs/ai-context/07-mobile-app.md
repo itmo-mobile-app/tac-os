@@ -40,7 +40,9 @@ The Analyzer is responsible for producing local target observations.
 
 Its responsibilities include:
 
-- calling `camera.detectMarkers()` through Runtime for marker ids, angles, and distances;
+- calling `camera.detectMarkers()` through Runtime for ArUco marker ids, angles, and distances;
+- supporting the required AI-based visual recognition demonstration through a reviewed vision API
+  (OpenRouter was suggested, but no integration contract is approved yet);
 - reading device position and orientation through Runtime;
 - determining team affiliation from marker ids;
 - deriving observation confidence once its policy has been agreed;
@@ -56,6 +58,23 @@ array of detections; a full typed `Detection[]` interface is deferred until
 the VM supports Float and collections. The private helper wire protocol is
 specified in `spec/camera-detector-protocol.md` and is not accessible from
 `.tc` code. The Camera API implementation is still pending.
+
+### AI recognition requirement and existing marker detector
+
+As of the October 2026 instructor update, the final demonstration must include real
+AI-based recognition of players/targets from camera imagery. OpenRouter is a
+proposed external vision-model gateway, **not** an approved camera/Runtime contract.
+The existing Go/OpenCV ArUco helper remains responsible for marker IDs, relative
+angles and distance; its `DETECT` IPC must not be repurposed to upload images.
+AI inference must not be presented as providing stable player IDs, calibrated
+distances or geolocation unless those capabilities are separately validated.
+
+The desired AI response fields, owning process, image transport, validation,
+privacy constraints and offline/error behavior need to be specified with the
+Runtime owner before code changes. A remote API requires internet access and
+a secret API key. The local ArUco path must continue to work without internet,
+but it does not alone satisfy the new demonstration requirement. See
+`docs/ai-context/02-open-questions.md` → "AI target recognition".
 
 The Analyzer should not contain shared target aggregation logic.
 

@@ -154,6 +154,25 @@ The prototype has no Analyzer IPC, Broker subscription, WebView or `.tc` code. I
 preview and coordinate/frame tests are supplemented by a real Map CLI to WM/headless E2E test and
 recorded Linux SDL2 display/close verification; the PNG preview alone is not native evidence.
 
+## AI target recognition requirement
+
+An October 2026 instructor update requires a demonstration of AI-based visual
+recognition of players/targets from camera imagery. Existing ArUco recognition
+alone is insufficient for that demonstration. The instructor suggested
+OpenRouter for access to a vision-capable model. The use of a remote model and
+its placement in the process architecture are **proposals pending approval**:
+it would require internet access despite the current offline project goal.
+
+This addition does not change the existing approved private detector protocol,
+`camera.detectMarkers()` ABI, `Observation` fields or the division of
+responsibility: the Go/OpenCV helper extracts marker IDs and geometry; Analyzer
+owns world-coordinate calculation; Map shows results; Target Service aggregates.
+An AI model should not be assumed to output a trustworthy marker ID, distance
+or global coordinate without specific tests. A separate contract and
+integration design must define what the vision model detects and which
+platform component owns its request/response flow. See the open questions
+document and `docs/requirements.md` (C-13, FR-2, NFR-1).
+
 ## Marker recognition
 
 **Architecture decision for #34:** `camera.detectMarkers()` is the public Runtime API for the Analyzer,
