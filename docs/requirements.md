@@ -59,7 +59,7 @@ of where opponents and teammates were recently seen.
 | Course instructor (Klyuchev A.O., ITMO) | The platform is built from scratch according to the assignment | Hard constraints, not negotiable |
 | Players | Fast, simple, reliable picture of where opponents are | Drive functional requirements |
 | Organizer | Easy deployment on site without internet, reuse across matches | Drive deployment requirements |
-| Development team (9 people) | Small verifiable increments, parallel work, the deadline | Drive process and scope |
+| Development team (10 people, nine core ownership areas) | Small verifiable increments, parallel work, the deadline | Drive process and scope |
 
 When the assignment and the airsoft scenario conflict, the assignment wins: the airsoft scenario gives
 content to the requirements but cannot remove a required platform component.
