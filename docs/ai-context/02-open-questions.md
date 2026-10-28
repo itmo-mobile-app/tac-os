@@ -130,14 +130,13 @@ Initial logical topics are expected to include:
 ## Target Service
 
 `Observation` and `Target` fields are defined in `spec/data-model.md` (approved by the Broker and Target
-Service, Analyzer, and Tactical Map owners). Remaining open:
+Service, Analyzer, and Tactical Map owners). The proposed aggregation, coordinate
+selection, probability, time decay, duplicate and stale-handling rules are
+specified in `spec/target-aggregation.md` (issue #91, pending PR review).
+Remaining open:
 
-- Aggregation algorithm.
-- Coordinate aggregation strategy.
-- Probability calculation formula.
-- Time decay formula.
-- Handling of duplicate observations.
-- Handling of stale observations.
+- Durable per-observer history and recovery across Target Service restarts.
+- Calibration of clustering radius and decay thresholds using field measurements.
 
 ## DBMS
 
