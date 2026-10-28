@@ -146,7 +146,7 @@ Each requirement lists the components that implement it.
 | --- | --- | --- |
 | FR-14 | The Broker delivers messages by topic between any number of publishers and subscribers (`spec/broker-protocol.md`) | Broker |
 | FR-15 | The Target Service consumes observations and aggregates observations of the same `targetId` into one `Target` | Target Service |
-| FR-16 | Fresh independent observations increase target probability; probability decays over time | Target Service (formulas not decided, see open questions → "Target Service") |
+| FR-16 | Fresh independent observations increase target probability; probability decays over time | Target Service (`spec/target-aggregation.md`) |
 | FR-17 | The Target Service stores targets and observations in the DBMS and publishes every target update | Target Service, DBMS, Broker |
 | FR-18 | The DBMS runs as a separate process, executes the SQL subset in `spec/sql.md` received from the Target Service, and keeps data in a file between restarts | DBMS, Target Service |
 
@@ -196,7 +196,7 @@ These questions affect the requirements above and are tracked in
 - which teams participate in a particular match; marker ID-to-team encoding is already fixed ("Application");
 - the tag rule and what happens to a tagged player ("Application");
 - the client behavior when the central node is unavailable, FR-13 ("Application");
-- probability and time decay formulas, FR-16 ("Target Service");
+- calibration of the initial probability and decay parameters after field testing ("Target Service");
 - whether the match history (who saw whom and when) must be kept after the match ("Application");
 - the number of teams in a match and whether every team runs its own central node ("Application");
 - the map coordinate system and the source of the map image ("Application");
