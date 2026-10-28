@@ -239,7 +239,7 @@ sanitizer build of the C++ code in CI) are described in
   The DBMS uses Go, as documented in `01-architecture.md` → "Implementation and build".
 - Whether the compiler must use ANTLR4 (the course stack names "Kotlin (ANTLR4)"; the current compiler has
   a hand-written lexer and parser).
-  
+
 - End-to-end environment.
 - Mock strategy for camera, GPS, and network.
 - Required CI checks before merge.
