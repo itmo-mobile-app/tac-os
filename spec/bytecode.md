@@ -9,7 +9,7 @@ minimal instruction set required for the first Compiler → VM integration scena
 
 ```text
 magic:           4 bytes, ASCII "TACB"
-version:         u16          # current version = 1
+version:         u16          # 1 = legacy; 2 = Float extension
 constant_count:  u16
 constant_pool:   [Constant; constant_count]
 function_count:  u16
@@ -22,8 +22,9 @@ All multi-byte integers in the file are little-endian.
 ### Constant
 
 ```text
-tag: u8 (0 = Int, 1 = String)
-value: varies (Int: i64; String: u32 length + UTF-8 bytes)
+tag: u8 (0 = Int, 1 = String; 2 = Float in version 2 only)
+value: varies (Int: i64; String: u32 length + UTF-8 bytes;
+               Float: 8-byte IEEE 754 binary64 bit pattern, little-endian)
 ```
 
 ### Function
@@ -48,11 +49,13 @@ Every function returns exactly one value. Void-like functions push `Int 0` befor
 
 ## Value representation (runtime)
 
-All values on the operand stack and in local variables occupy a single 64-bit slot.
+Each value on the operand stack and in a local variable has a 64-bit payload.
+The VM tracks its runtime kind separately from the payload.
 
 - `Int` — i64
 - `Bool` — represented as `Int` (0 = false, 1 = true). No separate physical type.
 - `String` — reference (pointer) to a heap-allocated string object.
+- `Float` (version 2) — IEEE 754 binary64 bits, with a distinct runtime kind.
 
 Strings from the constant pool are resolved to heap objects at load time.
 The exact string object layout and interning strategy are left to the VM implementation
@@ -91,13 +94,125 @@ Notes:
 This is the minimal set for the first integration test (arithmetic, one branch, one call, one Runtime
 call). Additional instructions are added only when a concrete scenario needs them.
 
+## Float extension for bytecode version 2 (proposed in #106)
+
+This is a **contract proposal**, not an assertion that the existing VM or
+Compiler implements it. Implementation belongs to issues #107 and #108.
+
+### Compatibility and constant representation
+
+- Version 1 retains its exact existing format, constant tags (`0`, `1`)
+  and opcodes (`0x01`–`0x10`).
+- Version 2 uses the **same** header, constant-pool and function-table layouts,
+  index widths, instruction encoding, calling convention and Runtime API.
+  It adds constant tag `2` and seven Float instructions below.
+- A v2-capable VM accepts v1 and v2 files. A v1 VM must reject an unsupported
+  v2 version rather than attempt to decode it as v1. Unknown versions,
+  constants, opcodes and truncated operands are loader errors.
+- Compiler emits v1 for source programs with no Float-related constructs;
+  emits v2 for a program using any Float literal, variable, function
+  parameter, return type, expression or comparison.
+- A v1 file containing tag `2` or opcodes `0x11`–`0x17` is invalid, even
+  if instructions containing these opcodes cannot be reached.
+
+The Float constant is `tag = 0x02`, followed by the **little-endian
+8-byte bit pattern** of IEEE 754 binary64, not a decimal string. Example:
+
+```text
+1.5 (Float) = 02 00 00 00 00 00 00 F8 3F
+```
+
+The loader rejects non-finite Float constants (NaN, +Infinity and -Infinity).
+Finite subnormals and both signs of zero are legal. Compiler decimal-literal
+conversion rounds to nearest binary64 value, ties to even.
+
+### New opcodes
+
+All new instructions consist of a single opcode byte and no operands.
+Each binary operation pops right operand and then left operand.
+
+| Opcode | Hex | Input kinds | Result |
+| --- | --- | --- | --- |
+| `FADD` | `0x11` | Float, Float | Float addition |
+| `FSUB` | `0x12` | Float, Float | Float subtraction |
+| `FMUL` | `0x13` | Float, Float | Float multiplication |
+| `FDIV` | `0x14` | Float, Float | Float division |
+| `FNEG` | `0x15` | Float | Float negation |
+| `FCMP_EQ` | `0x16` | Float, Float | Bool (Int 0/1) equality |
+| `FCMP_LT` | `0x17` | Float, Float | Bool (Int 0/1) less-than |
+
+Float comparison lowering:
+
+- `a == b`: `FCMP_EQ`; `a != b`: `FCMP_EQ; NOT`.
+- `a < b`: `FCMP_LT`; `a >= b`: `FCMP_LT; NOT`.
+- `a > b`: compare `b < a`; `a <= b`: compare `b < a`,
+  followed by `NOT`.
+- `-a`: `FNEG`.
+
+When lowering reversed comparisons, the compiler must **not** reverse the
+evaluation order of expressions with side effects. It can preserve normal
+left-to-right evaluation using temporary locals and then load operands in
+the required stack order. Existing comparison and unary-operator rules for
+Int remain unchanged.
+
+### Runtime and error semantics
+
+Values have a 64-bit payload and an independently tracked kind
+(`Int`, `String`, or `Float`; `Bool` remains `Int 0/1`). This is a
+logical representation, not a new file field. Float bits are never
+interpreted as an integer or String pointer.
+
+`PUSH_CONST`, `LOAD`, `STORE`, `CALL`, `RET`, and `POP` preserve or
+discard both payload **and** kind. Float parameters and returns use the
+existing function layout without function signature metadata; the compiler
+enforces declared types and the VM dynamically checks operand kinds.
+Existing `CALL_RUNTIME`, `runtime.log(String)`, Int operations and
+String comparison behavior are unchanged.
+
+- Binary64 arithmetic uses round to nearest, ties to even.
+- `FCMP_EQ(+0.0, -0.0)` is true.
+- Signed zero, subnormal finite results and underflow to zero are legal.
+- Division by either signed zero is a VM error (including `0.0 / 0.0`).
+- NaN or infinity produced by any Float arithmetic is a VM error.
+- Wrong runtime operand kinds or stack underflow are VM errors.
+- Errors write a `tacvm:` diagnostic on stderr and exit with a nonzero code.
+  They must not corrupt a String pointer or silently reinterpret Float
+  bits. This addition does not alter existing Int `DIV` behavior.
+
+### Required acceptance vectors
+
+| Case | Expected behavior |
+| --- | --- |
+| `1.5 + 2.25` | Float `3.75` |
+| `5.0 / 2.0` | Float `2.5` |
+| `-2.5 * 2.0` | Float `-5.0` |
+| `1.0 < 2.0` | Bool true |
+| `3.0 == 3.0` | Bool true |
+| `0.0 == -0.0` | Bool true |
+| `1 + 2.0` | Compile-time error |
+| `let x: Float = 10;` | Compile-time error |
+| `1.0 / 0.0` | VM execution error |
+| `1.0 / -0.0` | VM execution error |
+| `FADD` with an Int operand | VM execution error |
+| NaN or infinity Float constant | Loader error |
+| Truncated Float constant | Loader error |
+| Float opcode in v1 | Loader error |
+| Old `hello.bc` on v2 VM | Same output as previously |
+| v2 bytecode on legacy VM | Unsupported version |
+| Float in local, parameter and `RET` | Payload and kind preserved |
+
+An end-to-end test must compile the `calculateX` source from
+`spec/language.md` with the real `tacc` and execute it with the real
+`tacvm`. It must print `float-ok`. The Compiler and VM implementation
+tests belong in #107/#108; this PR only defines their shared contract.
+
 ## Open questions
 
 Not decided here; see `docs/ai-context/02-open-questions.md` → "Bytecode" and "VM":
 
 - heap/object representation and any instructions for it;
 - string interning / lifetime strategy;
-- versioning/compatibility strategy beyond the `version` field;
+- compatibility strategy for future versions after proposed Float v2;
 - metadata (debug info, source locations);
 - stack overflow / underflow behaviour;
 - behaviour of `DIV` when the divisor is zero.
