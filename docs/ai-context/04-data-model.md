@@ -83,15 +83,15 @@ The intended behavior is:
 - old observations lose weight over time;
 - probability decreases when no fresh confirmations arrive.
 
-The exact probability formula is not fixed yet.
+The initial probability formula and spatial grouping rules are defined in
+`spec/target-aggregation.md`.
 
 ## Time decay
 
 Target confidence must decrease over time when no new observations are received.
 
-The exact decay model is not fixed yet.
-
-Possible implementation details must remain in `docs/ai-context/02-open-questions.md` until a decision is accepted.
+The initial half-life, expiry, timestamp and duplicate rules are defined in
+`spec/target-aggregation.md`.
 
 ## Data flow
 

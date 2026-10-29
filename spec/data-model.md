@@ -37,8 +37,8 @@ Produced by Target Service, published on `targets.updated`.
 | `lastSeenAt` | Int | Unix time in milliseconds of the most recent relevant observation |
 
 `Target.probability` is separate from `Observation.confidence` and depends on
-evidence from multiple observers, coordinate agreement and freshness. Its exact
-formula is not specified here.
+evidence from multiple observers, coordinate agreement and freshness. Its calculation, spatial grouping, and time decay are specified in
+`spec/target-aggregation.md`.
 
 ## JSON encoding
 
@@ -50,6 +50,7 @@ Broker's payload remains the six-field `Observation` domain object.
 
 Not decided here; see `docs/ai-context/02-open-questions.md` → "Domain model" and "Target Service":
 
-- probability calculation formula and time decay formula;
-- duplicate/stale observation handling;
-- device/observer identifier format.
+- device/observer identifier format;
+- Analyzer's local confidence estimation policy.
+
+Aggregation, duplicates, and expiry are defined in `spec/target-aggregation.md`.
