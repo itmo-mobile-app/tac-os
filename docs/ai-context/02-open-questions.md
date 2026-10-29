@@ -12,7 +12,7 @@ A minimal syntax is defined in `spec/language.md` (reviewed and approved by the 
 Compiler owner; compilation notes confirmed against `spec/bytecode.md` by the VM Core owner).
 Remaining open:
 
-- Minimal type system.
+- Type-system additions beyond the proposed minimal Float extension (#106).
 - Whether classes are required.
 - Whether inheritance is required.
 - Exact representation of structs or objects.
@@ -33,7 +33,7 @@ Runtime calls are defined in `spec/bytecode.md` (approved by the VM Core owner).
 
 - Instructions for heap objects (structs/objects), once the language needs them.
 - Metadata format (debug info, source locations).
-- Versioning/compatibility strategy beyond the `version` field.
+- Compatibility policy for bytecode versions beyond proposed Float v2.
 
 ## VM
 
@@ -62,8 +62,10 @@ API are fixed in `spec/runtime-api.md`; the private Unix-domain socket
 protocol, timeout and helper lifecycle are fixed in
 `spec/camera-detector-protocol.md`. Still unresolved:
 
-- Adding native `Float` and collections/`Detection[]` in the language, compiler,
-  bytecode and VM; the initial JSON `String` is temporary.
+- The proposed Float contract is described in `spec/language.md` and
+  `spec/bytecode.md` (#106); implementation is still pending in #107/#108.
+  Native collections/`Detection[]` remain unresolved, and the current
+  Camera API continues returning JSON as `String`.
 - A recoverable error mechanism visible to `.tc` beyond an initial Runtime failure.
 - Production camera configuration and device-calibration strategy; initial
   defaults are only for the prototype.
@@ -236,7 +238,7 @@ sanitizer build of the C++ code in CI) are described in
   The DBMS uses Go, as documented in `01-architecture.md` → "Implementation and build".
 - Whether the compiler must use ANTLR4 (the course stack names "Kotlin (ANTLR4)"; the current compiler has
   a hand-written lexer and parser).
-  
+
 - End-to-end environment.
 - Mock strategy for camera, GPS, and network.
 - Required CI checks before merge.

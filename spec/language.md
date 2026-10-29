@@ -22,6 +22,7 @@ and a standard library remain open questions and are intentionally not covered h
 - `Int` — signed integer.
 - `Bool` — `true` / `false`.
 - `String` — UTF-8 text literal.
+- `Float` — IEEE 754 binary64 (proposed extension #106; not yet implemented).
 
 No user-defined types (structs/objects/classes) in this minimal version.
 
@@ -67,8 +68,8 @@ const <name>[: <type>] = <expression>;
 - Integer literals: `123` (decimal; negative values are written with unary `-`).
 - String literals: `"text"`, with escapes `\"`, `\\`, `\n`.
 - Boolean literals: `true`, `false`.
-- Arithmetic: `+ - * /` and unary `-` on `Int`.
-- Comparison: `< <= > >=` on `Int`; `== !=` on two values of the same type.
+- Arithmetic: `+ - * /` and unary `-` on `Int`, and on `Float` in the proposed extension.
+- Comparison: `< <= > >=` on `Int` or `Float`; `== !=` on two values of the same type.
 - Logical negation: unary `!` on `Bool`.
 - Parentheses: `( <expression> )`.
 - Function call: `name(arg, ...)`.
@@ -94,7 +95,7 @@ The grammar below (EBNF) is authoritative; the sections above explain it. `{ x }
 program      = { function } ;
 function     = "fun" ident "(" [ param { "," param } ] ")" [ ":" type ] block ;
 param        = ident ":" type ;
-type         = "Int" | "Bool" | "String" ;
+type         = "Int" | "Bool" | "String" | "Float" ;
 
 block        = "{" { statement } "}" ;
 statement    = var_decl | assignment | if_stmt | while_stmt | return_stmt | call_stmt ;
@@ -111,7 +112,7 @@ relational   = additive [ ( "<" | "<=" | ">" | ">=" ) additive ] ;
 additive     = term { ( "+" | "-" ) term } ;
 term         = unary { ( "*" | "/" ) unary } ;
 unary        = ( "-" | "!" ) unary | primary ;
-primary      = int_lit | string_lit | "true" | "false" | call | ident | "(" expression ")" ;
+primary      = int_lit | float_lit | string_lit | "true" | "false" | call | ident | "(" expression ")" ;
 call         = ident [ "." ident ] "(" [ expression { "," expression } ] ")" ;
 ```
 
@@ -120,6 +121,7 @@ Lexical tokens:
 ```text
 ident        = ( letter | "_" ) { letter | digit | "_" } ;   (* not a keyword *)
 int_lit      = digit { digit } ;                            (* must fit in a signed 64-bit integer *)
+float_lit    = digit { digit } "." digit { digit } ;          (* finite binary64 *)
 string_lit   = '"' { string_char | escape } '"' ;           (* no raw newlines inside *)
 string_char  = ? any character except '"', "\" and newline ? ;
 escape       = "\" ( '"' | "\" | "n" ) ;
@@ -128,7 +130,7 @@ digit        = "0" … "9" ;
 ```
 
 - Keywords: `fun`, `let`, `const`, `if`, `else`, `while`, `return`, `true`, `false`, `Int`, `Bool`,
-  `String`.
+  `String`, `Float`.
 - Whitespace (space, tab, `\r`, `\n`) and `//` comments may appear between any two tokens and are
   otherwise ignored.
 - Binary operators within one precedence level are left-associative. Comparison and equality operators
@@ -170,9 +172,11 @@ fun main() {
 
 Checked by the compiler; a program that breaks any of them is rejected with a compile-time error.
 
-- **Types**: `+ - * /`, unary `-`, and `< <= > >=` take `Int` operands; `!` takes `Bool`; `==` and
-  `!=` take two operands of the same type. There are no implicit conversions: the condition of `if`
-  and `while` must be `Bool`, and an `Int` is not accepted there.
+- **Types**: `+ - * /`, unary `-`, and `< <= > >=` accept `Int`, or `Float`
+  in the proposed extension, but both operands must have the same type.
+  `!` takes `Bool`; `==` and `!=` require matching types. There are no
+  implicit conversions, particularly between `Int` and `Float`.
+  Conditions of `if` and `while` must be `Bool`.
 - **Variables**: an annotated type must equal the type of the initializer; an assignment must keep
   the variable's type. Only `let` variables can be assigned; `const` variables and function
   parameters cannot.
@@ -196,8 +200,8 @@ Checked by the compiler; a program that breaks any of them is rejected with a co
 Confirmed with the VM Core owner against `spec/bytecode.md`. These notes describe how language-level
 constructs map onto the bytecode format; they do not change the syntax above.
 
-- **Value representation**: every value — `Int`, `Bool`, and `String` — occupies a single 64-bit slot
-  in locals and on the operand stack.
+- **Value representation**: each `Int`, `Bool`, `String` or proposed `Float`
+  has a 64-bit payload; the VM tracks its runtime kind separately.
 - **`Bool` representation**: `Bool` has no distinct runtime type. It is an `Int` slot holding `0`
   (false) or `1` (true), consistent with `CMP_EQ` / `CMP_LT` in `spec/bytecode.md`.
 - **`String` representation**: at runtime, a `String` value is a reference (pointer) to a string object
@@ -213,8 +217,10 @@ constructs map onto the bytecode format; they do not change the syntax above.
   - `a != b` compiles as `CMP_EQ` followed by `NOT`.
   - `a <= b` compiles as `b < a` (`CMP_LT`, operands swapped) followed by `NOT`.
   - `a >= b` compiles as `a < b` (`CMP_LT`) followed by `NOT`.
-- **Unary operators**: `!x` compiles as `x` followed by `NOT`; `-x` compiles as `PUSH_CONST` of `0`,
-  then `x`, then `SUB`.
+- **Unary operators**: `!x` compiles as `x` followed by `NOT`; Int `-x`
+  compiles as `PUSH_CONST` of `0`, then `x`, then `SUB`; Float `-x`
+  compiles as `x` followed by `FNEG`. Float comparisons use `FCMP_EQ`,
+  `FCMP_LT` and existing `NOT` as specified in `spec/bytecode.md`.
 - **Return values**: every call — to a function in the same file (`CALL`) or to a Runtime function
   (`CALL_RUNTIME`) — leaves exactly one value on the operand stack (see `spec/bytecode.md` and
   `spec/runtime-api.md`). Consequently:
@@ -232,11 +238,63 @@ PUSH_CONST   0
 RET
 ```
 
+## Float extension (proposed in #106)
+
+This is a **contract proposal**, not an implemented feature. Compiler #107 and
+VM #108 will implement it after review.
+
+- The source type `Float` is IEEE 754 binary64. Decimal literals have at
+  least one digit on either side of the dot: `0.0`, `12.5`, `960.0`.
+  Negative literals use the existing unary minus.
+- Numeric literal conversion uses correctly rounded binary64, round to nearest
+  with ties to even. Overflow to infinity is a compile-time error. Finite
+  subnormals and underflow to zero are permitted.
+- `1` is `Int`; `1.0` is `Float`. No implicit conversion between them
+  occurs in expressions, assignments, function arguments or returns.
+- Float supports `+ - * /`, unary `-`, `< <= > >= == !=`,
+  `let`, `const`, parameters and function return values. Both operands
+  of a Float binary operation must be Float, and comparisons yield `Bool`.
+- The compiler generates the new Float opcodes of `spec/bytecode.md` and
+  retains all existing rules for `Int`, `Bool`, `String` and Runtime calls.
+- Scientific notation (`1e3`), leading/trailing-dot literals (`.5`,
+  `5.`), casts, arrays, JSON, trigonometry and new Runtime APIs are excluded.
+
+The grammar additions are `Float` in `type` and the keyword list,
+`float_lit` in `primary`, and this lexical rule:
+
+```text
+float_lit = digit { digit } "." digit { digit } ;
+```
+
+A complete example for Map coordinate calculation:
+
+```text
+fun calculateX(longitude: Float, lonMin: Float,
+               lonMax: Float, width: Float): Float {
+    return (longitude - lonMin) / (lonMax - lonMin) * width;
+}
+
+fun main() {
+    let x: Float = calculateX(30.31, 30.308, 30.314, 960.0);
+    if (x >= 319.0) {
+        if (x <= 321.0) {
+            runtime.log("float-ok");
+        }
+    }
+}
+```
+
+The expected output is `float-ok` (x is approximately 320.0).
+A compliant compiler rejects each of `let x: Float = 1;`,
+`let x = 1 + 2.0;`, `let x = 1.0 < 2;`, and
+`let x: Int = 1.0;`. VM arithmetic errors are specified in
+`spec/bytecode.md`.
+
 ## Open questions
 
 Not decided here; see `docs/ai-context/02-open-questions.md` → "Language":
 
-- minimal type system beyond `Int` / `Bool` / `String`;
+- additional type-system features beyond `Int` / `Bool` / `String` / proposed `Float`;
 - whether classes/structs are required;
 - whether inheritance is required;
 - exact representation of structs or objects;
