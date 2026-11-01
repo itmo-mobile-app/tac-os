@@ -141,6 +141,7 @@ Technical interoperability has been demonstrated. Following the
 the Map owner reported on 2026-10-21 that the final frame and command fields had been discussed with
 `@khamitova-prog` and approved. The confirmation was reported from their discussion, rather than
 received as a GitHub reply. Merging the WM dependency is still required.
+
 ## Wayland verification (WSLg)
 
 The Map-to-WM integration was additionally tested using the SDL2 Wayland video driver under WSLg.

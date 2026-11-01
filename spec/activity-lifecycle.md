@@ -7,6 +7,7 @@
 This document defines the minimal lifecycle contract for Activities in TAC-OS.
 
 It describes:
+
 - the main stages of an Activity lifecycle;
 - responsibilities of Activity, Runtime, and Window Manager (WM);
 - Activity creation and termination;
@@ -18,6 +19,7 @@ It describes:
 ### 2.1. Activity
 
 An Activity is responsible for:
+
 - initializing its application-specific state;
 - executing its application-specific logic;
 - stopping its work when termination is requested;
@@ -28,6 +30,7 @@ An Activity does not directly control the lifecycle of the WM process.
 ### 2.2. Runtime
 
 Runtime coordinates the Activity lifecycle and is responsible for:
+
 - initiating Activity creation;
 - coordinating Activity initialization;
 - managing communication with WM;
@@ -40,6 +43,7 @@ Runtime coordinates the Activity lifecycle and is responsible for:
 WM is responsible for native window management.
 
 The WM contract defines:
+
 - `CREATE` — create a native window;
 - `SHOW` — display a window;
 - `CLOSE` — close a specified window and release its resources;
