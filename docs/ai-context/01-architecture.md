@@ -150,9 +150,24 @@ and the asset format are specified in `spec/map-rendering.md`.
 
 Probability affects marker opacity; it is not calculated by Map. `spec/data-model.md` is already
 approved by the Tactical Map and Analyzer owners and remains unchanged.
-The prototype has no Analyzer IPC, Broker subscription, WebView or `.tc` code. Its existing PNG
+The offline prototype has no Analyzer IPC, WebView or `.tc` code. Its existing PNG
 preview and coordinate/frame tests are supplemented by a real Map CLI to WM/headless E2E test and
 recorded Linux SDL2 display/close verification; the PNG preview alone is not native evidence.
+
+### Map and Broker integration for Sprint 3 (#99)
+
+The optional `-broker host:port` mode in the existing Go Map uses the approved TCP protocol to
+publish six-field Observation objects and subscribe to `targets.updated`. A JSONL fixture supplied
+with `-observations` is a one-shot prototype input; it does not implement Analyzer IPC. Incoming
+individual Target objects replace state by targetId and redraw the existing WM window with the same
+drawing commands. No target probability is calculated in Map. Broker connection failure leaves the
+last frame visible and the window closeable; there is no automatic reconnect, queue or replay.
+These client limitations do not resolve the general Broker reconnection design question.
+
+`TestMapBrokerWindowManagerE2E` connects the actual Broker and Map executables with the production
+WM/headless server and verifies message delivery, front-buffer pixels, redraws without window
+recreation, validation and disconnect/close behavior. See `app/map/README.md` for one-command tests
+and manual Linux SDL2 steps. This increment does not implement #109 or any Runtime-to-WM API.
 
 ## AI target recognition requirement
 

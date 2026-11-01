@@ -5,10 +5,18 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 )
 
-// Run draws one static frame, then blocks on window events. It does not stop WM.
-func Run(ctx context.Context, client Client, cfg Config, targets []Target, log io.Writer) (result error) {
+// Run preserves the offline static demo. It does not stop WM.
+func Run(ctx context.Context, client Client, cfg Config, targets []Target, log io.Writer) error {
+	return runMap(ctx, client, cfg, targets, nil, nil, log)
+}
+
+func runMap(ctx context.Context, client Client, cfg Config, targets []Target, updates <-chan Target, notices <-chan string, log io.Writer) (result error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	targets = append([]Target(nil), targets...)
 	commands, markers, err := BuildFrame(cfg, targets)
 	if err != nil {
 		return err
@@ -47,19 +55,101 @@ func Run(ctx context.Context, client Client, cfg Config, targets []Target, log i
 	}
 	PrintMarkers(log, markers, len(targets))
 	fmt.Fprintln(log, "Map shown. Close the window or press Ctrl+C to exit.")
+	type windowEvent struct {
+		response response
+		err      error
+	}
+	windowEvents := make(chan windowEvent, 1)
+	eventsDone := make(chan struct{})
+	go func() {
+		defer close(eventsDone)
+		for {
+			event, err := readResponse(stream.reader)
+			select {
+			case windowEvents <- windowEvent{event, err}:
+			case <-ctx.Done():
+				return
+			}
+			if err != nil {
+				return
+			}
+		}
+	}()
+	defer func() {
+		cancel()
+		stream.close()
+		<-eventsDone
+	}()
 	for {
-		event, err := readResponse(stream.reader)
-		if err != nil {
-			if ctx.Err() != nil {
+		select {
+		case <-ctx.Done():
+			return nil
+		case event := <-windowEvents:
+			if event.err != nil {
+				if ctx.Err() != nil {
+					return nil
+				}
+				return fmt.Errorf("WM event stream: %w", event.err)
+			}
+			if event.response.Event == "window_close" && event.response.WindowID == "map" {
+				// WM destroys the window before broadcasting this event.
+				windowExists = false
+				fmt.Fprintln(log, "Map window closed.")
 				return nil
 			}
-			return fmt.Errorf("WM event stream: %w", err)
-		}
-		if event.Event == "window_close" && event.WindowID == "map" {
-			// The supplied WM already destroys the window before broadcasting this event.
-			windowExists = false
-			fmt.Fprintln(log, "Map window closed.")
-			return nil
+		case target, ok := <-updates:
+			if !ok {
+				updates = nil
+				continue
+			}
+			found := false
+			for i := range targets {
+				if targets[i].TargetID == target.TargetID {
+					targets[i], found = target, true
+					break
+				}
+			}
+			if !found {
+				targets = append(targets, target)
+			}
+			commands, markers, err := BuildFrame(cfg, targets)
+			if err != nil {
+				return err
+			}
+			for _, command := range commands {
+				if err := client.Send(ctx, command); err != nil {
+					if ctx.Err() != nil {
+						return nil
+					}
+					var rejected *wmRejection
+					if errors.As(err, &rejected) && rejected.message == "no window; send CREATE first" {
+						// A native close may destroy the window during a redraw. WM broadcasts
+						// window_close before accepting the next command; let its reader catch up.
+						timer := time.NewTimer(client.timeout())
+						defer timer.Stop()
+						select {
+						case event := <-windowEvents:
+							if event.err == nil && event.response.Event == "window_close" && event.response.WindowID == "map" {
+								windowExists = false
+								fmt.Fprintln(log, "Map window closed.")
+								return nil
+							}
+						case <-ctx.Done():
+							return nil
+						case <-timer.C:
+						}
+					}
+					return err
+				}
+			}
+			fmt.Fprintf(log, "Target updated: %s\n", target.TargetID)
+			PrintMarkers(log, markers, len(targets))
+		case message, ok := <-notices:
+			if !ok {
+				notices = nil
+				continue
+			}
+			fmt.Fprintln(log, message)
 		}
 	}
 }

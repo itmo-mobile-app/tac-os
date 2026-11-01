@@ -20,7 +20,7 @@ Create a specification only when the corresponding contract becomes necessary.
 | [`data-model.md`](data-model.md) | Shared domain structures | approved |
 | [`sql.md`](sql.md) | SQL subset for the DBMS | approved |
 | [`dbms-protocol.md`](dbms-protocol.md) | Target Service ↔ DBMS binary-framed SQL/JSON | approved design; implementation pending |
-| [`map-rendering.md`](map-rendering.md) | Map coordinates, assets and drawing | Map prototype; native WM integration pending |
+| [`map-rendering.md`](map-rendering.md) | Map coordinates, assets and drawing | Go prototype; WM and Broker E2E covered; `.tc` Map pending |
 
 The original Sprint 0 contracts were drafted by Architecture & Integration and then reviewed and approved by the owner of the
 corresponding area (see `docs/ai-context/03-team-ownership.md`) during Sprint 0. An approved contract
