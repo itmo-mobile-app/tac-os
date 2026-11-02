@@ -82,7 +82,8 @@ The Runtime may be linked into the VM executable and does not need to run as a s
 - The DBMS is written in Go (1.22+) in `server/dbms/`, matching the course stack. It uses
   only the standard library. `go build ./cmd/tacdb` builds its CLI; `go test ./...` runs
   its unit tests. CMake also builds this executable and registers DBMS tests with CTest.
-  Issue #31 is an in-memory increment; persistence and the client protocol are deferred.
+  The in-memory executor and `tacdb-server` Unix-socket entry point (#96) implement
+  `spec/dbms-protocol.md`; persistence remains deferred.
 - The Window Manager, Broker, Target Service, and DBMS are written in Go or Rust, as required by the course
   technology stack (`docs/requirements.md`, C-11). Each component owner picks one of the two; the choice is
   recorded here.

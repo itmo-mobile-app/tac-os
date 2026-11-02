@@ -32,8 +32,19 @@ add_custom_command(OUTPUT "${TACOS_DBMS_EXECUTABLE}"
     VERBATIM)
 add_custom_target(tacos_dbms ALL DEPENDS "${TACOS_DBMS_EXECUTABLE}")
 
+set(TACOS_DBMS_SERVER "${CMAKE_CURRENT_BINARY_DIR}/tacdb-server${CMAKE_EXECUTABLE_SUFFIX}")
+add_custom_command(OUTPUT "${TACOS_DBMS_SERVER}"
+    COMMAND "${CMAKE_COMMAND}" -E env
+        "GOWORK=off" "GOCACHE=${TACOS_DBMS_GO_CACHE}"
+        "${TACOS_GO_EXECUTABLE}" build -buildvcs=false -o "${TACOS_DBMS_SERVER}" ./cmd/tacdb-server
+    WORKING_DIRECTORY "${TACOS_DBMS_SOURCE_DIR}"
+    DEPENDS ${dbms_go_sources} "${CMAKE_CURRENT_SOURCE_DIR}/go.mod"
+    COMMENT "Building the Unix-socket SQL server"
+    VERBATIM)
+add_custom_target(tacos_dbms_server ALL DEPENDS "${TACOS_DBMS_SERVER}")
+
 if(NOT TACOS_DBMS_STANDALONE)
-    foreach(variable TACOS_GO_EXECUTABLE TACOS_DBMS_SOURCE_DIR TACOS_DBMS_GO_CACHE TACOS_DBMS_EXECUTABLE)
+    foreach(variable TACOS_GO_EXECUTABLE TACOS_DBMS_SOURCE_DIR TACOS_DBMS_GO_CACHE TACOS_DBMS_EXECUTABLE TACOS_DBMS_SERVER)
         set(${variable} "${${variable}}" PARENT_SCOPE)
     endforeach()
 endif()
