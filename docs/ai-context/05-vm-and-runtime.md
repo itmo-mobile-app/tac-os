@@ -61,7 +61,10 @@ CALL
 RET
 ```
 
-The exact instruction set is not fixed yet.
+The instruction set is defined in `spec/bytecode.md`. VM #108 accepts v1 and
+Float v2, preserving a separate kind for each value. It rejects non-finite
+Float constants/results and division by signed zero. Compiler #107 is still
+required for the real Float source-to-bytecode integration test.
 
 ## Runtime responsibility
 

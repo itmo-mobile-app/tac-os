@@ -39,8 +39,8 @@
   <text class="t-sub" x="84" y="86">vm/src/vm.cpp</text>
   <rect class="fn" x="48" y="104" width="304" height="132" rx="4"/>
   <text class="t-code" x="66" y="130">run_file → load_program</text>
-  <text class="t-sub" x="66" y="152">проверяет TACB и версию 1</text>
-  <text class="t-sub" x="66" y="172">читает константы и функции</text>
+  <text class="t-sub" x="66" y="152">проверяет TACB и версии 1 / 2</text>
+  <text class="t-sub" x="66" y="172">читает Int / String / Float и функции</text>
   <text class="t-sub" x="66" y="192">entry_function</text>
   <text class="t-sub" x="66" y="212">проверяет каждый CALL_RUNTIME</text>
   <line class="edge" x1="200" y1="236" x2="200" y2="262" marker-end="url(#a3)"/>

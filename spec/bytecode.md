@@ -96,8 +96,9 @@ call). Additional instructions are added only when a concrete scenario needs the
 
 ## Float extension for bytecode version 2 (proposed in #106)
 
-This is a **contract proposal**, not an assertion that the existing VM or
-Compiler implements it. Implementation belongs to issues #107 and #108.
+This contract was merged in PR #111. VM support is implemented in #108;
+Compiler support belongs to #107. This section does not claim that a
+Float-capable Compiler is already available.
 
 ### Compatibility and constant representation
 

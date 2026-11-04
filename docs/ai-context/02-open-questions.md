@@ -65,7 +65,8 @@ protocol, timeout and helper lifecycle are fixed in
 `spec/camera-detector-protocol.md`. Still unresolved:
 
 - The proposed Float contract is described in `spec/language.md` and
-  `spec/bytecode.md` (#106); implementation is still pending in #107/#108.
+  `spec/bytecode.md` (#106); VM execution is implemented in #108; Compiler support and the real Float
+  Compiler-to-VM E2E remain pending in #107.
   Native collections/`Detection[]` remain unresolved, and the current
   Camera API continues returning JSON as `String`.
 - A recoverable error mechanism visible to `.tc` beyond an initial Runtime failure.

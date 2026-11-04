@@ -8,13 +8,13 @@ This API implements isolated executions; it does not approve shared Runtime use.
 The `tacos_vm` CMake target exposes `tacos/vm/vm.hpp`:
 
 ```cpp
-tacos::runtime::Value tacos::vm::run_file(
+tacos::vm::Value tacos::vm::run_file(
     const std::string& path, tacos::runtime::Runtime& runtime);
 ```
 
 Each call loads its own program and owns its instruction pointers, constants,
 operand stack, frames and local variables. Successful execution returns the
-entry function's single result. VM errors throw `tacos::vm::VmError`; Runtime
+entry function's single typed result, including Float from #108. VM errors throw `tacos::vm::VmError`; Runtime
 errors retain `tacos::runtime::RuntimeError`. The CLI catches errors, writes a
 `tacvm:` diagnostic and exits nonzero, preserving its existing behavior.
 No mutable execution state is shared between calls, including after a failure.
@@ -49,7 +49,8 @@ merging #93. They do not assert that prior owner agreement occurred.
 in two `std::thread` workers with separate Runtime/output instances. It checks
 return values, local variables, function calls and exact per-context output.
 It repeats concurrent execution and checks that one VM's error does not prevent
-another from completing. All existing CLI/E2E checks remain enabled.
+another from completing. Separate Float-bytecode fixtures verify payload/kind,
+signed zero and per-thread rounding restoration. All existing CLI/E2E checks remain enabled.
 
 Run under ASan/UBSan using the normal `TACOS_SANITIZE=ON` build. For a separate
 ThreadSanitizer build, use `TACOS_THREAD_SANITIZE=ON` (never combine sanitizers). See

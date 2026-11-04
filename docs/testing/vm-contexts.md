@@ -29,6 +29,10 @@ ASan/UBSan and TSAN cannot be enabled in the same build. The test compiles
 three real `.tc` files, starts two workers together, and checks their separate
 return values and exact outputs over twelve repetitions. A failing context
 runs alongside a successful one; a subsequent invocation verifies recovery.
+Two independent Float-bytecode fixtures also verify a typed Float host result,
+negative-zero preservation, ties-to-even under an inherited upward rounding
+mode, and restoration of host rounding on both success and error. These are
+independent bytecode fixtures, not the still-pending Compiler #107 E2E.
 
 ## Recorded local results
 
@@ -41,6 +45,7 @@ runs alongside a successful one; a subsequent invocation verifies recovery.
   was not granted. They remain enabled for Linux CI.
 - Linux-only Runtime socket calls required an external, uncommitted macOS
   compatibility include for local compilation. Native Linux CI is still needed.
-- This branch is based on main independently of Float #108, as required by
-  #93's separate-PR scope. Reconcile the interpreter extraction with #108
-  when the first branch merges; do not overwrite either implementation.
+- This branch includes the existing Float branch as a dependency. Open its PR
+  against `codex/vm-float-108` so the review diff contains only #93. Both VM
+  changes are reconciled: the public VM result preserves Float payload/kind,
+  and the interpreter library keeps Float rounding compiler flags.

@@ -5,3 +5,7 @@ target_link_libraries(tacos_vm PUBLIC tacos_runtime)
 
 add_executable(tacvm src/main.cpp)
 target_link_libraries(tacvm PRIVATE tacos_vm)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(tacos_vm PRIVATE -frounding-math -ffp-contract=off)
+endif()

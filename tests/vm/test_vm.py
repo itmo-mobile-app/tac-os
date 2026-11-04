@@ -22,11 +22,13 @@ def ins(op, value=None, argc=None):
     return data
 
 
-def module(constants, functions, entry=0):
-    data = b'TACB' + struct.pack('<HH', 1, len(constants))
+def module(constants, functions, entry=0, version=1):
+    data = b'TACB' + struct.pack('<HH', version, len(constants))
     for value in constants:
         if isinstance(value, int):
             data += b'\0' + struct.pack('<q', value)
+        elif isinstance(value, float):
+            data += b'\2' + struct.pack('<d', value)
         else:
             raw = value.encode()
             data += b'\1' + struct.pack('<I', len(raw)) + raw
@@ -38,8 +40,11 @@ def module(constants, functions, entry=0):
 
 
 class VmTests(unittest.TestCase):
-    def run_bc(self, constants, code, locals_=0, functions=None, error=None, output=''):
-        data = module(constants, functions or [(0, locals_, code)])
+    def run_bc(self, constants, code, locals_=0, functions=None, error=None, output='', version=1):
+        data = module(constants, functions or [(0, locals_, code)], version=version)
+        self.run_data(data, error, output)
+
+    def run_data(self, data, error=None, output=''):
         with tempfile.TemporaryDirectory() as tmp:
             path = pathlib.Path(tmp) / 'test.bc'
             path.write_bytes(data)
@@ -159,6 +164,90 @@ class VmTests(unittest.TestCase):
             for count in range(width):
                 with self.subTest(op=op, count=count):
                     self.run_bc([], bytes([op]) + bytes(count), error='unexpected end')
+
+
+class FloatTests(VmTests):
+    # Inherit the complete Int/Bool/String suite and run it on v2 as well.
+    def run_bc(self, *args, **kwargs):
+        kwargs.setdefault('version', 2)
+        return super().run_bc(*args, **kwargs)
+
+    def assert_float(self, expression, constants, expected):
+        n = len(constants)
+        code = expression + ins(1, n) + ins(22) + ins(16)
+        target = len(code) + 6
+        code += ins(11, target) + ins(15) + ins(1, n + 1) + ins(14)
+        self.run_bc(constants + [expected, 0], code)
+
+    def test_float_arithmetic(self):
+        for op, lhs, rhs, result in [
+            (17, 1.5, 2.25, 3.75), (18, 5.0, 2.0, 3.0),
+            (19, -2.5, 2.0, -5.0), (20, 5.0, 2.0, 2.5),
+            (17, 1.0, 2**-53, 1.0),  # tie rounds to even
+            (17, 1.0 + 2**-52, 2**-53, 1.0 + 2**-51),
+            (20, 5e-324, 2.0, 0.0),  # underflow is legal
+            (19, 2.2250738585072014e-308, 0.5, 1.1125369292536007e-308),
+        ]:
+            with self.subTest(op=op, lhs=lhs, rhs=rhs):
+                self.assert_float(ins(1, 0) + ins(1, 1) + ins(op), [lhs, rhs], result)
+        self.assert_float(ins(1, 0) + ins(21), [2.5], -2.5)
+
+    def test_coordinate_formula_bytecode(self):
+        # Independent bytecode fixture, not a substitute for the Compiler #107 E2E.
+        expression = (ins(1, 0) + ins(1, 1) + ins(18)
+                      + ins(1, 2) + ins(1, 1) + ins(18)
+                      + ins(20) + ins(1, 3) + ins(19))
+        expected = (30.31 - 30.308) / (30.314 - 30.308) * 960.0
+        self.assert_float(expression, [30.31, 30.308, 30.314, 960.0], expected)
+
+    def test_float_comparisons(self):
+        for op, lhs, rhs, expected in [
+            (22, 3.0, 3.0, 1), (22, 0.0, -0.0, 1), (22, 1.0, 2.0, 0),
+            (23, 1.0, 2.0, 1), (23, -2.0, -3.0, 0), (23, 0.0, -0.0, 0),
+        ]:
+            with self.subTest(op=op, lhs=lhs, rhs=rhs):
+                self.assert_value(ins(1, 0) + ins(1, 1) + ins(op), [lhs, rhs], expected)
+
+    def test_float_locals_parameters_and_return(self):
+        # Keep a String beneath Float arguments; callee has an extra Float local.
+        fn = ins(2, 0) + ins(2, 1) + ins(18) + ins(3, 2) + ins(2, 2) + ins(14)
+        main = ins(1, 3) + ins(1, 0) + ins(1, 1) + ins(12, 1, 2)
+        main += ins(1, 2) + ins(22) + ins(16)
+        target = len(main) + 6
+        main += ins(11, target) + ins(15)
+        main += ins(13, 4, 1) + ins(14)
+        self.run_bc([5.5, 2.0, 3.5, 'preserved', 'runtime.log'], b'',
+                    functions=[(0, 0, main), (2, 1, fn)], output='preserved\n')
+
+    def test_float_errors(self):
+        for zero in [0.0, -0.0]:
+            self.run_bc([1.0, zero], ins(1, 0) + ins(1, 1) + ins(20), error='division by zero')
+        for op, lhs, rhs in [(17, 1.7e308, 1.7e308), (18, -1.7e308, 1.7e308),
+                             (19, 1.7e308, 2.0), (20, 1.0, 5e-324)]:
+            self.run_bc([lhs, rhs], ins(1, 0) + ins(1, 1) + ins(op), error='non-finite Float result')
+        for op in range(17, 24):
+            with self.subTest(op=op):
+                prefix = ins(1, 0) if op == 21 else ins(1, 1) + ins(1, 0)
+                self.run_bc([1, 2.0], prefix + ins(op), error='expected Float')
+                self.run_bc([], ins(op), error='underflow')
+        for op in [4, 5, 6, 7, 9]:
+            self.run_bc([1.0, 2.0], ins(1, 0) + ins(1, 1) + ins(op), error='expected Int')
+        self.run_bc([1.0], ins(1, 0) + ins(1, 0) + ins(8), error='requires FCMP_EQ')
+        self.run_bc([1.0, 'text'], ins(1, 0) + ins(1, 1) + ins(17), error='expected Float')
+        self.run_bc([1.0, 'runtime.log'], ins(1, 0) + ins(13, 1, 1), error='Runtime Float')
+        for value in [float('nan'), float('inf'), -float('inf')]:
+            self.run_bc([value], ins(1, 0) + ins(14), error='non-finite Float constant')
+
+    def test_versions_and_truncated_float(self):
+        # v1 must reject Float even in unreachable code.
+        self.run_bc([1.0], ins(1, 0) + ins(14), version=1, error='unknown constant tag')
+        for op in range(17, 24):
+            self.run_bc([0], ins(1, 0) + ins(14) + ins(op), version=1,
+                        error='requires bytecode version 2')
+        self.run_bc([], b'', version=3, error='unsupported bytecode version')
+        for length in range(8):
+            raw = b'TACB' + struct.pack('<HH', 2, 1) + b'\2' + bytes(length)
+            self.run_data(raw, error='unexpected end')
 
 
 if __name__ == '__main__':
