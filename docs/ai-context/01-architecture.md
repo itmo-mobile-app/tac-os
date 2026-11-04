@@ -77,6 +77,9 @@ The Runtime may be linked into the VM executable and does not need to run as a s
 
 - The VM and the Runtime are written in C++17 and built with CMake (`CMakeLists.txt` at the root). The
   build produces `tacvm`, the VM with the Runtime linked in: `tacvm <program.bc>`.
+- The `tacos_vm` library exposes isolated host-driven executions for C++ tests.
+  The `tacvm` executable remains its command-line entry point; no new OS process
+  or `.tc` threading API is introduced. See `spec/vm-execution.md` for restrictions.
 - The Compiler is written in Kotlin (JVM 17) and built with Gradle in `compiler/`. `./gradlew installDist`
   produces the `tacc` launcher: `tacc <input.tc> <output.bc>`.
 - The DBMS is written in Go (1.22+) in `server/dbms/`, matching the course stack. It uses

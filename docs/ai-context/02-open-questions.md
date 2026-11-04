@@ -37,7 +37,9 @@ Runtime calls are defined in `spec/bytecode.md` (approved by the VM Core owner).
 
 ## VM
 
-- Exact execution model.
+- Runtime-owner approval of the isolated C++ execution restrictions in
+  `spec/vm-execution.md` (#93); shared Runtime/socket/window use is not approved.
+- Exact execution model beyond independent host-driven invocations.
 - Exact stack layout.
 - Heap representation.
 - Memory management strategy.

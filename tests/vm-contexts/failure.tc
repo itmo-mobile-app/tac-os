@@ -1,0 +1,4 @@
+fun main(): Int {
+    let divisor = 0;
+    return 1 / divisor;
+}

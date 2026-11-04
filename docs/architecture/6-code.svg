@@ -36,9 +36,9 @@
   <!-- VM component -->
   <rect class="box" x="30" y="60" width="340" height="310" rx="6"/>
   <text class="t-name" x="48" y="86">VM</text>
-  <text class="t-sub" x="84" y="86">vm/src/main.cpp</text>
+  <text class="t-sub" x="84" y="86">vm/src/vm.cpp</text>
   <rect class="fn" x="48" y="104" width="304" height="132" rx="4"/>
-  <text class="t-code" x="66" y="130">load_program</text>
+  <text class="t-code" x="66" y="130">run_file → load_program</text>
   <text class="t-sub" x="66" y="152">проверяет TACB и версию 1</text>
   <text class="t-sub" x="66" y="172">читает константы и функции</text>
   <text class="t-sub" x="66" y="192">entry_function</text>
@@ -46,9 +46,9 @@
   <line class="edge" x1="200" y1="236" x2="200" y2="262" marker-end="url(#a3)"/>
   <text class="t-arrow" x="208" y="254">Program</text>
   <rect class="fn" x="48" y="266" width="304" height="88" rx="4"/>
-  <text class="t-code" x="66" y="292">Vm::execute</text>
-  <text class="t-sub" x="66" y="314">ip + стек операндов</text>
-  <text class="t-sub" x="66" y="334">PUSH_CONST · CALL_RUNTIME · POP · RET</text>
+  <text class="t-code" x="66" y="292">Vm::run</text>
+  <text class="t-sub" x="66" y="314">ip + стек + кадры вызовов</text>
+  <text class="t-sub" x="66" y="334">LOAD · STORE · CALL · RET · Runtime</text>
 
   <!-- boundary note -->
   <text class="t-arrow" x="500" y="74" text-anchor="middle">интерфейс между ними:</text>

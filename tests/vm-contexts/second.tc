@@ -1,0 +1,12 @@
+fun increment(value: Int): Int {
+    let result = value + 2;
+    return result;
+}
+fun main(): Int {
+    let value = 0;
+    while (value < 20000) {
+        value = increment(value);
+    }
+    runtime.log("second");
+    return value + 99;
+}
