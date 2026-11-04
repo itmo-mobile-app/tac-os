@@ -7,7 +7,7 @@ Compiles a `.tc` program into a `.bc` file per `spec/bytecode.md`.
 The whole grammar of `spec/language.md`:
 
 - functions with parameters and an optional return type, calls between `.tc` functions (`CALL`);
-- `let` / `const` local variables of type `Int`, `Bool`, `String`, and assignment;
+- `let` / `const` local variables of type `Int`, `Bool`, `String`, `Float`, and assignment;
 - arithmetic, comparison, equality, and logical negation with the precedence from the spec;
 - `if` / `else if` / `else`, `while`, `return`;
 - Runtime calls `ns.func(...)` to the functions in `spec/runtime-api.md`.
@@ -32,7 +32,7 @@ Code generation follows `spec/language.md` → "Compilation notes":
 - parameters occupy locals `0 .. param_count-1`, `let`/`const` variables the following slots in
   order of declaration (one slot per declaration);
 - `a > b` is `b < a`, `a <= b` is `!(b < a)`, `a >= b` is `!(a < b)`, `a != b` is `!(a == b)`,
-  `-x` is `0 - x`; the operands of `>` and `<=` are therefore evaluated right to left;
+  `-x` is `0 - x` for Int or `FNEG` for Float; reversed comparisons use a temporary local to preserve left-to-right evaluation;
 - every call leaves one value on the stack, so a call used as a statement is followed by `POP`;
 - a function without a return type returns `Int 0` (`PUSH_CONST 0` + `RET`) on `return;` and at the
   end of its body;
@@ -86,3 +86,16 @@ The VM tests in `tests/vm` (`vm_*_e2e`) also compile their programs with `tacc`.
 
 Errors are reported as `<file>:<line>: error: <message>` on stderr, with exit code 1. Compilation
 stops at the first error.
+
+## Float (issue #107)
+
+`Float` literals have digits on both sides of the decimal point (`1.5`); arithmetic
+and comparison operands must both be `Float` (no implicit `Int` conversion).
+The compiler emits v2 bytecode if any Float construct is present, otherwise v1.
+Float constants are binary64 little-endian tagged `0x02`, and instructions use
+`FADD` through `FCMP_LT` (`0x11`–`0x17`). Reversed comparisons preserve the
+left-to-right evaluation order using temporary local slots.
+
+Run `./gradlew test` (including `FloatTest`), then validate the coordinate
+example against a v2-capable `tacvm`. The VM from PR #116 must be merged or
+built separately before an actual end-to-end test can succeed.
