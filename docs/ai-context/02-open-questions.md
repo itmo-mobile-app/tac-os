@@ -185,16 +185,22 @@ Before implementation, resolve the following with the architecture, Analyzer and
 The approved `spec/camera-detector-protocol.md` and `spec/runtime-api.md` keep their
 existing ArUco contracts until a separate interface change is reviewed.
 
+The Analyzer-side boundary between ArUco and AI recognition is proposed in
+`spec/analyzer-observation.md` → "AI recognition boundary". The questions above are tracked in
+issue #104; they are not additional work under #98.
+
 ## Domain model
 
 - Exact observation identifier format.
 - Device/client identifier format.
 - Probability representation.
-- Confidence representation, including where the detection `confidence` comes from (the ArUco detector
-  does not provide a score).
+- Confidence representation: the detector provides no score; the local `Observation.confidence`
+  policy is proposed in `spec/analyzer-observation.md` (issue #98, pending review).
 - Physical marker size and camera parameters (field of view or calibration) as detector configuration.
-- Direction and azimuth calculation details.
-- Coordinate precision requirements.
+- Direction and azimuth calculation, coordinate precision and the AI recognition boundary on the
+  Analyzer side are proposed in `spec/analyzer-observation.md` (issue #98, pending review). Not
+  covered by it: the heading reference (true or magnetic north) in the Runtime orientation API,
+  the Runtime location and time APIs, and field calibration of the confidence constants.
 
 ## Application
 

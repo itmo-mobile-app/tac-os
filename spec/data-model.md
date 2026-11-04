@@ -21,8 +21,8 @@ Produced by Analyzer, sent to Map over IPC, and published by Map to the Broker.
 The six fields above are the entire shared `Observation` object. Analyzer-to-Map
 IPC adds only an outer `"type":"OBSERVATION"` field; Map publishes the original
 six fields to Broker unchanged. See `spec/ipc.md`. Detector angles and distances
-are not part of this shared object. The production method for estimating local
-confidence is not yet defined.
+are not part of this shared object. The coordinate calculation and the local confidence policy
+are proposed in `spec/analyzer-observation.md` (issue #98, pending review).
 
 ## Target
 
@@ -51,6 +51,6 @@ Broker's payload remains the six-field `Observation` domain object.
 Not decided here; see `docs/ai-context/02-open-questions.md` → "Domain model" and "Target Service":
 
 - device/observer identifier format;
-- Analyzer's local confidence estimation policy.
+- Analyzer's local confidence estimation policy (proposed in `spec/analyzer-observation.md`, pending review).
 
 Aggregation, duplicates, and expiry are defined in `spec/target-aggregation.md`.

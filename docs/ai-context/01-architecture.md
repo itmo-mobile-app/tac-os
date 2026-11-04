@@ -114,7 +114,7 @@ Each process runs its own VM instance.
 Responsible for:
 
 - requesting marker detections through the Runtime Camera API (not accessing detector IPC directly);
-- deriving observation confidence using a policy that still needs to be specified;
+- deriving observation confidence using the policy proposed in `spec/analyzer-observation.md` (pending review);
 - reading device position and orientation through Runtime APIs;
 - calculating target coordinates;
 - creating an `Observation`;

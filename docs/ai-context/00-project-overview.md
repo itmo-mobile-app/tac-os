@@ -101,7 +101,7 @@ Responsible for:
 - calling the Runtime Camera API for ArUco marker ids, angles, and distances;
 - supporting the required AI recognition demonstration (vision-model integration pending review);
 - reading device position and orientation;
-- deriving observation confidence (policy still to be specified);
+- deriving observation confidence (policy proposed in `spec/analyzer-observation.md`, pending review);
 - calculating target coordinates using detections and device pose;
 - creating observations.
 
