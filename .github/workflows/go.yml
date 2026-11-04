@@ -16,7 +16,7 @@ jobs:
         include:
           - component: Marker Detector core
             directory: prototypes/marker-detect
-            packages: ./pose ./marker ./ipc
+            packages: ./pose ./marker ./ipc ./internal/runtimehelper
           - component: Broker
             directory: broker
             packages: ./...

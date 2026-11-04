@@ -1,5 +1,6 @@
 #include "tacos/runtime/runtime.hpp"
 #include "window_manager_client.hpp"
+#include "camera_detector_client.hpp"
 
 #include <ostream>
 #include <iostream>
@@ -311,6 +312,14 @@ Value window_quit(
 }
 
 
+Value camera_detect_markers_handler(
+    Runtime& runtime,
+    std::ostream&,
+    const std::vector<Value>&
+) {
+    return Value::string_value_of(runtime.camera_detect_markers());
+}
+
 Value ipc_listen_handler(
     Runtime& runtime,
     std::ostream&,
@@ -359,6 +368,7 @@ static const std::unordered_map<
     std::string, FunctionEntry
 > table = {
     {"runtime.log",        {1, &runtime_log}},
+    {"camera.detectMarkers", {0, &camera_detect_markers_handler}},
     {"window.create",      {3, &window_create}},
     {"window.show",        {0, &window_show}},
     {"window.close",       {0, &window_close}},
@@ -382,12 +392,22 @@ Runtime::Runtime(
     std::string wm_socket_path,
     std::string ipc_socket_path
 )
+    : Runtime(output, std::move(wm_socket_path), std::move(ipc_socket_path), CameraOptions{}) {}
+
+Runtime::Runtime(
+    std::ostream& output,
+    std::string wm_socket_path,
+    std::string ipc_socket_path,
+    CameraOptions camera_options
+)
     : output_(output),
       wm_socket_path_(std::move(wm_socket_path)),
-      ipc_socket_path_(std::move(ipc_socket_path)) {}
+      ipc_socket_path_(std::move(ipc_socket_path)),
+      camera_(std::make_unique<detail::CameraDetectorClient>(std::move(camera_options))) {}
 
 
 Runtime::~Runtime() {
+    camera_.reset();
     if (ipc_connection_fd_ != -1) {
         ::close(ipc_connection_fd_);
     }
@@ -442,6 +462,10 @@ const std::string& Runtime::ipc_socket_path() const {
     return ipc_socket_path_;
 }
 
+
+std::string Runtime::camera_detect_markers() {
+    return camera_->detect_markers();
+}
 
 void Runtime::ipc_listen() {
     if (ipc_listen_fd_ != -1) {

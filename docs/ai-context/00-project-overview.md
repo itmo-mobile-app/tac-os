@@ -128,8 +128,10 @@ The instructor now requires AI-based visual recognition of players/targets in th
 final demonstration. OpenRouter was suggested as one possible vision provider,
 but the image/API interface and cloud-versus-offline requirement conflict are
 still unresolved. The existing ArUco helper and Runtime ABI remain unchanged. The private Unix-domain socket uses JSON Lines
-(`spec/camera-detector-protocol.md`). These are approved contracts, but the
-socket adapter and end-to-end Camera API are not implemented yet.
+(`spec/camera-detector-protocol.md`). The Go helper and the C++ Runtime client
+are implemented; direct C++ tests cover the String API with synthetic detections,
+transport failures and cleanup (`docs/testing/camera-runtime.md`). This does not
+add typed detections or a `.tc` JSON parser.
 
 Analyzer sends completed coordinate-bearing `Observation` messages to Map over the
 Unix-domain socket defined in `spec/ipc.md`. Map forwards the six domain
