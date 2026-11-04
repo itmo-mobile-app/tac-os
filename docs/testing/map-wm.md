@@ -147,6 +147,7 @@ received as a GitHub reply. Merging the WM dependency is still required.
 The Map-to-WM integration was additionally tested using the SDL2 Wayland video driver under WSLg.
 
 **Environment:**
+
 - Platform: Ubuntu on WSL2 with WSLg
 - SDL2: 2.30.0
 - Video driver: `wayland`
