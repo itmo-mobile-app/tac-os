@@ -108,7 +108,8 @@ Not decided here; see `docs/ai-context/02-open-questions.md` → "DBMS":
 - whether indexes are required;
 - whether transactions are required;
 - storage format;
-- network/IPC implementation is pending; the wire contract is fixed in `spec/dbms-protocol.md`.
+- Target Service client integration is tracked in #97; the DBMS socket server (#96)
+  implements the wire contract fixed in `spec/dbms-protocol.md`.
 
 The DBMS runs as a separate server process and the Target Service connects to it as a client (see
 `docs/ai-context/01-architecture.md` → "DBMS").

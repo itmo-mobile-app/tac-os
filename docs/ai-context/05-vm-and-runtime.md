@@ -136,8 +136,10 @@ framing, error codes, bounded timeouts and lifecycle.
 The initial public call `camera.detectMarkers() -> String` returns only the
 JSON array (or reports a Runtime error). This temporarily avoids changing
 the current VM value layout. Native `Float` and a typed `Detection[]`
-return type remain later work; neither the public function nor its IPC
-implementation is present in the current executable yet.
+return type remain later work. The public function is registered in the C++
+Runtime and its Unix-socket client is implemented, with synthetic-fixture and
+failure tests in `docs/testing/camera-runtime.md`. No language changes or
+typed detection representation are included.
 
 The detector is not a third Tactical App process: Analyzer and Map remain independent `.tc`/VM
 processes and exchange application observations via `spec/ipc.md`. The Analyzer computes target
@@ -307,5 +309,5 @@ Each invocation owns its loaded program, stack, frames and locals. Separate
 C++ threads may run independent invocations with distinct Runtime instances,
 outputs and external resources. The initial tested scope is computation and
 `runtime.log`; shared sockets, camera and Window Manager usage are not approved.
-See `spec/vm-execution.md` for ownership, error propagation and pending owner review.
+See `spec/vm-execution.md` for ownership and error propagation; Runtime resource-isolation restrictions were reviewed in PR #117.
 Analyzer and Map still run as independent application processes.

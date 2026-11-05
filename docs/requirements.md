@@ -125,7 +125,7 @@ Each requirement lists the components that implement it.
 | FR-2 | Demonstrate AI recognition of visible players/targets (C-13); retain ArUco marker IDs, angles and distances via Runtime. AI interface pending. | Analyzer, Runtime, Marker Detector |
 | FR-3 | The detector estimates the camera-relative angle and distance to a marker and exposes them through Runtime | Marker Detector, Runtime, Analyzer |
 | FR-4 | The app reads the device position and orientation | Analyzer, Runtime |
-| FR-5 | The app calculates the target coordinates and creates an `Observation` with a confidence value | Analyzer |
+| FR-5 | The app calculates the target coordinates and creates an `Observation` with a confidence value | Analyzer (`spec/analyzer-observation.md`) |
 | FR-6 | The app tells teammates from opponents by the marker, and the Map shows them differently | Analyzer, Map (marker ID encodes team as `id / 12`; which teams participate in a particular match is separate) |
 
 ### Map (client)

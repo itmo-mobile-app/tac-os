@@ -19,7 +19,8 @@ The current detector returns:
 - `distance` — estimated distance to the marker, in meters.
 
 The prototype does not return `confidence`. Analyzer supplies `Observation.confidence`
-according to a policy still to be decided, and creates the observation timestamp.
+according to the policy proposed in `spec/analyzer-observation.md` (pending review), and creates the
+observation timestamp.
 
 A `Detection` is local to the client and does not represent the final shared target state.
 

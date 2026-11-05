@@ -1,0 +1,11 @@
+0 visible, 0 outside map
+Map shown. Close the window or press Ctrl+C to exit.
+Broker connected; SUB targets.updated sent (protocol has no acknowledgement)
+Observation sent to Broker (delivery is not acknowledged)
+Target updated: 17
+17: lat 59.9505, lon 30.3095 -> (240, 160), probability 90%
+1 visible, 0 outside map
+Target updated: 17
+17: lat 59.9495, lon 30.3125 -> (720, 480), probability 20%
+1 visible, 0 outside map
+Map window closed.

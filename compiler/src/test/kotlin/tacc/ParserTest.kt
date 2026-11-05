@@ -17,6 +17,7 @@ class ParserTest {
 
     private fun render(e: Expr): String = when (e) {
         is IntLit -> e.value.toString()
+        is FloatLit -> e.value.toString()
         is BoolLit -> e.value.toString()
         is StringLit -> "\"${e.value}\""
         is VarRef -> e.name
@@ -94,12 +95,17 @@ class ParserTest {
         assertEquals("expected an expression, found ';'", parseError("fun main() { let x = ; }").message)
         assertEquals("expected ';', found ')'", parseError("fun main() { let x = 1); }").message)
         assertEquals("expected 'fun' or end of file, found 'let'", parseError("let x = 1;").message)
-        assertEquals(
-            "expected type 'Int', 'Bool' or 'String', found 'Float'",
-            parseError("fun main() { let x: Float = 1; }").message,
-        )
         // A bare block is not a statement in spec/language.md -> "Grammar".
         assertEquals("expected a statement or '}', found '{'", parseError("fun main() { { } }").message)
+    }
+
+    @Test
+    fun floatLiteralAndTypeAreParsed() {
+        val decl = parse("fun main() { let x: Float = 1.5; }").functions[0].body.statements[0] as VarDecl
+        assertEquals(Type.FLOAT, decl.declaredType)
+        assertIs<FloatLit>(decl.initializer)
+        assertEquals("1.5", render(decl.initializer))
+        assertEquals("(1.5 + 2.0)", expr("1.5 + 2.0"))
     }
 
     @Test

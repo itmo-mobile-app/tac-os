@@ -45,7 +45,7 @@ Its responsibilities include:
   (OpenRouter was suggested, but no integration contract is approved yet);
 - reading device position and orientation through Runtime;
 - determining team affiliation from marker ids;
-- deriving observation confidence once its policy has been agreed;
+- deriving observation confidence; the policy is proposed in `spec/analyzer-observation.md` and not yet agreed;
 - calculating global coordinates from device position, heading, detection angle, and distance;
 - creating an `Observation`;
 - sending observations to Map over the separate application IPC.

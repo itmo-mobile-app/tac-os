@@ -6,3 +6,12 @@ add_test(NAME map_wm_e2e
 set_tests_properties(map_wm_e2e PROPERTIES
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/window-manager"
     TIMEOUT 120)
+
+add_test(NAME map_broker_wm_e2e
+    COMMAND "${CMAKE_COMMAND}" -E env
+        "GOWORK=off"
+        "${TACOS_GO_EXECUTABLE}" test -count=1
+        -run "^TestMapBrokerWindowManagerE2E$" ./backend/headless)
+set_tests_properties(map_broker_wm_e2e PROPERTIES
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/window-manager"
+    TIMEOUT 180)
