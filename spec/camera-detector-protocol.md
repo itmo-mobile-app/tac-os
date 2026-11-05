@@ -1,7 +1,7 @@
 # Private Camera Detector protocol
 
-Status: approved design for issue #60; the Go detector side is implemented (issue #69), the C++ Runtime
-client is pending.
+Status: approved design for issue #60; the Go detector side is implemented (issue #69),
+and the C++ Runtime client is implemented for issue #94.
 
 This is the **private** interface between the C++ Runtime in the Analyzer VM process and
 its Go/OpenCV marker-detector helper. It is not an application IPC interface, a

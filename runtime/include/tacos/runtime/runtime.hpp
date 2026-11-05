@@ -3,11 +3,20 @@
 
 #include <cstdint>
 #include <iosfwd>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 namespace tacos::runtime {
+
+namespace detail { class CameraDetectorClient; }
+
+// Host configuration; the VM-facing camera function still has zero arguments.
+struct CameraOptions {
+    std::string helper_path = "marker-detect";
+    std::string fake_mode;
+};
 
 enum class ValueKind {
     Int,
@@ -37,6 +46,13 @@ public:
             "/tmp/tac-os-analyzer-map.sock"
     );
 
+    Runtime(
+        std::ostream& output,
+        std::string wm_socket_path,
+        std::string ipc_socket_path,
+        CameraOptions camera_options
+    );
+
     // Деструктор: освобождает ресурсы сокетов
     ~Runtime();
 
@@ -57,6 +73,8 @@ public:
     const std::string& wm_socket_path() const;
     const std::string& ipc_socket_path() const;
 
+    std::string camera_detect_markers();
+
     // IPC: Map
     void ipc_listen();
     std::string ipc_receive();
@@ -76,6 +94,7 @@ private:
 
     // Данные, полученные после очередного '\n'.
     std::string ipc_buffer_;
+    std::unique_ptr<detail::CameraDetectorClient> camera_;
 };
 
 } // namespace tacos::runtime

@@ -1,6 +1,7 @@
 # Runtime is linked into the VM executable (docs/ai-context/01-architecture.md).
 add_library(tacos_runtime STATIC
     src/runtime.cpp
+    src/camera_detector_client.cpp
     src/window_manager_client.cpp)
 
 
@@ -33,3 +34,5 @@ add_test(
     NAME runtime_unit
     COMMAND runtime_unit_tests
 )
+
+add_subdirectory(tests/camera)
