@@ -96,6 +96,20 @@ Its responsibilities include:
 
 The exact UI structure is not fixed yet.
 
+### Coordinate-only .tc increment (#109)
+
+`app/map/tc/projection.tc` contains a first coordinate calculation on the custom language
+using the Float contract #106. It applies both map projection formulas, checks inclusive geographic
+bounds, clamps the east/south edges to the last pixel position as Float, and self-checks center,
+corners, fractional coordinates and outside points. Integer rounding/conversion is deferred.
+
+The required CTest `map_tc_projection_e2e` runs the real Compiler and VM and compares output
+with the expected fixture labels. It was verified on Linux on 2026-11-04 against Compiler PR #120 and VM PR #116.
+Both Float implementations have since been merged into `main`.
+This source does not draw windows, use Broker or replace the Go Map. See `app/map/tc/README.md`
+for exact revisions, verification results and outstanding dependency checks. The independent #99
+Broker integration and Runtime-to-WM contracts are unchanged.
+
 ## IPC scenario
 
 The primary local IPC scenario is:

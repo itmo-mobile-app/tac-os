@@ -1,0 +1,10 @@
+center-ok
+north-west-ok
+south-east-ok
+fractional-ok
+last-pixel-ok
+north-outside-ok
+south-outside-ok
+west-outside-ok
+east-outside-ok
+map-projection-ok

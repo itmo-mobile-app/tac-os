@@ -1,0 +1,94 @@
+// First Map calculation on .tc (#109). Requires Compiler #107 and VM #108.
+// Inputs are finite, valid WGS84 coordinates and a north-up 960x640 test map.
+// This program does not draw a window or communicate with Broker.
+
+fun contains(latitude: Float, longitude: Float, latMin: Float, latMax: Float,
+             lonMin: Float, lonMax: Float): Bool {
+    if (latitude < latMin) {
+        return false;
+    }
+    if (latitude > latMax) {
+        return false;
+    }
+    if (longitude < lonMin) {
+        return false;
+    }
+    if (longitude > lonMax) {
+        return false;
+    }
+    return true;
+}
+
+// Call only for inside points. Fractional positions remain Float; no Int cast.
+fun screenX(longitude: Float, lonMin: Float, lonMax: Float, width: Float): Float {
+    const x: Float = (longitude - lonMin) / (lonMax - lonMin) * width;
+    if (x > width - 1.0) {
+        return width - 1.0;
+    }
+    return x;
+}
+
+fun screenY(latitude: Float, latMin: Float, latMax: Float, height: Float): Float {
+    const y: Float = (latMax - latitude) / (latMax - latMin) * height;
+    if (y > height - 1.0) {
+        return height - 1.0;
+    }
+    return y;
+}
+
+fun withinTestMap(latitude: Float, longitude: Float): Bool {
+    return contains(latitude, longitude, 59.9490, 59.9510, 30.3080, 30.3140);
+}
+
+fun near(actual: Float, expected: Float): Bool {
+    const difference: Float = actual - expected;
+    if (difference < -0.000001) {
+        return false;
+    }
+    if (difference > 0.000001) {
+        return false;
+    }
+    return true;
+}
+
+fun checkPosition(latitude: Float, longitude: Float, expectedX: Float, expectedY: Float): Bool {
+    if (!withinTestMap(latitude, longitude)) {
+        return false;
+    }
+    const x: Float = screenX(longitude, 30.3080, 30.3140, 960.0);
+    const y: Float = screenY(latitude, 59.9490, 59.9510, 640.0);
+    if (!near(x, expectedX)) {
+        return false;
+    }
+    if (!near(y, expectedY)) {
+        return false;
+    }
+    return true;
+}
+
+fun report(ok: Bool, label: String): Int {
+    if (ok) {
+        runtime.log(label);
+        return 0;
+    }
+    runtime.log("FAIL");
+    return 1;
+}
+
+fun main() {
+    let failures: Int = 0;
+    failures = failures + report(checkPosition(59.9500, 30.3110, 480.0, 320.0), "center-ok");
+    failures = failures + report(checkPosition(59.9510, 30.3080, 0.0, 0.0), "north-west-ok");
+    failures = failures + report(checkPosition(59.9490, 30.3140, 959.0, 639.0), "south-east-ok");
+    failures = failures + report(checkPosition(59.950001, 30.310001, 320.16, 319.68), "fractional-ok");
+    failures = failures + report(checkPosition(59.949001, 30.313999, 959.0, 639.0), "last-pixel-ok");
+    failures = failures + report(!withinTestMap(59.9511, 30.3110), "north-outside-ok");
+    failures = failures + report(!withinTestMap(59.9489, 30.3110), "south-outside-ok");
+    failures = failures + report(!withinTestMap(59.9500, 30.3079), "west-outside-ok");
+    failures = failures + report(!withinTestMap(59.9500, 30.3141), "east-outside-ok");
+    if (failures == 0) {
+        runtime.log("map-projection-ok");
+    } else {
+        runtime.log("map-projection-failed");
+    }
+}
