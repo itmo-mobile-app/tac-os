@@ -36,8 +36,8 @@ class CodeGenTest {
             code("fun f(a: Int, b: Int): Bool { return a $op b; }\nfun main() { }", "f")
                 .map { it.substringAfter(' ') }
         assertEquals(listOf("LOAD 0", "LOAD 1", "CMP_LT", "RET"), cmp("<"))
-        assertEquals(listOf("LOAD 1", "LOAD 0", "CMP_LT", "RET"), cmp(">"))
-        assertEquals(listOf("LOAD 1", "LOAD 0", "CMP_LT", "NOT", "RET"), cmp("<="))
+        assertEquals(listOf("LOAD 0", "STORE 2", "LOAD 1", "LOAD 2", "CMP_LT", "RET"), cmp(">"))
+        assertEquals(listOf("LOAD 0", "STORE 2", "LOAD 1", "LOAD 2", "CMP_LT", "NOT", "RET"), cmp("<="))
         assertEquals(listOf("LOAD 0", "LOAD 1", "CMP_LT", "NOT", "RET"), cmp(">="))
         assertEquals(listOf("LOAD 0", "LOAD 1", "CMP_EQ", "RET"), cmp("=="))
         assertEquals(listOf("LOAD 0", "LOAD 1", "CMP_EQ", "NOT", "RET"), cmp("!="))

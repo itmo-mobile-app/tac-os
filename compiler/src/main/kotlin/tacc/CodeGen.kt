@@ -19,6 +19,9 @@ class CodeGenError(message: String, line: Int) : CompileError(message, line)
 class CodeGen {
     private val pool = ConstantPool()
     private lateinit var code: CodeBuilder
+    private var tempBase = 0
+    private var tempDepth = 0
+    private var maxTempDepth = 0
 
     fun generate(program: Program): BytecodeModule {
         if (program.functions.size > MAX_U16 + 1) {
@@ -26,13 +29,23 @@ class CodeGen {
         }
         val functions = program.functions.map { fn ->
             code = CodeBuilder()
+            tempBase = fn.params.size + fn.localCount
+            tempDepth = 0
+            maxTempDepth = 0
             genStatements(fn.body.statements)
             if (fn.returnType == null) emitReturnZero(fn.line)
-            CompiledFunction(fn.name, fn.params.size, fn.localCount, code.toByteArray())
+            if (fn.localCount + maxTempDepth > 255 || tempBase + maxTempDepth > 256) {
+                throw CodeGenError("too many local variables for comparison temporaries", fn.line)
+            }
+            CompiledFunction(fn.name, fn.params.size, fn.localCount + maxTempDepth, code.toByteArray())
         }
         val entry = program.functions.indexOfFirst { it.name == "main" }
         check(entry >= 0) { "internal error: 'main' presence should have been checked by Checker" }
-        return BytecodeModule(pool.all(), functions, entry)
+        val usesFloat = program.functions.any { fn ->
+            fn.returnType == Type.FLOAT || fn.params.any { it.type == Type.FLOAT } ||
+                containsFloat(fn.body)
+        }
+        return BytecodeModule(pool.all(), functions, entry, usesFloat)
     }
 
     // ---- Statements ----
@@ -112,14 +125,20 @@ class CodeGen {
     private fun genExpr(expr: Expr) {
         when (expr) {
             is IntLit -> code.pushConst(intConstant(expr.value, expr.line))
+            is FloatLit -> code.pushConst(floatConstant(expr.value, expr.line))
             is BoolLit -> code.pushConst(intConstant(if (expr.value) 1 else 0, expr.line))
             is StringLit -> code.pushConst(stringConstant(expr.value, expr.line))
             is VarRef -> code.load(expr.slot)
             is Unary -> when (expr.op) {
                 UnaryOp.NEG -> {
-                    code.pushConst(intConstant(0, expr.line))
-                    genExpr(expr.operand)
-                    code.op(Opcode.SUB)
+                    if (expr.type == Type.FLOAT) {
+                        genExpr(expr.operand)
+                        code.op(Opcode.FNEG)
+                    } else {
+                        code.pushConst(intConstant(0, expr.line))
+                        genExpr(expr.operand)
+                        code.op(Opcode.SUB)
+                    }
                 }
                 UnaryOp.NOT -> {
                     genExpr(expr.operand)
@@ -139,28 +158,60 @@ class CodeGen {
     }
 
     private fun genBinary(expr: Binary) {
-        val (first, second) = when (expr.op) {
-            // `a > b` is `b < a`; `a <= b` is `!(b < a)`: operands are swapped.
-            BinaryOp.GT, BinaryOp.LE -> expr.right to expr.left
-            else -> expr.left to expr.right
+        val swapped = expr.op == BinaryOp.GT || expr.op == BinaryOp.LE
+        if (swapped) {
+            // Evaluate the left expression first, including its side effects, then compare
+            // right < left without needing a SWAP instruction.
+            val slot = tempBase + tempDepth
+            if (slot > 255) throw CodeGenError("too many comparison temporaries", expr.line)
+            tempDepth++
+            maxTempDepth = maxOf(maxTempDepth, tempDepth)
+            genExpr(expr.left)
+            code.store(slot)
+            genExpr(expr.right)
+            code.load(slot)
+            tempDepth--
+        } else {
+            genExpr(expr.left)
+            genExpr(expr.right)
         }
-        genExpr(first)
-        genExpr(second)
+        val float = expr.left.type == Type.FLOAT
         when (expr.op) {
-            BinaryOp.ADD -> code.op(Opcode.ADD)
-            BinaryOp.SUB -> code.op(Opcode.SUB)
-            BinaryOp.MUL -> code.op(Opcode.MUL)
-            BinaryOp.DIV -> code.op(Opcode.DIV)
-            BinaryOp.EQ -> code.op(Opcode.CMP_EQ)
-            BinaryOp.NE -> code.op(Opcode.CMP_EQ).op(Opcode.NOT)
-            BinaryOp.LT, BinaryOp.GT -> code.op(Opcode.CMP_LT)
-            BinaryOp.LE, BinaryOp.GE -> code.op(Opcode.CMP_LT).op(Opcode.NOT)
+            BinaryOp.ADD -> code.op(if (float) Opcode.FADD else Opcode.ADD)
+            BinaryOp.SUB -> code.op(if (float) Opcode.FSUB else Opcode.SUB)
+            BinaryOp.MUL -> code.op(if (float) Opcode.FMUL else Opcode.MUL)
+            BinaryOp.DIV -> code.op(if (float) Opcode.FDIV else Opcode.DIV)
+            BinaryOp.EQ -> code.op(if (float) Opcode.FCMP_EQ else Opcode.CMP_EQ)
+            BinaryOp.NE -> code.op(if (float) Opcode.FCMP_EQ else Opcode.CMP_EQ).op(Opcode.NOT)
+            BinaryOp.LT, BinaryOp.GT -> code.op(if (float) Opcode.FCMP_LT else Opcode.CMP_LT)
+            BinaryOp.LE, BinaryOp.GE -> code.op(if (float) Opcode.FCMP_LT else Opcode.CMP_LT).op(Opcode.NOT)
         }
+    }
+
+    private fun containsFloat(stmt: Stmt): Boolean = when (stmt) {
+        is Block -> stmt.statements.any(::containsFloat)
+        is VarDecl -> stmt.declaredType == Type.FLOAT || containsFloat(stmt.initializer)
+        is Assign -> containsFloat(stmt.value)
+        is If -> containsFloat(stmt.condition) || containsFloat(stmt.thenBlock) ||
+            (stmt.elseBranch?.let(::containsFloat) ?: false)
+        is While -> containsFloat(stmt.condition) || containsFloat(stmt.body)
+        is Return -> stmt.value?.let(::containsFloat) ?: false
+        is CallStmt -> containsFloat(stmt.call)
+    }
+
+    private fun containsFloat(expr: Expr): Boolean = when (expr) {
+        is FloatLit -> true
+        is IntLit, is BoolLit, is StringLit, is VarRef -> expr.type == Type.FLOAT
+        is Unary -> expr.type == Type.FLOAT || containsFloat(expr.operand)
+        is Binary -> expr.type == Type.FLOAT || containsFloat(expr.left) || containsFloat(expr.right)
+        is Call -> expr.type == Type.FLOAT || expr.args.any(::containsFloat)
     }
 
     // ---- Constants ----
 
     private fun intConstant(value: Long, line: Int): Int = checkPoolSize(pool.intConstant(value), line)
+
+    private fun floatConstant(value: Double, line: Int): Int = checkPoolSize(pool.floatConstant(value), line)
 
     private fun stringConstant(value: String, line: Int): Int = checkPoolSize(pool.stringConstant(value), line)
 

@@ -16,7 +16,7 @@ grammar Tc;
 program    : function* EOF ;
 function   : FUN IDENT LPAREN (param (COMMA param)*)? RPAREN (COLON typeName)? block ;
 param      : IDENT COLON typeName ;
-typeName   : INT_TYPE | BOOL_TYPE | STRING_TYPE ;
+typeName   : INT_TYPE | BOOL_TYPE | STRING_TYPE | FLOAT_TYPE ;
 
 block      : LBRACE statement* RBRACE ;
 statement  : varDecl | assignment | ifStmt | whileStmt | returnStmt | callStmt ;
@@ -36,6 +36,7 @@ unary      : op=(MINUS | BANG) unary
            | primary
            ;
 primary    : INT                      # intLiteral
+           | FLOAT                    # floatLiteral
            | STRING                   # stringLiteral
            | (TRUE | FALSE)           # boolLiteral
            | call                     # callExpr
@@ -58,6 +59,7 @@ FALSE       : 'false' ;
 INT_TYPE    : 'Int' ;
 BOOL_TYPE   : 'Bool' ;
 STRING_TYPE : 'String' ;
+FLOAT_TYPE  : 'Float' ;
 
 LPAREN : '(' ;
 RPAREN : ')' ;
@@ -83,6 +85,7 @@ BANG   : '!' ;
 
 // Keywords above take precedence over IDENT for the same text; `letter` is still an IDENT.
 IDENT  : [a-zA-Z_] [a-zA-Z0-9_]* ;
+FLOAT  : [0-9]+ '.' [0-9]+ ;
 INT    : [0-9]+ ;
 // Escapes are validated (only \" \\ \n) when the token is read, see Parse.kt.
 STRING : '"' ( ~["\\\r\n] | '\\' ~[\r\n] )* '"' ;

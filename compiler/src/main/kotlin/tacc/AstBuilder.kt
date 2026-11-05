@@ -22,6 +22,7 @@ class AstBuilder {
     private fun type(ctx: TcParser.TypeNameContext): Type = when (ctx.start.type) {
         TcParser.INT_TYPE -> Type.INT
         TcParser.BOOL_TYPE -> Type.BOOL
+        TcParser.FLOAT_TYPE -> Type.FLOAT
         else -> Type.STRING
     }
 
@@ -110,6 +111,7 @@ class AstBuilder {
         val line = ctx.start.line
         return when (ctx) {
             is TcParser.IntLiteralContext -> IntLit(intValue(ctx.INT().symbol), line)
+            is TcParser.FloatLiteralContext -> FloatLit(floatValue(ctx.FLOAT().symbol), line)
             is TcParser.StringLiteralContext -> StringLit(stringValue(ctx.STRING().symbol), line)
             is TcParser.BoolLiteralContext -> BoolLit(ctx.TRUE() != null, line)
             is TcParser.CallExprContext -> call(ctx.call())

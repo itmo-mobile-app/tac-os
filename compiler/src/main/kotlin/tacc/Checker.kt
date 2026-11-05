@@ -182,6 +182,7 @@ class Checker {
     private fun checkExpr(expr: Expr): Type? {
         val type: Type? = when (expr) {
             is IntLit -> Type.INT
+            is FloatLit -> Type.FLOAT
             is BoolLit -> Type.BOOL
             is StringLit -> Type.STRING
             is VarRef -> {
@@ -191,11 +192,9 @@ class Checker {
             }
             is Unary -> {
                 val operand = valueType(expr.operand)
-                val required = if (expr.op == UnaryOp.NEG) Type.INT else Type.BOOL
-                if (operand != required) {
-                    throw SemanticError("operator '${expr.op.symbol}' requires $required, found $operand", expr.line)
-                }
-                required
+                if (expr.op == UnaryOp.NEG && (operand == Type.INT || operand == Type.FLOAT)) operand
+                else if (expr.op == UnaryOp.NOT && operand == Type.BOOL) Type.BOOL
+                else throw SemanticError("operator '${expr.op.symbol}' cannot be applied to $operand", expr.line)
             }
             is Binary -> checkBinary(expr)
             is Call -> checkCall(expr)
@@ -209,11 +208,11 @@ class Checker {
         val right = valueType(expr.right)
         return when (expr.op) {
             BinaryOp.ADD, BinaryOp.SUB, BinaryOp.MUL, BinaryOp.DIV -> {
-                requireInts(expr, left, right)
-                Type.INT
+                requireNumericPair(expr, left, right)
+                left
             }
             BinaryOp.LT, BinaryOp.LE, BinaryOp.GT, BinaryOp.GE -> {
-                requireInts(expr, left, right)
+                requireNumericPair(expr, left, right)
                 Type.BOOL
             }
             BinaryOp.EQ, BinaryOp.NE -> {
@@ -228,10 +227,10 @@ class Checker {
         }
     }
 
-    private fun requireInts(expr: Binary, left: Type, right: Type) {
-        if (left != Type.INT || right != Type.INT) {
+    private fun requireNumericPair(expr: Binary, left: Type, right: Type) {
+        if (left != right || (left != Type.INT && left != Type.FLOAT)) {
             throw SemanticError(
-                "operator '${expr.op.symbol}' requires Int operands, found $left and $right",
+                "operator '${expr.op.symbol}' requires matching Int or Float operands, found $left and $right",
                 expr.line,
             )
         }

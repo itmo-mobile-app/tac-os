@@ -49,6 +49,7 @@ fun tokenize(source: String): CommonTokenStream {
             TcLexer.BAD_INT -> throw LexError("invalid integer literal '${token.text}'", token.line)
             TcLexer.STRING -> stringValue(token)
             TcLexer.INT -> intValue(token)
+            TcLexer.FLOAT -> floatValue(token)
         }
     }
     return tokens
@@ -81,6 +82,14 @@ fun stringValue(token: Token): String {
 fun intValue(token: Token): Long =
     token.text.toLongOrNull()
         ?: throw LexError("integer literal ${token.text} does not fit in a signed 64-bit integer", token.line)
+
+/** Decimal Float literals use JVM correctly rounded binary64 conversion. */
+fun floatValue(token: Token): Double {
+    val value = token.text.toDoubleOrNull()
+        ?: throw LexError("invalid Float literal '${token.text}'", token.line)
+    if (!value.isFinite()) throw LexError("Float literal '${token.text}' is not finite", token.line)
+    return value
+}
 
 private object LexErrorListener : BaseErrorListener() {
     // Not expected: ERROR_CHAR matches any character the other rules do not.
@@ -126,7 +135,7 @@ private object ParseErrorListener : BaseErrorListener() {
             // Only the start of a statement allows `let`; only the start of an expression allows an integer.
             TcParser.LET in types -> if (TcParser.RBRACE in types) "a statement or '}'" else "a statement"
             TcParser.INT in types -> "an expression"
-            types == listOf(TcParser.INT_TYPE, TcParser.BOOL_TYPE, TcParser.STRING_TYPE) -> "type 'Int', 'Bool' or 'String'"
+            types == listOf(TcParser.INT_TYPE, TcParser.BOOL_TYPE, TcParser.STRING_TYPE, TcParser.FLOAT_TYPE) -> "type 'Int', 'Bool', 'String' or 'Float'"
             types.isEmpty() || types.size > 4 -> null
             else -> {
                 val names = types.map { name(it, parser) }
