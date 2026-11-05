@@ -1,0 +1,72 @@
+{
+  "issue": 99,
+  "base_commit": "2bd0c61de2c8f5293ae9407bf15da0d483e733e2",
+  "environment": [
+    "Linux c26eb98dec9c 6.10.14-linuxkit #1 SMP Sat May 17 08:28:57 UTC 2025 aarch64 GNU/Linux",
+    "go version go1.22.12 linux/arm64",
+    "2.26.5"
+  ],
+  "map_arguments": [
+    "-config",
+    "/repo/app/map/assets/test-map.json",
+    "-broker",
+    "127.0.0.1:18080",
+    "-observations",
+    "/repo/app/map/assets/observations.jsonl"
+  ],
+  "window_id": 4194312,
+  "window_recreated": false,
+  "first_marker": {
+    "position": [
+      240,
+      160
+    ],
+    "probability": 0.9,
+    "rgba": [
+      200,
+      85,
+      63,
+      255
+    ]
+  },
+  "second_marker": {
+    "position": [
+      720,
+      480
+    ],
+    "probability": 0.2,
+    "rgba": [
+      231,
+      181,
+      172,
+      255
+    ]
+  },
+  "old_position_erased": true,
+  "received_observation": {
+    "targetId": "17",
+    "observerId": "device-1",
+    "latitude": 59.9505,
+    "longitude": 30.3095,
+    "confidence": 0.85,
+    "timestamp": 1792255200000
+  },
+  "native_close_during_publication": {
+    "map_exit_code": 0,
+    "wm_remained_running": true,
+    "broker_remained_running": true
+  },
+  "sha256": {
+    "first.png": "b0915c9225635ddd02bbea2a9c6f63544364d359ff68b65b5e0c9f58e7fd52c7",
+    "second.png": "f31659ff1433fc551430d5fac6d7fe422887b8fa66ac2676697ae1a0c3f218c5",
+    "map-output.txt": "a345299c19d46b3de3eaa99c41e22c1ffd1767a7401265da54c0a13ceebec680"
+  },
+  "headless_e2e": {
+    "real_broker": true,
+    "real_map_cli": true,
+    "real_wm_renderer": true,
+    "child_processes_race_instrumented": true,
+    "passed_without_external_network": true,
+    "go_version": "1.22.12 linux/arm64"
+  }
+}

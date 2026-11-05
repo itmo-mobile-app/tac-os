@@ -8,7 +8,10 @@ WM #80 has been merged.
 ## Scope
 
 The Go prototype runs outside the VM. Map converts hardcoded `Target` records to screen coordinates
-and sends drawing commands to WM. WM handles the native surface and knows nothing about targets.
+and sends drawing commands to WM. With `-broker` (#99), the same renderer consumes Target updates
+from the approved Broker protocol and redraws the existing window. WM handles the native surface
+and knows nothing about targets. Broker mode and its delivery/reconnection limitations are documented
+in `app/map/README.md`; it does not change the drawing or domain wire contracts.
 The final `.tc` application will use Runtime; no language or VM changes are included here.
 
 ## Coordinates and assets
@@ -79,3 +82,7 @@ production WM server and headless renderer over Unix sockets, including successf
 Native SDL2/X11 display, opacity and native window-close events were verified on Linux.
 The reproducible commands, exact environment, screenshots and measured results are recorded in
 `docs/testing/map-wm.md`. PNG-preview alone is not the native integration evidence.
+
+`TestMapBrokerWindowManagerE2E` additionally verifies the real Broker to Map CLI to WM/headless
+path: six-field Observation publication, moving/fading marker pixels, retained targets, one window,
+and graceful Broker disconnect. CTest registers it as `map_broker_wm_e2e`.

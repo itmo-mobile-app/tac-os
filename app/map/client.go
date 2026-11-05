@@ -22,6 +22,10 @@ type response struct {
 	WindowID string `json:"window_id"`
 }
 
+type wmRejection struct{ message string }
+
+func (e *wmRejection) Error() string { return "WM rejected request: " + e.message }
+
 func (c Client) timeout() time.Duration {
 	if c.Timeout > 0 {
 		return c.Timeout
@@ -42,7 +46,7 @@ func readResponse(reader *bufio.Reader) (response, error) {
 		return response{}, fmt.Errorf("WM response is missing boolean 'ok'")
 	}
 	if !*resp.OK {
-		return response{}, fmt.Errorf("WM rejected request: %s", resp.Message)
+		return response{}, &wmRejection{message: resp.Message}
 	}
 	return resp, nil
 }

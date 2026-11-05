@@ -216,6 +216,12 @@ compatibility and native Linux SDL2 integration were verified against WM #80; se
 `docs/testing/map-wm.md`. Agreement with the WM owner on the final frame and command fields was
 confirmed by the Map owner. WM #80 has been merged.
 
+The Go Map's #99 prototype mode now exchanges Observation/Target messages with the existing Broker
+and redraws its current window. On connection failure it keeps the last frame and remains closeable.
+It has no automatic reconnect, message replay or offline queue; restart is required to reconnect.
+This documents a limited prototype behavior, not a general application recovery policy. See
+`app/map/README.md`. The `.tc` coordinate scenario (#109) remains a separate increment.
+
 ## Deployment
 
 - Exact client Linux environment.
