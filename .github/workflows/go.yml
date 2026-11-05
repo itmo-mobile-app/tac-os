@@ -6,6 +6,36 @@ on:
     branches: [main]
 
 jobs:
+  system-smoke:
+    name: Linux system smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: tests/system-smoke
+    env:
+      GOPROXY: "off"
+      GOSUMDB: "off"
+      GOTOOLCHAIN: local
+      GOWORK: "off"
+      GOFLAGS: -mod=readonly
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.22.x"
+          cache: false
+      - name: Use an empty module cache
+        run: echo "GOMODCACHE=$(mktemp -d)" >> "$GITHUB_ENV"
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)"
+      - name: Go vet
+        run: go vet ./...
+      - name: Test isolation, failure and cancellation (race detector)
+        run: go test -race -count=1 -timeout 5m ./...
+      - name: Run documented CLI
+        run: go run -mod=readonly .
+
   modules:
     name: Go / ${{ matrix.component }}
     runs-on: ubuntu-latest
