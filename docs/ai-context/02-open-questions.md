@@ -151,7 +151,8 @@ The minimal SQL subset is defined in `spec/sql.md` (approved by the SQL DBMS own
 - The client protocol is specified in `spec/dbms-protocol.md`: Unix-domain
   socket, four-byte little-endian length framing, raw UTF-8 SQL requests and
   JSON responses with typed SELECT columns and structured errors. Its network
-  server and Target Service client are not yet implemented.
+  server is implemented in `tacdb-server` (#96). Target Service client integration
+  is tracked separately in #97.
 - How stale Observation records are removed or expired, since `DELETE` is not
   included in the minimal SQL subset.
 
