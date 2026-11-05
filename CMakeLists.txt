@@ -6,6 +6,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(TACOS_SANITIZE "Build with AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
+option(TACOS_THREAD_SANITIZE "Build with ThreadSanitizer for isolated VM contexts" OFF)
+if(TACOS_SANITIZE AND TACOS_THREAD_SANITIZE)
+    message(FATAL_ERROR "Use separate builds for ASan/UBSan and ThreadSanitizer")
+endif()
 
 # The compiler is a Kotlin project built by Gradle (compiler/); tests call its launcher.
 set(TACOS_TACC "${CMAKE_SOURCE_DIR}/compiler/build/install/tacc/bin/tacc"
@@ -16,6 +20,11 @@ add_compile_options(-Wall -Wextra -Wpedantic)
 if(TACOS_SANITIZE)
     add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
     add_link_options(-fsanitize=address,undefined)
+endif()
+
+if(TACOS_THREAD_SANITIZE)
+    add_compile_options(-fsanitize=thread -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=thread)
 endif()
 
 enable_testing()

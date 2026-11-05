@@ -36,9 +36,9 @@
   <!-- VM component -->
   <rect class="box" x="30" y="60" width="340" height="310" rx="6"/>
   <text class="t-name" x="48" y="86">VM</text>
-  <text class="t-sub" x="84" y="86">vm/src/main.cpp</text>
+  <text class="t-sub" x="84" y="86">vm/src/vm.cpp</text>
   <rect class="fn" x="48" y="104" width="304" height="132" rx="4"/>
-  <text class="t-code" x="66" y="130">load_program</text>
+  <text class="t-code" x="66" y="130">run_file → load_program</text>
   <text class="t-sub" x="66" y="152">проверяет TACB и версии 1 / 2</text>
   <text class="t-sub" x="66" y="172">читает Int / String / Float и функции</text>
   <text class="t-sub" x="66" y="192">entry_function</text>

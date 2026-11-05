@@ -301,3 +301,13 @@ The Runtime hides the concrete WebView engine from application code.
 - Window Manager remains a separate system component.
 - Runtime APIs should be added only when required by application scenarios.
 - Keep Runtime calls minimal and stable once shared by multiple components.
+
+## Independent host executions (#93)
+
+`tacos_vm` exposes `tacos::vm::run_file(path, runtime)` separately from the CLI.
+Each invocation owns its loaded program, stack, frames and locals. Separate
+C++ threads may run independent invocations with distinct Runtime instances,
+outputs and external resources. The initial tested scope is computation and
+`runtime.log`; shared sockets, camera and Window Manager usage are not approved.
+See `spec/vm-execution.md` for ownership and error propagation; Runtime resource-isolation restrictions were reviewed in PR #117.
+Analyzer and Map still run as independent application processes.

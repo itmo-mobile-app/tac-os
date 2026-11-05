@@ -13,6 +13,7 @@ Create a specification only when the corresponding contract becomes necessary.
 | --- | --- | --- |
 | [`language.md`](language.md) | `.tc` syntax | approved |
 | [`bytecode.md`](bytecode.md) | Compiler ↔ VM | approved |
+| [`vm-execution.md`](vm-execution.md) | C++ host ↔ independent VM executions | proposed; Runtime isolation restrictions reviewed in #117 |
 | [`runtime-api.md`](runtime-api.md) | VM ↔ Runtime and initial Camera API | approved; C++ Camera client implemented (#94) |
 | [`camera-detector-protocol.md`](camera-detector-protocol.md) | Private C++ Runtime ↔ Go marker detector IPC | approved; Go helper and C++ Runtime client implemented |
 | [`ipc.md`](ipc.md) | Analyzer ↔ Map | approved |
