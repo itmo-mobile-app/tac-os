@@ -141,3 +141,52 @@ Technical interoperability has been demonstrated. Following the
 the Map owner reported on 2026-10-21 that the final frame and command fields had been discussed with
 `@khamitova-prog` and approved. The confirmation was reported from their discussion, rather than
 received as a GitHub reply. Merging the WM dependency is still required.
+
+## Wayland verification (WSLg)
+
+The Map-to-WM integration was additionally tested using the SDL2 Wayland video driver under WSLg.
+
+**Environment:**
+
+- Platform: Ubuntu on WSL2 with WSLg
+- SDL2: 2.30.0
+- Video driver: `wayland`
+- `WAYLAND_DISPLAY=wayland-0`
+- `DISPLAY=:0`
+- WM and Map built from the current repository checkout.
+
+**Build:**
+
+```bash
+(cd window-manager && go build -tags sdl -o /tmp/tac-wm-wayland ./cmd/wm-server)
+(cd app/map && go build -o /tmp/tac-map-wayland ./cmd/map-demo)
+```
+
+**Run:**
+
+Start the WM in one terminal:
+
+```bash
+SDL_VIDEODRIVER=wayland /tmp/tac-wm-wayland -backend sdl
+```
+
+Start Map in another terminal:
+
+```bash
+SDL_VIDEODRIVER=wayland /tmp/tac-map-wayland -config app/map/assets/test-map.json
+```
+
+The `Tactical Map` window opened successfully and displayed the map.
+
+**Result:**
+
+- Closing the native window emitted the `window_close` event.
+- Map printed `Map window closed.` and exited with code `0`.
+- The WM process remained alive after Map exited.
+- Both `/tmp/tacos-wm.sock` and `/tmp/tacos-wm-events.sock` existed while the WM was running.
+- After stopping the WM with `Ctrl+C`, both socket files were removed.
+- The WM did not crash.
+
+WSLg emitted several `libEGL` and Mesa/ZINK warnings during startup. They did not prevent rendering or affect the tested lifecycle behavior.
+
+**Conclusion:** The native window-close lifecycle and socket cleanup were reproduced successfully with SDL2 using the Wayland driver under WSLg.
