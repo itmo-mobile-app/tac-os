@@ -13,14 +13,15 @@ Create a specification only when the corresponding contract becomes necessary.
 | --- | --- | --- |
 | [`language.md`](language.md) | `.tc` syntax | approved |
 | [`bytecode.md`](bytecode.md) | Compiler ↔ VM | approved |
-| [`runtime-api.md`](runtime-api.md) | VM ↔ Runtime and initial Camera API | approved design; Camera implementation pending |
-| [`camera-detector-protocol.md`](camera-detector-protocol.md) | Private C++ Runtime ↔ Go marker detector IPC | approved design; Go detector side implemented, Runtime client pending |
+| [`runtime-api.md`](runtime-api.md) | VM ↔ Runtime and initial Camera API | approved; C++ Camera client implemented (#94) |
+| [`camera-detector-protocol.md`](camera-detector-protocol.md) | Private C++ Runtime ↔ Go marker detector IPC | approved; Go helper and C++ Runtime client implemented |
 | [`ipc.md`](ipc.md) | Analyzer ↔ Map | approved |
 | [`broker-protocol.md`](broker-protocol.md) | Client/Target Service ↔ Broker | approved |
 | [`data-model.md`](data-model.md) | Shared domain structures | approved |
+| [`analyzer-observation.md`](analyzer-observation.md) | Analyzer: target coordinates, local confidence, AI recognition boundary | proposed for review (#98) |
 | [`sql.md`](sql.md) | SQL subset for the DBMS | approved |
 | [`dbms-protocol.md`](dbms-protocol.md) | Target Service ↔ DBMS binary-framed SQL/JSON | approved design; implementation pending |
-| [`map-rendering.md`](map-rendering.md) | Map coordinates, assets and drawing | Map prototype; native WM integration pending |
+| [`map-rendering.md`](map-rendering.md) | Map coordinates, assets and drawing | Go prototype; WM and Broker E2E covered; `.tc` Map pending |
 
 The original Sprint 0 contracts were drafted by Architecture & Integration and then reviewed and approved by the owner of the
 corresponding area (see `docs/ai-context/03-team-ownership.md`) during Sprint 0. An approved contract

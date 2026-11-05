@@ -35,7 +35,7 @@ Command messages and event messages use newline-delimited JSON (one JSON object 
 A command request contains the following fields:
 
 | Field | Type | Description |
-|---|---|---|
+| --- | --- | --- |
 | `command` | string | Command to execute. |
 | `window_id` | string | Window identifier. Defaults to `map` when omitted. |
 | `title` | string | Window title. Defaults to `Tactical Map` when omitted. |
@@ -74,7 +74,7 @@ The prototype supports one window at a time. It does not define multi-window beh
 A response contains:
 
 | Field | Type | Description |
-|---|---|---|
+| --- | --- | --- |
 | `ok` | boolean | Indicates whether the operation succeeded. |
 | `message` | string | Result information or an error description. |
 | `event` | string | Event name when the response carries an event; otherwise omitted or empty. |

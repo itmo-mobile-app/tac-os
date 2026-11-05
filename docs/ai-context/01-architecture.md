@@ -82,7 +82,8 @@ The Runtime may be linked into the VM executable and does not need to run as a s
 - The DBMS is written in Go (1.22+) in `server/dbms/`, matching the course stack. It uses
   only the standard library. `go build ./cmd/tacdb` builds its CLI; `go test ./...` runs
   its unit tests. CMake also builds this executable and registers DBMS tests with CTest.
-  Issue #31 is an in-memory increment; persistence and the client protocol are deferred.
+  The in-memory executor and `tacdb-server` Unix-socket entry point (#96) implement
+  `spec/dbms-protocol.md`; persistence remains deferred.
 - The Window Manager, Broker, Target Service, and DBMS are written in Go or Rust, as required by the course
   technology stack (`docs/requirements.md`, C-11). Each component owner picks one of the two; the choice is
   recorded here.
@@ -114,7 +115,7 @@ Each process runs its own VM instance.
 Responsible for:
 
 - requesting marker detections through the Runtime Camera API (not accessing detector IPC directly);
-- deriving observation confidence using a policy that still needs to be specified;
+- deriving observation confidence using the policy proposed in `spec/analyzer-observation.md` (pending review);
 - reading device position and orientation through Runtime APIs;
 - calculating target coordinates;
 - creating an `Observation`;
@@ -150,9 +151,24 @@ and the asset format are specified in `spec/map-rendering.md`.
 
 Probability affects marker opacity; it is not calculated by Map. `spec/data-model.md` is already
 approved by the Tactical Map and Analyzer owners and remains unchanged.
-The prototype has no Analyzer IPC, Broker subscription, WebView or `.tc` code. Its existing PNG
+The offline prototype has no Analyzer IPC, WebView or `.tc` code. Its existing PNG
 preview and coordinate/frame tests are supplemented by a real Map CLI to WM/headless E2E test and
 recorded Linux SDL2 display/close verification; the PNG preview alone is not native evidence.
+
+### Map and Broker integration for Sprint 3 (#99)
+
+The optional `-broker host:port` mode in the existing Go Map uses the approved TCP protocol to
+publish six-field Observation objects and subscribe to `targets.updated`. A JSONL fixture supplied
+with `-observations` is a one-shot prototype input; it does not implement Analyzer IPC. Incoming
+individual Target objects replace state by targetId and redraw the existing WM window with the same
+drawing commands. No target probability is calculated in Map. Broker connection failure leaves the
+last frame visible and the window closeable; there is no automatic reconnect, queue or replay.
+These client limitations do not resolve the general Broker reconnection design question.
+
+`TestMapBrokerWindowManagerE2E` connects the actual Broker and Map executables with the production
+WM/headless server and verifies message delivery, front-buffer pixels, redraws without window
+recreation, validation and disconnect/close behavior. See `app/map/README.md` for one-command tests
+and manual Linux SDL2 steps. This increment does not implement #109 or any Runtime-to-WM API.
 
 ## AI target recognition requirement
 

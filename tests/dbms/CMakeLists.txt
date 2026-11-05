@@ -1,4 +1,4 @@
-foreach(case Create Insert Select Update UpdateErrors Literals Syntax Semantic Atomicity Independent)
+foreach(case Create Insert Select Update UpdateErrors Literals Syntax Semantic Atomicity Independent ResultTypes)
     string(TOLOWER "${case}" name)
     add_test(NAME dbms.${name}
         COMMAND "${CMAKE_COMMAND}" -E env
@@ -22,3 +22,11 @@ add_test(NAME dbms.cli
         "-DOUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/cli_test.cmake")
 set_tests_properties(dbms.cli PROPERTIES LABELS dbms)
+
+add_test(NAME dbms.socket
+    COMMAND "${CMAKE_COMMAND}" -E env
+        "GOWORK=off" "GOCACHE=${TACOS_DBMS_GO_CACHE}"
+        "TACOS_DBMS_SERVER=${TACOS_DBMS_SERVER}"
+        "${TACOS_GO_EXECUTABLE}" test -count=1 ./internal/server)
+set_tests_properties(dbms.socket PROPERTIES
+    WORKING_DIRECTORY "${TACOS_DBMS_SOURCE_DIR}" LABELS dbms TIMEOUT 120)

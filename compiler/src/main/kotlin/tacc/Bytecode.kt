@@ -20,10 +20,18 @@ object Opcode {
     const val RET: Int = 0x0E
     const val POP: Int = 0x0F
     const val NOT: Int = 0x10
+    const val FADD: Int = 0x11
+    const val FSUB: Int = 0x12
+    const val FMUL: Int = 0x13
+    const val FDIV: Int = 0x14
+    const val FNEG: Int = 0x15
+    const val FCMP_EQ: Int = 0x16
+    const val FCMP_LT: Int = 0x17
 }
 
 sealed class Constant {
     data class IntConst(val value: Long) : Constant()
+    data class FloatConst(val value: Double) : Constant()
     data class StringConst(val value: String) : Constant()
 }
 
@@ -32,6 +40,7 @@ class ConstantPool {
     private val constants = mutableListOf<Constant>()
     private val stringIndex = mutableMapOf<String, Int>()
     private val intIndex = mutableMapOf<Long, Int>()
+    private val floatIndex = mutableMapOf<Long, Int>()
 
     fun stringConstant(value: String): Int =
         stringIndex.getOrPut(value) {
@@ -42,6 +51,12 @@ class ConstantPool {
     fun intConstant(value: Long): Int =
         intIndex.getOrPut(value) {
             constants.add(Constant.IntConst(value))
+            constants.size - 1
+        }
+
+    fun floatConstant(value: Double): Int =
+        floatIndex.getOrPut(value.toRawBits()) {
+            constants.add(Constant.FloatConst(value))
             constants.size - 1
         }
 
@@ -120,4 +135,5 @@ class BytecodeModule(
     val constants: List<Constant>,
     val functions: List<CompiledFunction>,
     val entryFunction: Int,
+    val usesFloat: Boolean = constants.any { it is Constant.FloatConst },
 )

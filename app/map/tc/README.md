@@ -1,10 +1,9 @@
 # Map coordinate calculation on .tc (#109)
 
-Status: the real Compiler → VM Linux E2E passed on 2026-11-04 with the unmerged Float
-implementations from Compiler PR #120 (`0324e967eb6caadba2dce95d4cd643f2eb66ad79`) and VM
-PR #116 (`86b1d5102d0ee5ca3e8beeadcd4860ee8f0aa4aa`). Main at
-`2bd0c61de2c8f5293ae9407bf15da0d483e733e2` still lacks both implementations. This change must
-be integrated after those dependencies; their source code is not part of #109.
+Status: the real Compiler → VM Linux E2E passed on 2026-11-04 using the
+then-unmerged Float implementations from Compiler PR #120 and VM PR #116.
+Both have since been merged into `main`. This change adds only Map's
+coordinate scenario, not a second compiler or VM implementation.
 
 `projection.tc` is an actual custom-language source. It contains the two geographic-to-screen
 formulas, an inclusive bounds check, Float parameters/locals/returns and self-checking fixtures.
@@ -64,7 +63,7 @@ both exit statuses and compares stdout with `tests/map-tc/expected.txt`. Every f
 `FAIL` instead of its expected label and ends with `map-projection-failed`, so incorrect results
 cannot pass just because the VM process exits normally. Compile errors and VM errors also fail.
 No generated `.bc` is checked in. The test is required, without an automatic skip for absent Float.
-Merge #107/#108 before this change. On the old Int-only toolchain this test fails explicitly.
+The Float implementations from #107/#108 are now in `main`. On the legacy Int-only toolchain this test fails explicitly.
 
 ### Verification on 2026-11-04
 

@@ -45,7 +45,7 @@ Its responsibilities include:
   (OpenRouter was suggested, but no integration contract is approved yet);
 - reading device position and orientation through Runtime;
 - determining team affiliation from marker ids;
-- deriving observation confidence once its policy has been agreed;
+- deriving observation confidence; the policy is proposed in `spec/analyzer-observation.md` and not yet agreed;
 - calculating global coordinates from device position, heading, detection angle, and distance;
 - creating an `Observation`;
 - sending observations to Map over the separate application IPC.
@@ -104,8 +104,8 @@ bounds, clamps the east/south edges to the last pixel position as Float, and sel
 corners, fractional coordinates and outside points. Integer rounding/conversion is deferred.
 
 The required CTest `map_tc_projection_e2e` runs the real Compiler and VM and compares output
-with the expected fixture labels. It passed on Linux on 2026-11-04 using Compiler PR #120
-and VM PR #116, which must land before #109; the Int-only main cannot execute this source.
+with the expected fixture labels. It was verified on Linux on 2026-11-04 against Compiler PR #120 and VM PR #116.
+Both Float implementations have since been merged into `main`.
 This source does not draw windows, use Broker or replace the Go Map. See `app/map/tc/README.md`
 for exact revisions, verification results and outstanding dependency checks. The independent #99
 Broker integration and Runtime-to-WM contracts are unchanged.

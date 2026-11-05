@@ -63,7 +63,8 @@ protocol, timeout and helper lifecycle are fixed in
 `spec/camera-detector-protocol.md`. Still unresolved:
 
 - The proposed Float contract is described in `spec/language.md` and
-  `spec/bytecode.md` (#106); implementation is still pending in #107/#108.
+  `spec/bytecode.md` (#106); VM execution is implemented in #108; Compiler support and the real Float
+  Compiler-to-VM E2E remain pending in #107.
   Native collections/`Detection[]` remain unresolved, and the current
   Camera API continues returning JSON as `String`.
 - A recoverable error mechanism visible to `.tc` beyond an initial Runtime failure.
@@ -151,7 +152,8 @@ The minimal SQL subset is defined in `spec/sql.md` (approved by the SQL DBMS own
 - The client protocol is specified in `spec/dbms-protocol.md`: Unix-domain
   socket, four-byte little-endian length framing, raw UTF-8 SQL requests and
   JSON responses with typed SELECT columns and structured errors. Its network
-  server and Target Service client are not yet implemented.
+  server is implemented in `tacdb-server` (#96). Target Service client integration
+  is tracked separately in #97.
 - How stale Observation records are removed or expired, since `DELETE` is not
   included in the minimal SQL subset.
 
@@ -185,16 +187,22 @@ Before implementation, resolve the following with the architecture, Analyzer and
 The approved `spec/camera-detector-protocol.md` and `spec/runtime-api.md` keep their
 existing ArUco contracts until a separate interface change is reviewed.
 
+The Analyzer-side boundary between ArUco and AI recognition is proposed in
+`spec/analyzer-observation.md` → "AI recognition boundary". The questions above are tracked in
+issue #104; they are not additional work under #98.
+
 ## Domain model
 
 - Exact observation identifier format.
 - Device/client identifier format.
 - Probability representation.
-- Confidence representation, including where the detection `confidence` comes from (the ArUco detector
-  does not provide a score).
+- Confidence representation: the detector provides no score; the local `Observation.confidence`
+  policy is proposed in `spec/analyzer-observation.md` (issue #98, pending review).
 - Physical marker size and camera parameters (field of view or calibration) as detector configuration.
-- Direction and azimuth calculation details.
-- Coordinate precision requirements.
+- Direction and azimuth calculation, coordinate precision and the AI recognition boundary on the
+  Analyzer side are proposed in `spec/analyzer-observation.md` (issue #98, pending review). Not
+  covered by it: the heading reference (true or magnetic north) in the Runtime orientation API,
+  the Runtime location and time APIs, and field calibration of the confidence constants.
 
 ## Application
 
@@ -214,6 +222,12 @@ image and its geographic calibration still need to be supplied for deployment. D
 compatibility and native Linux SDL2 integration were verified against WM #80; see
 `docs/testing/map-wm.md`. Agreement with the WM owner on the final frame and command fields was
 confirmed by the Map owner. WM #80 has been merged.
+
+The Go Map's #99 prototype mode now exchanges Observation/Target messages with the existing Broker
+and redraws its current window. On connection failure it keeps the last frame and remains closeable.
+It has no automatic reconnect, message replay or offline queue; restart is required to reconnect.
+This documents a limited prototype behavior, not a general application recovery policy. See
+`app/map/README.md`. The `.tc` coordinate scenario (#109) remains a separate increment.
 
 ## Deployment
 

@@ -9,6 +9,7 @@ package tacc
 
 enum class Type(val displayName: String) {
     INT("Int"),
+    FLOAT("Float"),
     BOOL("Bool"),
     STRING("String"),
     ;
@@ -26,6 +27,8 @@ sealed class Expr {
 }
 
 data class IntLit(val value: Long, override val line: Int) : Expr()
+
+data class FloatLit(val value: Double, override val line: Int) : Expr()
 
 data class BoolLit(val value: Boolean, override val line: Int) : Expr()
 

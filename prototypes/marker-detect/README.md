@@ -98,6 +98,14 @@ two requests over one connection, an empty list, `CAMERA_UNAVAILABLE`, `DETECTIO
 oversized requests, closing the socket, a stale or busy socket file. The tests of `cmd/marker-detect` check
 the camera source with a fake camera.
 
+## Runtime test helper without OpenCV
+
+The production command still requires OpenCV to build, including for `-fake`.
+The test-only launcher in `internal/runtimehelper` reuses the existing IPC server
+and fake sources without importing gocv. The Runtime CMake tests build this helper
+and check repeated requests and shutdown; see
+[Runtime camera integration tests](../../docs/testing/camera-runtime.md).
+
 ## Run
 
 ```bash

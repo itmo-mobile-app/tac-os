@@ -14,8 +14,7 @@ type Color struct {
 	A uint8 `json:"a"`
 }
 
-// Command extends the existing WM JSON envelope. Drawing fields are the Map-side
-// proposal documented in spec/map-rendering.md; the supplied WM does not yet implement them.
+// Command follows the existing WM JSON envelope and drawing contract in spec/map-rendering.md.
 type Command struct {
 	Command   string `json:"command"`
 	WindowID  string `json:"window_id,omitempty"`

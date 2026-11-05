@@ -23,11 +23,12 @@ class Module(val constants: List<Any>, val functions: List<Function>, val entry:
         fun read(bytes: ByteArray): Module {
             val r = Reader(bytes)
             check(String(r.bytes(4), Charsets.US_ASCII) == "TACB") { "bad magic" }
-            check(r.u16() == 1) { "bad version" }
+            check(r.u16() in 1..2) { "bad version" }
             val constants = List(r.u16()) {
                 when (val tag = r.u8()) {
                     0 -> r.i64()
                     1 -> r.string()
+                    2 -> Double.fromBits(r.i64())
                     else -> error("bad constant tag $tag")
                 }
             }
@@ -70,6 +71,9 @@ private val MNEMONICS = mapOf(
     Opcode.CMP_EQ to "CMP_EQ", Opcode.CMP_LT to "CMP_LT", Opcode.JMP to "JMP",
     Opcode.JMP_IF_FALSE to "JMP_IF_FALSE", Opcode.CALL to "CALL", Opcode.CALL_RUNTIME to "CALL_RUNTIME",
     Opcode.RET to "RET", Opcode.POP to "POP", Opcode.NOT to "NOT",
+    Opcode.FADD to "FADD", Opcode.FSUB to "FSUB", Opcode.FMUL to "FMUL",
+    Opcode.FDIV to "FDIV", Opcode.FNEG to "FNEG", Opcode.FCMP_EQ to "FCMP_EQ",
+    Opcode.FCMP_LT to "FCMP_LT",
 )
 
 /**
@@ -134,6 +138,25 @@ class TestVm(private val module: Module) {
                             else -> if (a < b) 1L else 0L
                         },
                     )
+                }
+                Opcode.FADD, Opcode.FSUB, Opcode.FMUL, Opcode.FDIV, Opcode.FCMP_LT -> {
+                    val b = stack.removeLast() as Double
+                    val a = stack.removeLast() as Double
+                    val result: Any = when (op) {
+                        Opcode.FADD -> a + b
+                        Opcode.FSUB -> a - b
+                        Opcode.FMUL -> a * b
+                        Opcode.FDIV -> { check(b != 0.0) { "Float division by zero" }; a / b }
+                        else -> if (a < b) 1L else 0L
+                    }
+                    if (result is Double) check(result.isFinite()) { "non-finite Float result" }
+                    stack.addLast(result)
+                }
+                Opcode.FNEG -> stack.addLast(-(stack.removeLast() as Double))
+                Opcode.FCMP_EQ -> {
+                    val b = stack.removeLast() as Double
+                    val a = stack.removeLast() as Double
+                    stack.addLast(if (a == b) 1L else 0L)
                 }
                 Opcode.CMP_EQ -> {
                     val b = stack.removeLast()

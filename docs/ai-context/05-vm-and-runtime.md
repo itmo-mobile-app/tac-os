@@ -61,7 +61,10 @@ CALL
 RET
 ```
 
-The exact instruction set is not fixed yet.
+The instruction set is defined in `spec/bytecode.md`. VM #108 accepts v1 and
+Float v2, preserving a separate kind for each value. It rejects non-finite
+Float constants/results and division by signed zero. Compiler #107 is still
+required for the real Float source-to-bytecode integration test.
 
 ## Runtime responsibility
 
@@ -133,8 +136,10 @@ framing, error codes, bounded timeouts and lifecycle.
 The initial public call `camera.detectMarkers() -> String` returns only the
 JSON array (or reports a Runtime error). This temporarily avoids changing
 the current VM value layout. Native `Float` and a typed `Detection[]`
-return type remain later work; neither the public function nor its IPC
-implementation is present in the current executable yet.
+return type remain later work. The public function is registered in the C++
+Runtime and its Unix-socket client is implemented, with synthetic-fixture and
+failure tests in `docs/testing/camera-runtime.md`. No language changes or
+typed detection representation are included.
 
 The detector is not a third Tactical App process: Analyzer and Map remain independent `.tc`/VM
 processes and exchange application observations via `spec/ipc.md`. The Analyzer computes target

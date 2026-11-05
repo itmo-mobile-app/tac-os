@@ -1,0 +1,13 @@
+fun calculateX(longitude: Float, lonMin: Float,
+               lonMax: Float, width: Float): Float {
+    return (longitude - lonMin) / (lonMax - lonMin) * width;
+}
+
+fun main() {
+    let x: Float = calculateX(30.31, 30.308, 30.314, 960.0);
+    if (x >= 319.0) {
+        if (x <= 321.0) {
+            runtime.log("float-ok");
+        }
+    }
+}

@@ -10,7 +10,8 @@ Tables exist only in memory. Closing `tacdb` discards them. The CLI is a develop
 entry point, **not** the Target Service wire protocol. The planned socket client/server
 contract is fixed in `spec/dbms-protocol.md`: a Unix-domain stream socket with
 four-byte little-endian length-prefixed UTF-8 SQL requests and JSON responses.
-Neither persistence nor the socket server is implemented in this CLI increment.
+The socket server is implemented separately as `tacdb-server` (#96). Persistence
+is not implemented.
 The local Go API is not a deployment decision.
 
 ## Build and test only this component
@@ -45,7 +46,7 @@ ctest --test-dir "$HOME/tac-os-build/dbms-go" --output-on-failure
 "$HOME/tac-os-build/dbms-go/tacdb"
 ```
 
-The isolated build registers twelve DBMS checks. It does not require Kotlin or the VM.
+The isolated build registers fourteen DBMS checks. It does not require Kotlin or the VM.
 For the complete monorepo build, follow the root README. The CLI then lives at
 `build/server/dbms/tacdb`. DBMS checks carry the `dbms` label:
 
@@ -117,3 +118,50 @@ The table representation is an internal detail, not a persistent storage format.
 The zero value of `Database` is ready to use. `Execute` accepts one semicolon-terminated
 statement. `QueryError.Position` is a zero-based byte offset. Results own copies of rows.
 A used Database must not be copied or used concurrently.
+
+## Unix-socket server (Linux, issue #96)
+
+```bash
+cd server/dbms
+go build -buildvcs=false -o /tmp/tacdb-server ./cmd/tacdb-server
+/tmp/tacdb-server -socket /tmp/tac-os-dbms.sock
+```
+
+CMake builds `tacdb-server` next to `tacdb`. The existing CLI is unchanged.
+The server implements `spec/dbms-protocol.md` without extending SQL or changing
+its wire format: one raw UTF-8 SQL statement per four-byte uint32 LE frame,
+one framed JSON response, and multiple exchanges on the same connection.
+Requests/responses are limited to 1 MiB. SQL errors include a zero-based byte
+position; malformed/truncated/oversized frames close only their connection.
+Empty/invalid UTF-8 payloads in valid-size frames return BAD_REQUEST.
+SELECT columns include types even for zero rows. INTEGER values remain int64.
+Oversized SELECT responses return RESULT_TOO_LARGE.
+
+Connections share one database; a mutex serializes executor access. Socket I/O
+is outside that mutex. `-io-timeout 5s` controls the deadline for each frame read
+or write; it is not a database execution timeout. The client should use its
+own timeout and must not blindly retry writes after an ambiguous disconnect.
+No persistence, authentication protocol, TCP endpoint or transactions are added.
+Database contents are discarded when this process exits.
+
+SIGINT (Ctrl+C) and SIGTERM stop accepting clients, interrupt blocked socket I/O,
+wait for handlers and remove only the socket created by that server. Socket
+permissions are 0600. Startup refuses regular files, symlinks, foreign-owned or
+active sockets, and can remove an owned stale socket after ECONNREFUSED.
+A same-owner 0600 `<socket>.lock` file uses flock to prevent simultaneous server
+starts. It remains after exit intentionally; it contains no SQL data. Do not
+remove the lock file while a server might be running or starting. Use a private
+service-owned directory for deployment. The code uses Linux system APIs.
+
+`go test -race -count=1 ./...` tests actual Unix sockets, partial/coalesced frames,
+frame boundaries, UTF-8, malformed requests, int64 extremes, errors, empty
+SELECT metadata, response limits, parallel clients, timeouts and cleanup.
+It also builds and starts a separate server process and checks all four SQL
+commands and SIGTERM cleanup. CTest `dbms.socket` runs the same socket tests
+against its built server using `TACOS_DBMS_SERVER`; the general Go CI matrix
+already includes this module. No camera or external network service is needed.
+
+The local `Result.Types` slice follows `Result.Columns` in projection order;
+like rows and names it is copied, including for an empty SELECT. This metadata
+addition lets the wire adapter report exact column types without inferring them
+from data. `Database` itself remains unsafe for concurrent direct callers.

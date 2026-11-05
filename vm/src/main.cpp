@@ -1,6 +1,9 @@
 #include "tacos/runtime/runtime.hpp"
 
 #include <cstdint>
+#include <cfenv>
+#include <cmath>
+#include <cstring>
 #include <exception>
 #include <fstream>
 #include <iomanip>
@@ -15,10 +18,25 @@
 namespace {
 
 using tacos::runtime::Runtime;
-using tacos::runtime::Value;
-using tacos::runtime::ValueKind;
 
-constexpr std::uint16_t kSupportedVersion = 1;
+static_assert(sizeof(double) == 8 && std::numeric_limits<double>::is_iec559,
+              "Float bytecode requires IEEE 754 binary64");
+
+// The embedding thread may use another rounding mode. VM arithmetic must use
+// round-to-nearest, ties-to-even without leaking that choice back to its caller.
+class RoundingScope {
+public:
+    RoundingScope() : previous_(std::fegetround()) {
+        if (previous_ == -1 || std::fesetround(FE_TONEAREST) != 0) {
+            throw std::runtime_error("cannot set Float rounding mode");
+        }
+    }
+    ~RoundingScope() { std::fesetround(previous_); }
+    RoundingScope(const RoundingScope&) = delete;
+    RoundingScope& operator=(const RoundingScope&) = delete;
+private:
+    int previous_;
+};
 
 enum class Opcode : std::uint8_t {
     PushConst = 0x01,
@@ -37,12 +55,64 @@ enum class Opcode : std::uint8_t {
     Ret = 0x0E,
     Pop = 0x0F,
     Not = 0x10,
+    FAdd = 0x11,
+    FSub = 0x12,
+    FMul = 0x13,
+    FDiv = 0x14,
+    FNeg = 0x15,
+    FCmpEq = 0x16,
+    FCmpLt = 0x17,
 };
 
 class VmError : public std::runtime_error {
 public:
     explicit VmError(const std::string& message)
         : std::runtime_error(message) {}
+};
+
+// Float is VM-owned. The Runtime boundary retains its existing Int/String ABI.
+enum class ValueKind { Int, String, Float };
+
+struct Value {
+    ValueKind kind = ValueKind::Int;
+    union {
+        std::int64_t int_value = 0;
+        double float_value;
+    };
+    std::string string_value;
+
+    static Value int_value_of(std::int64_t number) {
+        Value value;
+        value.int_value = number;
+        return value;
+    }
+    static Value string_value_of(std::string text) {
+        Value value;
+        value.kind = ValueKind::String;
+        value.string_value = std::move(text);
+        return value;
+    }
+    static Value float_value_of(double number) {
+        Value value;
+        value.kind = ValueKind::Float;
+        value.float_value = number;
+        return value;
+    }
+    static Value from_runtime(const tacos::runtime::Value& value) {
+        switch (value.kind) {
+        case tacos::runtime::ValueKind::Int: return int_value_of(value.int_value);
+        case tacos::runtime::ValueKind::String: return string_value_of(value.string_value);
+        }
+        throw VmError("unsupported Runtime result kind");
+    }
+    tacos::runtime::Value to_runtime() const {
+        switch (kind) {
+        case ValueKind::Int: return tacos::runtime::Value::int_value_of(int_value);
+        case ValueKind::String: return tacos::runtime::Value::string_value_of(string_value);
+        case ValueKind::Float: throw VmError("Runtime Float arguments are not supported");
+        }
+        throw VmError("unsupported VM value kind");
+    }
 };
 
 struct Constant {
@@ -101,6 +171,17 @@ public:
             raw |= static_cast<std::uint64_t>(bytes_[offset_++]) << shift;
         }
         return static_cast<std::int64_t>(raw);
+    }
+
+    double f64(const std::string& field) {
+        require(8, field);
+        std::uint64_t bits = 0;
+        for (unsigned shift = 0; shift < 64; shift += 8) {
+            bits |= static_cast<std::uint64_t>(bytes_[offset_++]) << shift;
+        }
+        double value;
+        std::memcpy(&value, &bits, sizeof(value));
+        return value;
     }
 
     std::string string(const std::string& field) {
@@ -181,7 +262,7 @@ Program load_program(const std::string& path, Runtime& runtime) {
     }
 
     const auto version = reader.u16("version");
-    if (version != kSupportedVersion) {
+    if (version != 1 && version != 2) {
         throw VmError("unsupported bytecode version " + std::to_string(version));
     }
 
@@ -196,6 +277,12 @@ Program load_program(const std::string& path, Runtime& runtime) {
             program.constants.push_back({Value::int_value_of(reader.i64("Int constant"))});
         } else if (tag == 1) {
             program.constants.push_back({Value::string_value_of(reader.string("String constant"))});
+        } else if (tag == 2 && version == 2) {
+            const auto value = reader.f64("Float constant");
+            if (!std::isfinite(value)) {
+                throw VmError("non-finite Float constant at offset " + std::to_string(tag_offset));
+            }
+            program.constants.push_back({Value::float_value_of(value)});
         } else {
             throw VmError("unknown constant tag " + std::to_string(tag) +
                           " at offset " + std::to_string(tag_offset));
@@ -278,6 +365,18 @@ Program load_program(const std::string& path, Runtime& runtime) {
                 }
                 break;
             }
+            case Opcode::FAdd:
+            case Opcode::FSub:
+            case Opcode::FMul:
+            case Opcode::FDiv:
+            case Opcode::FNeg:
+            case Opcode::FCmpEq:
+            case Opcode::FCmpLt:
+                if (version != 2) {
+                    throw VmError("Float opcode requires bytecode version 2 at offset " +
+                                  std::to_string(offset));
+                }
+                break;
             case Opcode::Add:
             case Opcode::Sub:
             case Opcode::Mul:
@@ -309,6 +408,7 @@ public:
         : program_(std::move(program)), runtime_(runtime) {}
 
     Value run() {
+        RoundingScope rounding;
         frames_.push_back(make_frame(program_.entry_function, {}));
         while (!frames_.empty()) {
             auto& frame = frames_.back();
@@ -369,10 +469,41 @@ public:
                 push(Value::int_value_of(result));
                 break;
             }
+            case Opcode::FAdd:
+            case Opcode::FSub:
+            case Opcode::FMul:
+            case Opcode::FDiv:
+            case Opcode::FCmpEq:
+            case Opcode::FCmpLt: {
+                const auto rhs = floating(pop());
+                const auto lhs = floating(pop());
+                if (opcode == Opcode::FCmpEq || opcode == Opcode::FCmpLt) {
+                    push(Value::int_value_of(opcode == Opcode::FCmpEq ? lhs == rhs : lhs < rhs));
+                    break;
+                }
+                double result = 0.0;
+                switch (opcode) {
+                case Opcode::FAdd: result = lhs + rhs; break;
+                case Opcode::FSub: result = lhs - rhs; break;
+                case Opcode::FMul: result = lhs * rhs; break;
+                case Opcode::FDiv:
+                    if (rhs == 0.0) throw VmError("Float division by zero");
+                    result = lhs / rhs;
+                    break;
+                default: break;
+                }
+                if (!std::isfinite(result)) throw VmError("non-finite Float result");
+                push(Value::float_value_of(result));
+                break;
+            }
+            case Opcode::FNeg:
+                push(Value::float_value_of(-floating(pop())));
+                break;
             case Opcode::CmpEq: {
                 const auto rhs = pop();
                 const auto lhs = pop();
                 if (lhs.kind != rhs.kind) throw VmError("CMP_EQ requires matching types");
+                if (lhs.kind == ValueKind::Float) throw VmError("Float equality requires FCMP_EQ");
                 const bool equal = lhs.kind == ValueKind::Int
                     ? lhs.int_value == rhs.int_value : lhs.string_value == rhs.string_value;
                 push(Value::int_value_of(equal));
@@ -401,7 +532,11 @@ public:
                 const auto index = operand(2);
                 const auto argc = operand(1);
                 const auto args = arguments(argc);
-                push(runtime_.call(program_.constants[index].value.string_value, args));
+                std::vector<tacos::runtime::Value> runtime_args;
+                runtime_args.reserve(args.size());
+                for (const auto& arg : args) runtime_args.push_back(arg.to_runtime());
+                push(Value::from_runtime(runtime_.call(
+                    program_.constants[index].value.string_value, runtime_args)));
                 break;
             }
             case Opcode::Pop:
@@ -469,6 +604,11 @@ private:
     static std::int64_t integer(const Value& value) {
         if (value.kind != ValueKind::Int) throw VmError("expected Int operand");
         return value.int_value;
+    }
+
+    static double floating(const Value& value) {
+        if (value.kind != ValueKind::Float) throw VmError("expected Float operand");
+        return value.float_value;
     }
 
     static bool boolean(const Value& value) {

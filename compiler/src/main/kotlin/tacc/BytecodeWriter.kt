@@ -9,12 +9,13 @@ import java.io.ByteArrayOutputStream
  */
 object BytecodeWriter {
     private const val MAGIC = "TACB"
-    private const val VERSION: Int = 1
+    private const val LEGACY_VERSION: Int = 1
+    private const val FLOAT_VERSION: Int = 2
 
     fun write(module: BytecodeModule): ByteArray {
         val out = ByteArrayOutputStream()
         out.write(MAGIC.toByteArray(Charsets.US_ASCII))
-        writeU16(out, VERSION)
+        writeU16(out, if (module.usesFloat) FLOAT_VERSION else LEGACY_VERSION)
         writeConstantPool(out, module.constants)
         writeFunctionTable(out, module.functions)
         writeU16(out, module.entryFunction)
@@ -28,6 +29,10 @@ object BytecodeWriter {
                 is Constant.IntConst -> {
                     out.write(0) // tag = Int
                     writeI64(out, c.value)
+                }
+                is Constant.FloatConst -> {
+                    out.write(2) // tag = Float (v2 only)
+                    writeI64(out, c.value.toRawBits())
                 }
                 is Constant.StringConst -> {
                     out.write(1) // tag = String

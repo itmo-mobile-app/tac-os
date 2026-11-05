@@ -32,7 +32,7 @@ Writes `message` followed by a newline (`\n`) to the process's standard output a
 has no meaningful result).
 This is the minimal function needed for the first Compiler → VM → Runtime integration test.
 
-## Camera API contract (approved design; implementation pending)
+## Camera API contract
 
 The initial VM-facing call is:
 
@@ -71,9 +71,35 @@ directly. Analyzer will eventually combine detector results with device
 position and orientation to create `Observation` records sent to Map via
 the **separate** `spec/ipc.md` contract.
 
-This section fixes the Camera API design but does not claim that
-`camera.detectMarkers` is already registered or executable in the current
-C++ Runtime or compiled `.tc` applications.
+`camera.detectMarkers` is registered in the C++ Runtime with arity zero.
+Successful calls return `ValueKind::String`; all camera, helper, protocol and
+transport failures throw `tacos::runtime::RuntimeError`. A valid helper error
+(`CAMERA_UNAVAILABLE`, `DETECTION_FAILED` or `BAD_REQUEST`) preserves the
+connection for a later call. A transport/protocol failure stops the owned helper
+and makes later camera calls on that Runtime fail without an automatic restart.
+
+The existing three-argument C++ Runtime constructor remains available. An
+additional overload accepts `CameraOptions` as its fourth argument:
+
+```cpp
+CameraOptions camera;
+camera.helper_path = "/path/to/marker-detect"; // default: marker-detect on PATH
+camera.fake_mode = "two"; // default: empty, meaning the real camera
+Runtime runtime(output, "/tmp/tacos-wm.sock", "/tmp/tac-os-analyzer-map.sock", camera);
+```
+
+The executable is launched directly, without a shell, with `-socket` and,
+when configured, `-fake`. Host options are not `.tc` arguments and do not change
+the VM value layout. They are validated on the first camera call; supported
+fake modes are `two`, `empty`, `camera-unavailable` and `detection-failed`.
+The helper executable must implement `spec/camera-detector-protocol.md`.
+
+One Runtime must not be called concurrently from two threads. Each camera
+client owns only its child and connection. Simultaneous camera owners inside
+one process are unsupported because the default socket pathname contains the
+Analyzer PID. No new `.tc` types, JSON parser or language support are added.
+Direct C++ contract tests and shared Go fixtures are documented in
+`docs/testing/camera-runtime.md`.
 
 ## IPC API: Analyzer to Map
 
