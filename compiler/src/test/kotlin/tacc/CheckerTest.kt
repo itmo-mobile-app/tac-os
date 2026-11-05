@@ -50,13 +50,13 @@ class CheckerTest {
 
     @Test
     fun arithmeticRequiresInts() {
-        rejects(inMain("let x = 1 + true;"), "operator '+' requires Int operands, found Int and Bool")
-        rejects(inMain("let x = \"a\" * 2;"), "operator '*' requires Int operands, found String and Int")
+        rejects(inMain("let x = 1 + true;"), "operator '+' requires matching Int or Float operands, found Int and Bool")
+        rejects(inMain("let x = \"a\" * 2;"), "operator '*' requires matching Int or Float operands, found String and Int")
     }
 
     @Test
     fun comparisonRequiresInts() =
-        rejects(inMain("let x = true < false;"), "operator '<' requires Int operands, found Bool and Bool")
+        rejects(inMain("let x = true < false;"), "operator '<' requires matching Int or Float operands, found Bool and Bool")
 
     @Test
     fun equalityRequiresTheSameType() =
@@ -64,7 +64,7 @@ class CheckerTest {
 
     @Test
     fun unaryOperatorTypes() {
-        rejects(inMain("let x = -true;"), "operator '-' requires Int, found Bool")
+        rejects(inMain("let x = -true;"), "operator '-' cannot be applied to Bool")
         rejects(inMain("let x = !1;"), "operator '!' requires Bool, found Int")
     }
 
