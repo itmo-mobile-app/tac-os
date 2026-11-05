@@ -65,7 +65,7 @@ class CheckerTest {
     @Test
     fun unaryOperatorTypes() {
         rejects(inMain("let x = -true;"), "operator '-' cannot be applied to Bool")
-        rejects(inMain("let x = !1;"), "operator '!' requires Bool, found Int")
+        rejects(inMain("let x = !1;"), "operator '!' cannot be applied to Int")
     }
 
     @Test
