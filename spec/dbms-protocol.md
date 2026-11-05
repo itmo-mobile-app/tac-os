@@ -1,6 +1,7 @@
 # DBMS client protocol
 
-Status: approved design for issue #61; socket server/client implementation pending.
+Status: approved design for issue #61; DBMS socket server implemented in #96,
+Target Service client integration tracked in #97.
 
 This contract connects the **Target Service** (client) and the custom Go **DBMS**
 (server), running as separate processes on the same central Linux node. It does not

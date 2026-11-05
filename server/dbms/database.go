@@ -97,6 +97,7 @@ func (t *table) selectRows(s statement) (Result, error) {
 		for i, c := range t.columns {
 			selected = append(selected, i)
 			result.Columns = append(result.Columns, c.name)
+			result.Types = append(result.Types, c.typeID)
 		}
 	} else {
 		for _, c := range s.columns {
@@ -106,6 +107,7 @@ func (t *table) selectRows(s statement) (Result, error) {
 			}
 			selected = append(selected, i)
 			result.Columns = append(result.Columns, c.name)
+			result.Types = append(result.Types, t.columns[i].typeID)
 		}
 	}
 	filter := -1

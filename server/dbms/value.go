@@ -28,7 +28,9 @@ func (v Value) Text() (string, bool)   { return v.text, v.typeID == Text }
 // Result owns copies of selected values; changing it cannot change stored data.
 type Result struct {
 	Columns []string
-	Rows    [][]Value
+	// Types follows projection order, including for an empty SELECT.
+	Types []Type
+	Rows  [][]Value
 }
 
 // QueryError uses a zero-based byte offset relative to one input statement.
