@@ -18,6 +18,7 @@ Create a specification only when the corresponding contract becomes necessary.
 | [`ipc.md`](ipc.md) | Analyzer ↔ Map | approved |
 | [`broker-protocol.md`](broker-protocol.md) | Client/Target Service ↔ Broker | approved |
 | [`data-model.md`](data-model.md) | Shared domain structures | approved |
+| [`analyzer-observation.md`](analyzer-observation.md) | Analyzer: target coordinates, local confidence, AI recognition boundary | proposed for review (#98) |
 | [`sql.md`](sql.md) | SQL subset for the DBMS | approved |
 | [`dbms-protocol.md`](dbms-protocol.md) | Target Service ↔ DBMS binary-framed SQL/JSON | approved design; implementation pending |
 | [`map-rendering.md`](map-rendering.md) | Map coordinates, assets and drawing | Go prototype; WM and Broker E2E covered; `.tc` Map pending |

@@ -1,0 +1,503 @@
+{
+  "version": 1,
+  "description": "Test vectors for spec/analyzer-observation.md (issue #98). See that document for the rules.",
+  "constants": {
+    "EARTH_RADIUS_M": 6371000.0,
+    "MAX_RANGE_M": 100.0,
+    "MAX_ABS_LATITUDE": 80.0,
+    "MAX_ABS_RELATIVE_ANGLE": 90.0,
+    "CONFIDENCE_MAX": 0.9,
+    "CONFIDENCE_DISTANCE_SCALE_M": 25.0
+  },
+  "tolerance": 1e-09,
+  "vectors": [
+    {
+      "name": "no-detections",
+      "description": "A frame without markers is a successful empty result: no Observation, nothing rejected.",
+      "input": {
+        "observerId": "device-1",
+        "timestamp": 1800000000000,
+        "position": {
+          "latitude": 59.9505,
+          "longitude": 30.311
+        },
+        "heading": 90.0,
+        "detections": []
+      },
+      "expected": {
+        "observations": [],
+        "rejected": []
+      }
+    },
+    {
+      "name": "single-east",
+      "description": "The camera looks east and the marker is in the center of the frame, 10 m away: the target is 10 m east.",
+      "input": {
+        "observerId": "device-1",
+        "timestamp": 1800000000100,
+        "position": {
+          "latitude": 59.9505,
+          "longitude": 30.311
+        },
+        "heading": 90.0,
+        "detections": [
+          {
+            "id": 17,
+            "relativeAngle": 0.0,
+            "distance": 10.0
+          }
+        ]
+      },
+      "expected": {
+        "observations": [
+          {
+            "targetId": "17",
+            "observerId": "device-1",
+            "latitude": 59.9505,
+            "longitude": 30.311179595644,
+            "confidence": 0.642857142857,
+            "timestamp": 1800000000100
+          }
+        ],
+        "rejected": []
+      }
+    },
+    {
+      "name": "two-detections-heading-wraps",
+      "description": "Same detections as the detector test mode `two`. Heading 350 plus 12.5 wraps to bearing 2.5.",
+      "input": {
+        "observerId": "device-1",
+        "timestamp": 1800000000200,
+        "position": {
+          "latitude": 59.9505,
+          "longitude": 30.311
+        },
+        "heading": 350.0,
+        "detections": [
+          {
+            "id": 17,
+            "relativeAngle": 12.5,
+            "distance": 3.2
+          },
+          {
+            "id": 23,
+            "relativeAngle": -8.4,
+            "distance": 5.7
+          }
+        ]
+      },
+      "expected": {
+        "observations": [
+          {
+            "targetId": "17",
+            "observerId": "device-1",
+            "latitude": 59.950528750901,
+            "longitude": 30.311002506833,
+            "confidence": 0.797872340426,
+            "timestamp": 1800000000200
+          },
+          {
+            "targetId": "23",
+            "observerId": "device-1",
+            "latitude": 59.950548640648,
+            "longitude": 30.310967687161,
+            "confidence": 0.732899022801,
+            "timestamp": 1800000000200
+          }
+        ],
+        "rejected": []
+      }
+    },
+    {
+      "name": "southwest-in-southern-western-hemisphere",
+      "description": "Negative latitude and longitude: the camera looks south, the marker is 30 degrees to the right (bearing 210, south-west), 40 m away.",
+      "input": {
+        "observerId": "device-1",
+        "timestamp": 1800000000300,
+        "position": {
+          "latitude": -22.9068,
+          "longitude": -43.1729
+        },
+        "heading": 180.0,
+        "detections": [
+          {
+            "id": 5,
+            "relativeAngle": 30.0,
+            "distance": 40.0
+          }
+        ]
+      },
+      "expected": {
+        "observations": [
+          {
+            "targetId": "5",
+            "observerId": "device-1",
+            "latitude": -22.907111534143,
+            "longitude": -43.173095262907,
+            "confidence": 0.346153846154,
+            "timestamp": 1800000000300
+          }
+        ],
+        "rejected": []
+      }
+    },
+    {
+      "name": "maximum-range-north",
+      "description": "Distance exactly MAX_RANGE_M is accepted. At the equator 100 m north is 100 / R radians of latitude.",
+      "input": {
+        "observerId": "device-1",
+        "timestamp": 1800000000400,
+        "position": {
+          "latitude": 0.0,
+          "longitude": 0.0
+        },
+        "heading": 0.0,
+        "detections": [
+          {
+            "id": 71,
+            "relativeAngle": 0.0,
+            "distance": 100.0
+          }
+        ]
+      },
+      "expected": {
+        "observations": [
+          {
+            "targetId": "71",
+            "observerId": "device-1",
+            "latitude": 0.000899321606,
+            "longitude": 0.0,
+            "confidence": 0.18,
+            "timestamp": 1800000000400
+          }
+        ],
+        "rejected": []
+      }
+    },
+    {
+      "name": "position-unavailable",
+      "description": "No device position: nothing is guessed, no Observation is created.",
+      "input": {
+        "observerId": "device-1",
+        "timestamp": 1800000000500,
+        "position": null,
+        "heading": 90.0,
+        "detections": [
+          {
+            "id": 17,
+            "relativeAngle": 0.0,
+            "distance": 10.0
+          }
+        ]
+      },
+      "expected": {
+        "observations": [],
+        "rejected": [
+          {
+            "reason": "INVALID_POSITION"
+          }
+        ]
+      }
+    },
+    {
+      "name": "latitude-out-of-range",
+      "description": "Latitude 91 is not a valid position.",
+      "input": {
+        "observerId": "device-1",
+        "timestamp": 1800000000600,
+        "position": {
+          "latitude": 91.0,
+          "longitude": 30.311
+        },
+        "heading": 90.0,
+        "detections": [
+          {
+            "id": 17,
+            "relativeAngle": 0.0,
+            "distance": 10.0
+          }
+        ]
+      },
+      "expected": {
+        "observations": [],
+        "rejected": [
+          {
+            "reason": "INVALID_POSITION"
+          }
+        ]
+      }
+    },
+    {
+      "name": "latitude-beyond-supported",
+      "description": "|latitude| above MAX_ABS_LATITUDE (80) is outside the validity of the local approximation.",
+      "input": {
+        "observerId": "device-1",
+        "timestamp": 1800000000700,
+        "position": {
+          "latitude": 80.5,
+          "longitude": 30.311
+        },
+        "heading": 90.0,
+        "detections": [
+          {
+            "id": 17,
+            "relativeAngle": 0.0,
+            "distance": 10.0
+          }
+        ]
+      },
+      "expected": {
+        "observations": [],
+        "rejected": [
+          {
+            "reason": "INVALID_POSITION"
+          }
+        ]
+      }
+    },
+    {
+      "name": "heading-unavailable",
+      "description": "No device heading: no Observation.",
+      "input": {
+        "observerId": "device-1",
+        "timestamp": 1800000000800,
+        "position": {
+          "latitude": 59.9505,
+          "longitude": 30.311
+        },
+        "heading": null,
+        "detections": [
+          {
+            "id": 17,
+            "relativeAngle": 0.0,
+            "distance": 10.0
+          }
+        ]
+      },
+      "expected": {
+        "observations": [],
+        "rejected": [
+          {
+            "reason": "INVALID_HEADING"
+          }
+        ]
+      }
+    },
+    {
+      "name": "heading-360",
+      "description": "Heading must be in [0, 360): 360.0 is rejected, it is not silently wrapped.",
+      "input": {
+        "observerId": "device-1",
+        "timestamp": 1800000000900,
+        "position": {
+          "latitude": 59.9505,
+          "longitude": 30.311
+        },
+        "heading": 360.0,
+        "detections": [
+          {
+            "id": 17,
+            "relativeAngle": 0.0,
+            "distance": 10.0
+          }
+        ]
+      },
+      "expected": {
+        "observations": [],
+        "rejected": [
+          {
+            "reason": "INVALID_HEADING"
+          }
+        ]
+      }
+    },
+    {
+      "name": "id-out-of-range",
+      "description": "ArUco id 72 is not a game marker (valid ids are 0..71).",
+      "input": {
+        "observerId": "device-1",
+        "timestamp": 1800000001000,
+        "position": {
+          "latitude": 59.9505,
+          "longitude": 30.311
+        },
+        "heading": 90.0,
+        "detections": [
+          {
+            "id": 72,
+            "relativeAngle": 0.0,
+            "distance": 10.0
+          }
+        ]
+      },
+      "expected": {
+        "observations": [],
+        "rejected": [
+          {
+            "id": 72,
+            "reason": "INVALID_ID"
+          }
+        ]
+      }
+    },
+    {
+      "name": "angle-out-of-range",
+      "description": "A relative angle of 90 degrees or more cannot be inside a camera frame.",
+      "input": {
+        "observerId": "device-1",
+        "timestamp": 1800000001100,
+        "position": {
+          "latitude": 59.9505,
+          "longitude": 30.311
+        },
+        "heading": 90.0,
+        "detections": [
+          {
+            "id": 17,
+            "relativeAngle": 90.0,
+            "distance": 10.0
+          }
+        ]
+      },
+      "expected": {
+        "observations": [],
+        "rejected": [
+          {
+            "id": 17,
+            "reason": "INVALID_ANGLE"
+          }
+        ]
+      }
+    },
+    {
+      "name": "zero-distance",
+      "description": "Distance must be greater than 0.",
+      "input": {
+        "observerId": "device-1",
+        "timestamp": 1800000001200,
+        "position": {
+          "latitude": 59.9505,
+          "longitude": 30.311
+        },
+        "heading": 90.0,
+        "detections": [
+          {
+            "id": 17,
+            "relativeAngle": 0.0,
+            "distance": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "observations": [],
+        "rejected": [
+          {
+            "id": 17,
+            "reason": "INVALID_DISTANCE"
+          }
+        ]
+      }
+    },
+    {
+      "name": "beyond-maximum-range",
+      "description": "Distance above MAX_RANGE_M is rejected.",
+      "input": {
+        "observerId": "device-1",
+        "timestamp": 1800000001300,
+        "position": {
+          "latitude": 59.9505,
+          "longitude": 30.311
+        },
+        "heading": 90.0,
+        "detections": [
+          {
+            "id": 17,
+            "relativeAngle": 0.0,
+            "distance": 100.01
+          }
+        ]
+      },
+      "expected": {
+        "observations": [],
+        "rejected": [
+          {
+            "id": 17,
+            "reason": "INVALID_DISTANCE"
+          }
+        ]
+      }
+    },
+    {
+      "name": "invalid-detection-does-not-hide-valid-one",
+      "description": "Every detection is judged on its own: id 18 is rejected, id 23 still produces an Observation.",
+      "input": {
+        "observerId": "device-1",
+        "timestamp": 1800000001400,
+        "position": {
+          "latitude": 59.9505,
+          "longitude": 30.311
+        },
+        "heading": 350.0,
+        "detections": [
+          {
+            "id": 18,
+            "relativeAngle": 0.0,
+            "distance": -2.0
+          },
+          {
+            "id": 23,
+            "relativeAngle": -8.4,
+            "distance": 5.7
+          }
+        ]
+      },
+      "expected": {
+        "observations": [
+          {
+            "targetId": "23",
+            "observerId": "device-1",
+            "latitude": 59.950548640648,
+            "longitude": 30.310967687161,
+            "confidence": 0.732899022801,
+            "timestamp": 1800000001400
+          }
+        ],
+        "rejected": [
+          {
+            "id": 18,
+            "reason": "INVALID_DISTANCE"
+          }
+        ]
+      }
+    },
+    {
+      "name": "antimeridian",
+      "description": "The calculated longitude would exceed 180 degrees: the antimeridian is not supported.",
+      "input": {
+        "observerId": "device-1",
+        "timestamp": 1800000001500,
+        "position": {
+          "latitude": 0.0,
+          "longitude": 179.99999
+        },
+        "heading": 90.0,
+        "detections": [
+          {
+            "id": 17,
+            "relativeAngle": 0.0,
+            "distance": 10.0
+          }
+        ]
+      },
+      "expected": {
+        "observations": [],
+        "rejected": [
+          {
+            "id": 17,
+            "reason": "INVALID_RESULT"
+          }
+        ]
+      }
+    }
+  ]
+}
