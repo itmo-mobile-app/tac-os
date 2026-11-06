@@ -81,6 +81,33 @@ jobs:
         working-directory: ${{ matrix.directory }}
         run: go test -race -count=1 ${{ matrix.packages }}
 
+      # Run the DBMS client E2E against the real server, not just the fake socket
+      # responder used by ordinary unit tests.
+      - name: Build DBMS server for Target Service E2E
+        if: matrix.component == 'Target Service'
+        working-directory: server/dbms
+        run: go build -buildvcs=false -o "$RUNNER_TEMP/tacdb-server" ./cmd/tacdb-server
+
+      - name: Test Target Service client against real DBMS
+        if: matrix.component == 'Target Service'
+        working-directory: target-service
+        env:
+          TACOS_DBMS_SERVER: ${{ runner.temp }}/tacdb-server
+        run: go test -race -count=1 -v -run '^TestRealDBMSIntegration        if: matrix.component == 'Window Manager'
+        working-directory: window-manager
+        run: |
+          go build -o "$RUNNER_TEMP/wm-server-headless" ./cmd/wm-server
+          go build -o "$RUNNER_TEMP/wm-client" ./cmd/wm-client
+
+      - name: Build Window Manager SDL2 backend
+        if: matrix.component == 'Window Manager'
+        working-directory: window-manager
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-dev
+          go build -tags sdl -o "$RUNNER_TEMP/wm-server-sdl" ./cmd/wm-server
+ ./dbclient
+
       - name: Build Window Manager server and client
         if: matrix.component == 'Window Manager'
         working-directory: window-manager
