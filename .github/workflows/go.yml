@@ -81,6 +81,19 @@ jobs:
         working-directory: ${{ matrix.directory }}
         run: go test -race -count=1 ${{ matrix.packages }}
 
+      # Verify real Unix-socket SQL integration in CI; ordinary Go tests use a fake DBMS.
+      - name: Build DBMS server for Target Service E2E
+        if: matrix.component == 'Target Service'
+        working-directory: server/dbms
+        run: go build -buildvcs=false -o "$RUNNER_TEMP/tacdb-server" ./cmd/tacdb-server
+
+      - name: Test Target Service client against real DBMS
+        if: matrix.component == 'Target Service'
+        working-directory: target-service
+        env:
+          TACOS_DBMS_SERVER: ${{ runner.temp }}/tacdb-server
+        run: go test -race -count=1 -v -run '^TestRealDBMSIntegration$' ./dbclient
+
       - name: Build Window Manager server and client
         if: matrix.component == 'Window Manager'
         working-directory: window-manager
