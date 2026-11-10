@@ -1,0 +1,60 @@
+// #128 proposal: requires unimplemented Broker/drawing/polling signatures.
+// This is a bounded API usage sketch with fixture pixels, not the finished Map.
+fun main() {
+    runtime.ipc_listen();
+    window.create("Tactical Map", 960, 640);
+    window.beginFrame(0, 0, 0, 255);
+    window.drawImage("app/map/assets/test-map.png", 0, 0, 960, 640);
+    // Precomputed pixels for the fixed fixture, probability 0.85 -> alpha 226.
+    window.drawCircle(480, 160, 13, 255, 255, 255, 255);
+    window.drawCircle(480, 160, 10, 196, 72, 48, 226);
+    window.present();
+    window.show();
+
+    let network: Int = broker.connect("127.0.0.1", 5000, 1000);
+    if (network == 0) {
+        network = broker.subscribe("targets.updated");
+    }
+    if (network == 0) {
+        // Six domain fields only: no IPC type. This is a separate send fixture.
+        const observation: String = "{\"targetId\":\"17\",\"observerId\":\"device-1\",\"latitude\":59.9505,\"longitude\":30.311,\"confidence\":0.85,\"timestamp\":1792255200000}";
+        network = broker.publish("observations", observation);
+    }
+    if (network < 0) {
+        runtime.log("Broker unavailable: keep visible state");
+    }
+
+    // Short demonstration loop. A production Map continues until termination.
+    let ticks: Int = 0;
+    while (ticks < 20) {
+        const local: Int = runtime.ipc_poll(0);
+        if (local == 1) {
+            runtime.log(runtime.ipc_message());
+            // #127: validate/extract six fields, render locally, then publish.
+            // Do not publish the seven-field IPC object as a Broker payload.
+        } else {
+            if (local < 0) { runtime.log("invalid-or-disconnected-IPC-peer"); }
+        }
+        if (network == 0) {
+            const remote: Int = broker.receive(0);
+            if (remote == 1) {
+                if (broker.topic() == "targets.updated") {
+                    runtime.log(broker.payload());
+                    // #127: validate Target; project/round in .tc and redraw.
+                }
+            } else {
+                if (remote < 0) {
+                    network = remote;
+                    runtime.log("Broker disconnected: keep visible state");
+                }
+            }
+        }
+        if (window.pollEvent(50) == "window_close") {
+            broker.close();
+            return; // WM already destroyed the window; no second CLOSE.
+        }
+        ticks = ticks + 1;
+    }
+    broker.close();
+    window.close(); // Programmatic close; never window.quit().
+}

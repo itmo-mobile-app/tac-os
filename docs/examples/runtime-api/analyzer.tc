@@ -1,0 +1,29 @@
+// #128 proposal: new device/time calls and Runtime Float results are not implemented.
+// Camera also needs registration in Compiler's Runtime signature table.
+// This is an API usage sketch, not the finished Analyzer or an executable test.
+fun main() {
+    if (location.read(1000) != 0) {
+        runtime.log("position-unavailable: skip this frame");
+        return;
+    }
+    const latitude: Float = location.latitude();
+    const longitude: Float = location.longitude();
+
+    if (orientation.read(1000) != 0) {
+        runtime.log("heading-unavailable: skip this frame");
+        return;
+    }
+    const heading: Float = orientation.heading();
+    const detections: String = camera.detectMarkers();
+    const receivedAt: Int = time.nowMs();
+    runtime.log(detections);
+
+    // Above: real call shapes for pose/detections/time acquisition.
+    // Below: independent, prebuilt valid IPC fixture from spec/ipc.md.
+    // It is NOT derived from latitude/longitude/heading/receivedAt.
+    // Production observation calculation/serialization depends on #127 and #98.
+    const fixture: String = "{\"type\":\"OBSERVATION\",\"targetId\":\"17\",\"observerId\":\"device-1\",\"latitude\":59.9505,\"longitude\":30.311,\"confidence\":0.85,\"timestamp\":1792255200000}";
+    if (runtime.ipc_send(fixture) != 0) {
+        runtime.log("fixture-dropped: Map unavailable");
+    }
+}
