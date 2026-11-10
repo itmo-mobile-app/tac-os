@@ -1,0 +1,42 @@
+// Proposal #127: requires the unapproved helpers in spec/runtime-api.md.
+// Well-typed five-field Target fixture, already stripped of Broker MSG framing.
+// JSON schema/recoverable validation and real Broker/WM calls remain review gates.
+fun processTarget(payload: String) {
+    const targetId = json.getString(payload, "targetId");
+    const latitude = json.getFloat(payload, "latitude");
+    const longitude = json.getFloat(payload, "longitude");
+    const probability = json.getFloat(payload, "probability");
+    const lastSeenAt = json.getInt(payload, "lastSeenAt");
+    let valid = true;
+    if (targetId == "") { valid = false; }
+    if (latitude < -90.0) { valid = false; }
+    if (latitude > 90.0) { valid = false; }
+    if (longitude < -180.0) { valid = false; }
+    if (longitude > 180.0) { valid = false; }
+    if (probability < 0.0) { valid = false; }
+    if (probability > 1.0) { valid = false; }
+    if (!valid) {
+        runtime.log("invalid-target");
+        return;
+    }
+    // Existing map-rendering.md bounds, north up and east right.
+    if (latitude < 59.949) { return; }
+    if (latitude > 59.951) { return; }
+    if (longitude < 30.308) { return; }
+    if (longitude > 30.314) { return; }
+    let x = (longitude - 30.308) / (30.314 - 30.308) * 960.0;
+    let y = (59.951 - latitude) / (59.951 - 59.949) * 640.0;
+    if (x > 959.0) { x = 959.0; }
+    if (y > 639.0) { y = 639.0; }
+    // Keep the server probability and exact i64 time; do not aggregate here.
+    runtime.log(targetId);
+    runtime.log(text.fromInt(lastSeenAt));
+    runtime.log(text.fromFloat(probability));
+    runtime.log(text.fromFloat(x));
+    runtime.log(text.fromFloat(y));
+    // Integer pixel rounding and WM drawing depend on #128/#136.
+}
+
+fun main() {
+    processTarget("{\"targetId\":\"17\",\"latitude\":59.9505,\"longitude\":30.311,\"probability\":0.85,\"lastSeenAt\":1800000000100}");
+}

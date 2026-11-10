@@ -292,6 +292,66 @@ A compliant compiler rejects each of `let x: Float = 1;`,
 
 ## Open questions
 
+### Observation and Target data access (#127, proposal)
+
+This subsection and the linked examples are **pending owner review**, not an
+extension of the approved language or an implementation claim. The proposed
+Runtime signatures and their errors/limits are in
+[`runtime-api.md`](runtime-api.md#minimal-string-data-helpers-127-proposal).
+The review record is in
+[`data-contract-review.md`](../docs/data-contract-review.md).
+
+Use existing scalar locals and function parameters for domain fields, and
+immutable UTF-8 `String` values for JSON. A detection array is a JSON String,
+not a new `.tc` array type. The proposal adds only explicitly typed Runtime
+calls: array length/element extraction, flat object field extraction, JSON
+quoting, numeric formatting and string concatenation. It adds no grammar,
+operator overload, implicit conversion, struct, class, JSON DOM or generic
+collection. In particular, `String + String` remains a compile-time error.
+
+The alternatives were compared against the actual application operations:
+
+| Choice | Required extra mechanism | Assessment for this increment |
+| --- | --- | --- |
+| Raw string slicing/search | Indexing, escaping, numeric parsing and a JSON parser written in `.tc` | More language operations and easy framing/escaping mistakes |
+| Simple records and arrays | Type declarations, field/index access, allocation and Compiler/VM layout agreement | Valid future option, but not required to pass six/five scalar fields |
+| Narrow String helpers | Nine typed Runtime calls over existing values | Proposed minimum; application decisions stay in `.tc` |
+
+The two complete source sketches are
+[`analyzer.tc`](../docs/examples/data-contract/analyzer.tc) and
+[`map.tc`](../docs/examples/data-contract/map.tc). They are review inputs,
+not executable application implementations or CTest fixtures. The first reads
+each detector field, computes a restricted north-facing fixture in `.tc`,
+serializes all six Observation fields and checks `runtime.ipc_send`'s result.
+The second extracts all five Target fields, validates their ranges and computes
+map coordinates in `.tc`. Its input is one Broker **payload**, not a `MSG` line.
+
+Compiler #132 would register exactly the approved helper signatures, including
+return types usable in expressions, and the existing zero-argument
+`camera.detectMarkers() -> String`. That Camera function exists in Runtime
+but is absent from the current Compiler signature table. Wrong arity, wrong
+argument types, unknown helpers and mixed Int/Float remain compile-time errors.
+Calls evaluate arguments left to right and lower to the existing
+`CALL_RUNTIME`; no source syntax or bytecode signature metadata is added.
+
+The existing six Observation and five Target fields in
+[`data-model.md`](data-model.md) remain authoritative. `timestamp` and
+`lastSeenAt` stay i64 Int milliseconds, never Float. Detector `id` becomes a
+decimal `targetId` String; angles/distance never become shared domain fields.
+
+Geographic calculations, input ranges, confidence policy, team selection,
+map projection and target aggregation are not helper responsibilities.
+The sample confidence formula remains a proposal from
+[`analyzer-observation.md`](analyzer-observation.md), not a new approval.
+Full trigonometry, device/time calls, Broker I/O and WM drawing remain separate
+dependencies (#128/#134–#136); their signatures must not be invented here.
+
+Open before implementation: owner approval of this helper set, bounded String
+ownership in VM, and a recoverable validation path for untrusted JSON. The
+initial RuntimeError behavior cannot satisfy Map's eventual requirement to
+discard malformed updates and keep its window alive. The example only covers
+a well-typed fixture; no `try`, sentinel value or silent fallback is implied.
+
 Not decided here; see `docs/ai-context/02-open-questions.md` → "Language":
 
 - additional type-system features beyond `Int` / `Bool` / `String` / proposed `Float`;
