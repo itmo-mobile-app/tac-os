@@ -209,6 +209,24 @@ tests belong in #107/#108; this PR only defines their shared contract.
 
 ## Open questions
 
+### Observation and Target helper lowering (#127, proposal)
+
+The pending String-helper proposal in
+[`runtime-api.md`](runtime-api.md#minimal-string-data-helpers-127-proposal)
+requires **no new format version, constant tag, opcode or call ABI**. Each
+helper is an ordinary `CALL_RUNTIME` with its name in the String constant pool
+and its fixed arity. Int/Float/String results retain their existing runtime
+kinds through locals, calls and returns. Bool remains Int 0/1.
+
+A program using Float fields follows the existing version-2 selection rule;
+existing v1 programs retain their format and behavior. Unknown helper names
+on an older Runtime remain load-time errors, not a reason to reinterpret v1
+or v2 data. VM #133 must check result kinds and String ownership with Runtime;
+the proposal does not define a heap-object layout, borrowed JSON pointer,
+document handle, GC or cross-process shared state. Bounded reclamation for
+generated Strings remains an explicit approval gate, as does recoverable
+validation for untrusted JSON. This subsection is not an implementation claim.
+
 Not decided here; see `docs/ai-context/02-open-questions.md` → "Bytecode" and "VM":
 
 - heap/object representation and any instructions for it;

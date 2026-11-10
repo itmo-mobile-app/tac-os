@@ -185,6 +185,111 @@ The wire schema is defined in spec/ipc.md.
 
 ## Open questions
 
+### Minimal String data helpers (#127, proposal)
+
+**Pending VM, Runtime, Analyzer, Map and architecture owner review.** The
+approved API above is unchanged. These names must not be implemented or
+treated as approved solely because they appear in this subsection.
+Selection rationale and source examples are in
+[`language.md`](language.md#observation-and-target-data-access-127-proposal).
+
+| Proposed signature | Result and concrete use |
+| --- | --- |
+| `json.arrayLength(source: String) -> Int` | Number of detector objects; `[]` gives 0 |
+| `json.arrayObject(source: String, index: Int) -> String` | One flat detection object, zero-based index |
+| `json.getInt(source: String, key: String) -> Int` | Exact i64 `id`, `timestamp` or `lastSeenAt` |
+| `json.getFloat(source: String, key: String) -> Float` | Finite binary64 angle/distance, coordinates or confidence/probability |
+| `json.getString(source: String, key: String) -> String` | Decoded `targetId` or `observerId` |
+| `json.quote(value: String) -> String` | One JSON string token, including quotes and required escaping |
+| `text.concat(left: String, right: String) -> String` | Concatenated text for an application-built JSON object |
+| `text.fromInt(value: Int) -> String` | Base-10 i64 token without quotes, grouping or leading `+` |
+| `text.fromFloat(value: Float) -> String` | Locale-independent finite JSON number token |
+
+#### Supported JSON subset
+
+- Input must be valid UTF-8 JSON with exactly one root value; JSON whitespace
+  around it is allowed. Trailing garbage, duplicate decoded keys, malformed
+  escapes, unpaired surrogate escapes and invalid UTF-8 are rejected.
+- Object readers accept a flat object of String and JSON number values only.
+  Arrays are accepted only by `arrayLength`/`arrayObject`, and contain only
+  those flat objects. Empty arrays are valid. Nested objects/arrays, booleans
+  and null are outside this increment. The entire source is validated on each
+  read, including unrequested fields or elements. Object key order is irrelevant.
+- Keys are matched by decoded, case-sensitive content. Missing keys and wrong
+  field types are errors, never empty String, zero or absent-value sentinels.
+  These readers do not enforce domain field sets or ranges: `.tc` still owns
+  schema/range validation according to `data-model.md` and `ipc.md`.
+  Support for exact-key-set validation without a DOM is an open review question
+  below; unknown domain fields must not silently become accepted wire data.
+- `getInt` accepts integer lexical tokens only, in signed i64 range. `17.0`,
+  `17e0`, `"17"` and overflowing integers are errors. It does not pass through
+  binary64, so `9007199254740993` remains exact. `-0` yields Int 0.
+- `getFloat` accepts JSON number syntax (including integer/exponent tokens),
+  converted directly to binary64 with round to nearest, ties to even.
+  Overflow to a non-finite value is an error. Finite subnormals, signed zero
+  and underflow to zero are allowed. This explicit JSON conversion does not
+  introduce an implicit `.tc` Int-to-Float conversion.
+- `arrayObject` returns an independent immutable String containing the selected
+  object (original substring or equivalent compact JSON). Its lifetime does not
+  depend on retaining the source. It is not a borrowed pointer or object handle.
+
+#### Output and resource rules
+
+- `quote` escapes quotes, backslashes and U+0000–U+001F, including CR/LF.
+  It preserves decoded text and emits valid UTF-8 JSON without raw newlines.
+  It is for **values**, never quoting an already serialized object. Strings
+  constructed internally may contain controls; JSON encoding must escape them.
+- `fromFloat` emits a shortest decimal that round-trips to the same binary64
+  value, with `.` as the decimal separator; exponent notation is allowed.
+  It never rounds coordinates to a fixed low number of decimal places.
+  Both signed zeros are legal JSON numbers. Non-finite input is an error.
+- All helpers are pure with respect to external services. They do no camera,
+  IPC, network or WM I/O, and never add a newline. `runtime.ipc_send` remains
+  responsible for the one transport newline. Application JSON assembly selects
+  exactly six domain fields or those same six plus IPC `type: "OBSERVATION"`.
+- Proposed bounds: 65,536 UTF-8 bytes per input/output String, excluding any
+  transport newline, and at most 72 array elements (the detector marker range).
+  Bounds are checked before allocation/concatenation; an escape-expanded
+  `quote` result may exceed the bound even when its input fits.
+  This does not enlarge any downstream transport's existing limit.
+- No parser state, cached document handle or String storage is shared between
+  independent VM executions. Results use the existing String runtime kind;
+  numeric results use existing Int or Float kinds.
+
+#### Errors and approval gates
+
+Wrong argument runtime kinds, malformed/unsupported JSON, missing/wrong-type
+fields, numeric overflow, negative/out-of-range array indices, byte/element
+limit violations and allocation failure produce a RuntimeError. Diagnostics
+identify the helper and failing key/index or limit without logging the entire
+payload. A declared call with a wrong argument type is rejected earlier by
+Compiler; invalid bytecode is still checked by VM/Runtime.
+
+The existing uncaught Runtime error path terminates execution with a nonzero
+status. This is an explicit limitation of this proposal, **not** the production
+Map policy. In contrast, the existing `runtime.ipc_send` still returns -1 on
+transport/framing failure; helpers do not change that approved behavior.
+
+Before #132/#133 proceed, owners must decide:
+
+1. Whether these nine helpers are sufficient, or narrow schema-aware codecs
+   would reduce total complexity. Such codecs may validate/encode fields only;
+   they must never compute coordinates, confidence, probability or map pixels.
+2. How `.tc` can reject malformed, wrong-type, missing/extra-field domain
+   messages and continue without a fatal RuntimeError. A bounded validation
+   API versus recoverable errors needs explicit agreement with #128; neither
+   a general exception model nor a JSON DOM is approved here.
+3. The VM ownership/reclamation rule for generated immutable Strings. Per-call
+   size bounds do not bound a long-running process. No GC, global String arena,
+   leaked lifetime or new pointer ABI is implicitly approved.
+4. Agreement on the proposed byte/element limits with existing camera/IPC and
+   future Broker limits. Parser implementation/library selection is not fixed.
+
+See [`data-contract-review.md`](../docs/data-contract-review.md) for required
+reviews and acceptance vectors. #128 owns device/time, networking and WM calls;
+this section adds no signatures for those services and changes neither the
+Camera String result nor the private detector protocol.
+
 Not decided here; see `docs/ai-context/02-open-questions.md` → "Runtime":
 
 - the remaining Runtime API surface (threads, IPC, location, orientation, networking, files, time,

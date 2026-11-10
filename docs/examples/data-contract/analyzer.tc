@@ -1,0 +1,63 @@
+// Proposal #127: requires the unapproved helpers in spec/runtime-api.md.
+// Fixture only: device at the equator, heading north, relativeAngle == 0.
+// General bearings require separately reviewed sin/cos and device APIs.
+fun observationJson(targetId: String, observerId: String, latitude: Float,
+                    longitude: Float, confidence: Float, timestamp: Int,
+                    forIpc: Bool): String {
+    let result = "{";
+    if (forIpc) {
+        result = text.concat(result, "\"type\":\"OBSERVATION\",");
+    }
+    result = text.concat(result, "\"targetId\":");
+    result = text.concat(result, json.quote(targetId));
+    result = text.concat(result, ",\"observerId\":");
+    result = text.concat(result, json.quote(observerId));
+    result = text.concat(result, ",\"latitude\":");
+    result = text.concat(result, text.fromFloat(latitude));
+    result = text.concat(result, ",\"longitude\":");
+    result = text.concat(result, text.fromFloat(longitude));
+    result = text.concat(result, ",\"confidence\":");
+    result = text.concat(result, text.fromFloat(confidence));
+    result = text.concat(result, ",\"timestamp\":");
+    result = text.concat(result, text.fromInt(timestamp));
+    return text.concat(result, "}");
+}
+
+fun analyze(detections: String, observerId: String, timestamp: Int) {
+    let index = 0;
+    const count = json.arrayLength(detections);
+    while (index < count) {
+        const detection = json.arrayObject(detections, index);
+        const id = json.getInt(detection, "id");
+        const angle = json.getFloat(detection, "relativeAngle");
+        const distance = json.getFloat(detection, "distance");
+        let valid = true;
+        if (id < 0) { valid = false; }
+        if (id > 71) { valid = false; }
+        if (angle != 0.0) { valid = false; }
+        if (distance <= 0.0) { valid = false; }
+        if (distance > 100.0) { valid = false; }
+        if (observerId == "") { valid = false; }
+        if (valid) {
+            // north = distance, east = 0 at this fixture's heading/bearing.
+            const latitude = distance / 6371000.0 * 180.0 / 3.141592653589793;
+            const longitude = 0.0;
+            // Proposed policy from analyzer-observation.md, still needs review.
+            const confidence = 0.9 / (1.0 + distance / 25.0);
+            const message = observationJson(text.fromInt(id), observerId,
+                latitude, longitude, confidence, timestamp, true);
+            const status = runtime.ipc_send(message);
+            if (status != 0) { runtime.log("observation-dropped"); }
+        } else {
+            runtime.log("invalid-or-unsupported-fixture-detection");
+        }
+        index = index + 1;
+    }
+}
+
+fun main() {
+    // Replace only the fixture source with camera.detectMarkers() once #132
+    // registers that existing Runtime signature. Empty array sends nothing.
+    analyze("[{\"id\":17,\"relativeAngle\":0.0,\"distance\":10.0}]",
+            "device-1", 1800000000100);
+}
