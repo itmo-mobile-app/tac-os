@@ -57,7 +57,22 @@ The Runtime call ABI and the first function (`runtime.log`) are defined in `spec
 mechanism and message format for the Analyzer↔Map scenario are defined in `spec/ipc.md` (both approved by
 the Runtime owner). Remaining open:
 
-- Exact Runtime API (beyond `runtime.log`).
+- Sprint 4 device/time, Broker, drawing/events and bounded IPC candidates are
+  documented in [`spec/runtime-api.md`](../../spec/runtime-api.md#sprint-4-minimum-api-128-proposal)
+  for issue #128. They are not approved or implemented. Required owner decisions:
+  - snapshot-based location/heading getters, true-north camera-axis convention,
+    provider injection, sample age and camera/pose skew;
+  - extending the existing Int/String VM-to-Runtime conversion boundary for
+    finite Float values, with Compiler registration and existing v1/v2 regression;
+  - recoverable status codes, deadlines and additive IPC polling so Map can
+    service local observations, Broker messages and native close in one thread;
+  - Broker transport/line limits, no-ACK semantics and explicit reconnect policy;
+  - bounded WM commands/event subscription/cleanup consistent with the reviewed
+    Activity contract, including no duplicate CLOSE and no application QUIT;
+  - agreement with #127 / PR #152 on recoverable domain validation, exact field
+    sets and bounded reclamation of generated Strings;
+  - the minimum trigonometry and Float-to-Int pixel rounding/conversion needed
+    for general Analyzer bearings and the final Map drawing path.
 - Linux threading primitive.
 - Thread synchronization primitives.
 The camera architecture and the **initial** `camera.detectMarkers() -> String`
@@ -65,20 +80,19 @@ API are fixed in `spec/runtime-api.md`; the private Unix-domain socket
 protocol, timeout and helper lifecycle are fixed in
 `spec/camera-detector-protocol.md`. Still unresolved:
 
-- The proposed Float contract is described in `spec/language.md` and
-  `spec/bytecode.md` (#106); VM execution is implemented in #108; Compiler support and the real Float
-  Compiler-to-VM E2E remain pending in #107.
+- The Float contract is described in `spec/language.md` and
+  `spec/bytecode.md` (#106); Compiler #107 and VM #108 are merged, with the
+  real Compiler-to-VM projection scenario in `tests/map-tc/`. Runtime still
+  accepts/returns only Int and String; a Float boundary is proposed in #128.
   Native collections/`Detection[]` remain unresolved, and the current
   Camera API continues returning JSON as `String`.
 - A recoverable error mechanism visible to `.tc` beyond an initial Runtime failure.
 - Production camera configuration and device-calibration strategy; initial
   defaults are only for the prototype.
 - Approval from the course instructor for OpenCV/gocv usage in the detector.
-- Location API.
-- Orientation API.
-- Networking API.
+- Approval of the #128 location, orientation, Broker and time proposal before
+  implementation in #134/#135; drawing/lifecycle integration follows in #136.
 - File API.
-- Time API.
 
 ## Window Manager
 
