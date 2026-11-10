@@ -6,15 +6,19 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/itmo-mobile-app/tac-os/server/dbms"
 )
 
 // Server owns its listener and a single in-memory database. Call Serve once.
 type Server struct {
 	listener    *net.UnixListener
 	lock        *os.File
+	dataLock    *os.File
 	path        string
 	inode       os.FileInfo
 	timeout     time.Duration
@@ -31,17 +35,13 @@ func owned(info os.FileInfo) bool {
 	return ok && stat.Uid == uint32(os.Geteuid())
 }
 
-// Listen creates a user-only socket. The persistent .lock file is only a lifecycle
-// guard, not database storage. Never remove it while a server may be starting.
-func Listen(path string, timeout time.Duration) (*Server, error) {
-	if path == "" || timeout <= 0 {
-		return nil, fmt.Errorf("socket path and positive I/O timeout are required")
-	}
-	fd, err := syscall.Open(path+".lock", syscall.O_CREAT|syscall.O_RDWR|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0600)
+// lockFile keeps a path-based lock for the lifetime of the process using it.
+func lockFile(path string) (*os.File, error) {
+	fd, err := syscall.Open(path, syscall.O_CREAT|syscall.O_RDWR|syscall.O_NOFOLLOW|syscall.O_CLOEXEC|syscall.O_NONBLOCK, 0600)
 	if err != nil {
 		return nil, err
 	}
-	lock := os.NewFile(uintptr(fd), path+".lock")
+	lock := os.NewFile(uintptr(fd), path)
 	success := false
 	defer func() {
 		if !success {
@@ -53,12 +53,78 @@ func Listen(path string, timeout time.Duration) (*Server, error) {
 		return nil, err
 	}
 	if !info.Mode().IsRegular() || !owned(info) || info.Mode().Perm() != 0600 {
-		return nil, fmt.Errorf("unsafe socket lock file")
+		return nil, fmt.Errorf("unsafe lock file: %s", path)
 	}
 	if err = syscall.Flock(fd, syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
-		return nil, fmt.Errorf("socket is locked: %w", err)
+		return nil, fmt.Errorf("path is locked: %s: %w", path, err)
 	}
-	info, err = os.Lstat(path)
+	success = true
+	return lock, nil
+}
+
+// Listen creates a user-only socket for an in-memory database.
+func Listen(path string, timeout time.Duration) (*Server, error) {
+	return listen(path, timeout)
+}
+
+// ListenPersistent restores the snapshot before making the socket available.
+func ListenPersistent(path string, timeout time.Duration, dataPath string) (*Server, error) {
+	canonical := func(name string) (string, error) {
+		absolute, err := filepath.Abs(name)
+		if err != nil {
+			return "", err
+		}
+		dir, err := filepath.EvalSymlinks(filepath.Dir(absolute))
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(dir, filepath.Base(absolute)), nil
+	}
+	socketPath, err := canonical(path)
+	if err != nil {
+		return nil, err
+	}
+	dataPath, err = canonical(dataPath)
+	if err != nil {
+		return nil, err
+	}
+	if socketPath == dataPath || socketPath+".lock" == dataPath || socketPath == dataPath+".lock" {
+		return nil, fmt.Errorf("socket and snapshot paths must be distinct")
+	}
+	lock, err := lockFile(dataPath + ".lock")
+	if err != nil {
+		return nil, fmt.Errorf("lock snapshot: %w", err)
+	}
+	db, err := dbms.OpenSnapshot(dataPath)
+	if err != nil {
+		_ = lock.Close()
+		return nil, err
+	}
+	s, err := listen(socketPath, timeout)
+	if err != nil {
+		_ = lock.Close()
+		return nil, err
+	}
+	s.executor.db = *db
+	s.dataLock = lock
+	return s, nil
+}
+
+func listen(path string, timeout time.Duration) (*Server, error) {
+	if path == "" || timeout <= 0 {
+		return nil, fmt.Errorf("socket path and positive I/O timeout are required")
+	}
+	lock, err := lockFile(path + ".lock")
+	if err != nil {
+		return nil, err
+	}
+	success := false
+	defer func() {
+		if !success {
+			_ = lock.Close()
+		}
+	}()
+	info, err := os.Lstat(path)
 	if err == nil {
 		if info.Mode()&os.ModeSocket == 0 || !owned(info) {
 			return nil, fmt.Errorf("refusing to remove non-socket or foreign socket: %s", path)
@@ -106,10 +172,14 @@ func (s *Server) Close() {
 			_ = conn.Close()
 		}
 		s.mu.Unlock()
+		s.workers.Wait()
 		if info, err := os.Lstat(s.path); err == nil && os.SameFile(info, s.inode) && info.Mode()&os.ModeSocket != 0 {
 			_ = os.Remove(s.path)
 		}
 		_ = s.lock.Close()
+		if s.dataLock != nil {
+			_ = s.dataLock.Close()
+		}
 	})
 }
 
@@ -123,7 +193,7 @@ func (s *Server) Serve(ctx context.Context) error {
 		}
 	}()
 	defer close(done)
-	defer func() { s.Close(); s.workers.Wait() }()
+	defer s.Close()
 	for {
 		conn, err := s.listener.Accept()
 		if err != nil {
