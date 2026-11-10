@@ -185,9 +185,8 @@ Responsible for:
 
 The approved Target Service ↔ DBMS contract is a Unix-domain stream socket
 with a four-byte little-endian length header, raw UTF-8 SQL requests and
-length-prefixed JSON responses (`spec/dbms-protocol.md`). The current DBMS
-executor is in-memory only; socket serving is implemented in `tacdb-server` (#96),
-while persistence remains unimplemented.
+length-prefixed JSON responses (`spec/dbms-protocol.md`). `tacdb-server` (#96)
+can restore and save its tables on disk when started with `-data` (#131).
 
 ### Database
 

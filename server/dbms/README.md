@@ -1,17 +1,17 @@
-# In-memory SQL DBMS
+# SQL DBMS
 
-This component implements issues #31 and #67 in Go, matching the course technology stack.
+This component implements issues #31, #67, #96, and #131 in Go, matching the course technology stack.
 It uses only the standard library and its own SQL lexer, parser, and executor.
 It supports `CREATE TABLE`, `INSERT INTO ... VALUES`,
 `SELECT ... FROM ... [WHERE column = value]`, and
 `UPDATE ... SET column = value, ... WHERE column = value` from `spec/sql.md`.
 
-Tables exist only in memory. Closing `tacdb` discards them. The CLI is a development
+The `tacdb` CLI keeps tables in memory and discards them on exit. It is a development
 entry point, **not** the Target Service wire protocol. The planned socket client/server
 contract is fixed in `spec/dbms-protocol.md`: a Unix-domain stream socket with
 four-byte little-endian length-prefixed UTF-8 SQL requests and JSON responses.
-The socket server is implemented separately as `tacdb-server` (#96). Persistence
-is not implemented.
+The socket server is implemented separately as `tacdb-server` (#96), with optional
+file storage enabled by `-data` (#131).
 The local Go API is not a deployment decision.
 
 ## Build and test only this component
@@ -46,7 +46,7 @@ ctest --test-dir "$HOME/tac-os-build/dbms-go" --output-on-failure
 "$HOME/tac-os-build/dbms-go/tacdb"
 ```
 
-The isolated build registers fourteen DBMS checks. It does not require Kotlin or the VM.
+The isolated build registers seventeen DBMS checks. It does not require Kotlin or the VM.
 For the complete monorepo build, follow the root README. The CLI then lives at
 `build/server/dbms/tacdb`. DBMS checks carry the `dbms` label:
 
@@ -141,8 +141,8 @@ Connections share one database; a mutex serializes executor access. Socket I/O
 is outside that mutex. `-io-timeout 5s` controls the deadline for each frame read
 or write; it is not a database execution timeout. The client should use its
 own timeout and must not blindly retry writes after an ambiguous disconnect.
-No persistence, authentication protocol, TCP endpoint or transactions are added.
-Database contents are discarded when this process exits.
+With no `-data` argument, database contents are discarded when the process exits.
+There is no authentication protocol, TCP endpoint or transaction support.
 
 SIGINT (Ctrl+C) and SIGTERM stop accepting clients, interrupt blocked socket I/O,
 wait for handlers and remove only the socket created by that server. Socket
@@ -165,3 +165,74 @@ The local `Result.Types` slice follows `Result.Columns` in projection order;
 like rows and names it is copied, including for an empty SELECT. This metadata
 addition lets the wire adapter report exact column types without inferring them
 from data. `Database` itself remains unsafe for concurrent direct callers.
+
+## File storage and restart (#131)
+
+Create a private directory on a local Linux filesystem and keep the same file
+path across restarts. For example, using the standalone CMake build above:
+
+```bash
+install -d -m 700 "$HOME/.local/state/tac-os"
+"$HOME/tac-os-build/dbms-go/tacdb-server" -socket /tmp/tac-os-dbms.sock \
+  -data "$HOME/.local/state/tac-os/dbms.json"
+```
+
+There is no default data path: omitting `-data` preserves the in-memory mode.
+A missing file starts an empty database. An existing zero-byte, incomplete,
+unsupported, or invalid snapshot fails startup before the server opens a socket;
+it is not overwritten. Only regular snapshot files are accepted. Keep the
+parent directory service-owned and do not edit or replace files during use.
+`<data>.lock` uses advisory flock to prevent a second server opening the same
+path, even on a different socket. Its presence after exit is normal. Use a single
+path per database and leave lock files in place; path aliases via hard links,
+external file writers, and remote filesystems are outside the supported setup.
+
+### Snapshot format
+
+The file is a UTF-8 JSON object with `version: 1` and `tables`. Each table has
+its name, ordered column descriptors and rows. Row values follow column order.
+For example:
+
+```json
+{
+  "version": 1,
+  "tables": [{
+    "name": "targets",
+    "columns": [
+      {"name": "id", "type": "INTEGER"},
+      {"name": "score", "type": "REAL"}
+    ],
+    "rows": [[9223372036854775807, 0.75]]
+  }]
+}
+```
+
+`INTEGER` values are decoded directly into signed int64, `REAL` into finite
+float64, and `TEXT` into strings. Empty tables retain their schema and have
+`rows: []`. The loader checks version, table/column names and uniqueness,
+row widths and cell types. There is no checksum to detect corruption that
+still produces a valid snapshot. The disk format is internal to the DBMS;
+clients keep using `spec/dbms-protocol.md`.
+
+### Save and failure semantics
+
+The server serializes execution and snapshot replacement under its existing DB
+mutex. Each valid CREATE, INSERT or UPDATE stages its changes, writes the entire
+snapshot to a same-directory temporary file (mode 0600), syncs and closes it,
+renames it over the previous file, then syncs the parent directory before
+returning success. SELECT and SQL errors do not rewrite the file. A failure
+before rename leaves the live database and the previous snapshot unchanged.
+
+If rename succeeds but directory sync fails, the visible new snapshot and live
+state match, but durability is uncertain; the server logs the error and returns
+the existing `INTERNAL_ERROR` response. A disconnect can also hide the outcome
+of a write. Do not automatically replay such writes; read the current state
+first. After a crash before rename the previous file is used; leftover temporary
+files are ignored. Power-loss guarantees depend on a local filesystem and storage
+that honor atomic rename and file/directory sync. There is no WAL, power-failure
+simulation, or multi-statement transaction. Full snapshots cost time and space
+proportional to the database size; this is intended for a small MVP dataset.
+
+`go test -race -count=1 ./...` and CTest cover snapshot round trips, invalid
+files, failed replacement, and a separate process writing data, restarting,
+and reading it back. `dbms.socket` includes the restart and socket cleanup check.
