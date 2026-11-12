@@ -1,0 +1,14 @@
+{"Time":"2026-11-12T20:49:55.158617+03:00","Action":"start","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke"}
+{"Time":"2026-11-12T20:49:56.699281+03:00","Action":"run","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestServerE2E"}
+{"Time":"2026-11-12T20:49:56.699411+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestServerE2E","Output":"=== RUN   TestServerE2E\n"}
+{"Time":"2026-11-12T20:49:57.593503+03:00","Action":"run","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestServerE2E/SQLIntegration"}
+{"Time":"2026-11-12T20:49:57.593532+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestServerE2E/SQLIntegration","Output":"=== RUN   TestServerE2E/SQLIntegration\n"}
+{"Time":"2026-11-12T20:49:57.593614+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestServerE2E/SQLIntegration","Output":"    server_e2e_test.go:104: BLOCKED-CONTRACT: configure documented Target Service DBMS arguments and Target SELECT; spec/dbms-protocol.md defines framing, not service CLI or domain schema\n"}
+{"Time":"2026-11-12T20:49:57.593659+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestServerE2E/SQLIntegration","Output":"--- SKIP: TestServerE2E/SQLIntegration (0.00s)\n"}
+{"Time":"2026-11-12T20:49:57.593674+03:00","Action":"skip","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestServerE2E/SQLIntegration","Elapsed":0}
+{"Time":"2026-11-12T20:49:57.593692+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestServerE2E","Output":"    server_e2e_test.go:210: INCOMPLETE ACCEPTANCE: SQL integration contract is not configured; its SKIP must not produce an overall green acceptance run\n"}
+{"Time":"2026-11-12T20:49:57.594575+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestServerE2E","Output":"--- FAIL: TestServerE2E (0.90s)\n"}
+{"Time":"2026-11-12T20:49:57.59459+03:00","Action":"fail","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestServerE2E","Elapsed":0.9}
+{"Time":"2026-11-12T20:49:57.594768+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Output":"FAIL\n"}
+{"Time":"2026-11-12T20:49:57.59543+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Output":"FAIL\tgithub.com/itmo-mobile-app/tac-os/tests/system-smoke\t2.437s\n"}
+{"Time":"2026-11-12T20:49:57.595441+03:00","Action":"fail","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Elapsed":2.437}

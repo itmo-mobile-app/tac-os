@@ -1,0 +1,7 @@
+2026-11-12T21:28:53+03:00
+Linux VMLinux.local 7.0.0-42-generic #42-Ubuntu SMP PREEMPT_DYNAMIC Thu Oct 15 08:19:15 UTC 2026 aarch64 GNU/Linux
+go version go1.26.8 linux/arm64
+3877600e4e4a6fa06bc8081d849aa5f4913fcf96
+ M tests/system-smoke/README.md
+?? docs/testing/reports/
+?? tests/system-smoke/server_e2e_test.go
