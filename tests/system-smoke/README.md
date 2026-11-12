@@ -169,3 +169,60 @@ In another terminal, send `kill -INT <runner-pid>` or `kill -TERM <runner-pid>`
 while services are running. Check that the printed resource directory and its
 sockets disappear and that the child processes terminate. The binary must be
 started from inside the checkout so it can locate the component sources.
+
+## Server acceptance tests (#140)
+
+The separate `server_e2e` build tag enables black-box acceptance tests against the
+component sources in the current checkout. Production components are not patched
+or replaced. The test publisher sends only Observation messages; it never
+publishes fabricated Target messages. Run from this directory:
+
+```sh
+GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local go test -tags server_e2e -run '^TestServerE2E$' -count=1 -timeout 5m -v .
+```
+
+The tests build and start real Broker, Target Service, DBMS and (for the Map case)
+Go Map plus the production headless WM. They cover the DBMS wire protocol,
+one observer, two observers, duplicate handling, invalid observations, periodic
+time decay, Map redraw and cleanup on both success and failure. A first valid
+Target is a prerequisite for negative checks, so a service that produces no
+Targets cannot pass through silence. Bootstrap retries repeat the exact same
+observer and timestamp to handle Broker subscription races without adding
+independent evidence. After the first Target, scenarios send inputs once.
+
+The probability oracle uses the published formula, input timestamps and receive
+time, allowing one second for delivery/scheduling. Periodic updates must arrive
+within eight seconds (the contract interval is five). This is a bounded local
+acceptance budget, not a new transport guarantee. Map verification checks its
+redraw confirmation after real WM command responses and expected marker pixel
+coordinates; it does not inspect framebuffer pixels or prove native GUI output.
+
+Missing `targets.updated` is a test failure. Checks that cannot proceed beyond
+that first missing Target do not prove defects in their later assertions.
+The existing regression tests and default CI are unchanged; an untagged green
+run does not establish that #140 passes. Run the tagged command explicitly.
+
+### SQL integration contract configuration
+
+The current specifications define SQL framing, but not the integrated Target
+Service's DBMS CLI option or a normative domain table schema. The illustrative
+`targets` table in `spec/sql.md` is not treated as an approved integration schema.
+Until those interfaces are agreed, `SQLIntegration` reports `BLOCKED-CONTRACT`
+with a Go test SKIP. The parent test also fails explicitly for incomplete SQL
+configuration, so this SKIP cannot turn the acceptance command green.
+
+Once documented, configure `TACOS_E2E_TARGET_DBMS_ARGS` as a JSON array of extra
+Target Service arguments containing `{dbms}` in place of the private DBMS socket.
+Arguments are passed directly, without a shell. Configure
+`TACOS_E2E_TARGET_SELECT` as one read-only SELECT projecting target ID, latitude,
+longitude, probability and last-seen timestamp, in that order. The test looks
+for target `17`. It never creates or populates service-owned domain tables.
+Those arguments apply to all server scenarios; the SELECT applies only to SQL
+integration. Do not invent or silently default an unsupported service flag.
+
+`DBMSProtocol` creates its own probe table in its own process. Its success proves
+real SQL transport/execution only, independently of Target Service integration.
+File persistence and aggregation recovery after restart are not covered here.
+
+Recorded baseline results: [macOS](../../docs/testing/reports/140-main-3877600.md)
+and [Ubuntu Linux](../../docs/testing/reports/140-main-3877600-linux.md).

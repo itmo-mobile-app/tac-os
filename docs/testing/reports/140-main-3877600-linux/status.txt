@@ -1,0 +1,4 @@
+vet exit=0
+regression exit=0
+cli exit=0
+acceptance exit=1

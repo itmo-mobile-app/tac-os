@@ -1,0 +1,59 @@
+{"Time":"2026-11-12T21:29:02.326688837+03:00","Action":"start","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke"}
+{"Time":"2026-11-12T21:29:02.327091795+03:00","Action":"start","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke/cmd/wm-headless"}
+{"Time":"2026-11-12T21:29:02.327125837+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke/cmd/wm-headless","Output":"?   \tgithub.com/itmo-mobile-app/tac-os/tests/system-smoke/cmd/wm-headless\t[no test files]\n"}
+{"Time":"2026-11-12T21:29:02.327138962+03:00","Action":"skip","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke/cmd/wm-headless","Elapsed":0}
+{"Time":"2026-11-12T21:29:02.335256879+03:00","Action":"run","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke"}
+{"Time":"2026-11-12T21:29:02.335350129+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke","Output":"=== RUN   TestSystemSmoke\n"}
+{"Time":"2026-11-12T21:29:03.710681129+03:00","Action":"run","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/parallel"}
+{"Time":"2026-11-12T21:29:03.710726004+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/parallel","Output":"=== RUN   TestSystemSmoke/parallel\n"}
+{"Time":"2026-11-12T21:29:03.710739213+03:00","Action":"run","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/parallel/0"}
+{"Time":"2026-11-12T21:29:03.710744296+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/parallel/0","Output":"=== RUN   TestSystemSmoke/parallel/0\n"}
+{"Time":"2026-11-12T21:29:03.710748546+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/parallel/0","Output":"=== PAUSE TestSystemSmoke/parallel/0\n"}
+{"Time":"2026-11-12T21:29:03.710751546+03:00","Action":"pause","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/parallel/0"}
+{"Time":"2026-11-12T21:29:03.710756004+03:00","Action":"run","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/parallel/1"}
+{"Time":"2026-11-12T21:29:03.710759379+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/parallel/1","Output":"=== RUN   TestSystemSmoke/parallel/1\n"}
+{"Time":"2026-11-12T21:29:03.710766213+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/parallel/1","Output":"=== PAUSE TestSystemSmoke/parallel/1\n"}
+{"Time":"2026-11-12T21:29:03.710769421+03:00","Action":"pause","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/parallel/1"}
+{"Time":"2026-11-12T21:29:03.710824379+03:00","Action":"cont","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/parallel/0"}
+{"Time":"2026-11-12T21:29:03.710840213+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/parallel/0","Output":"=== CONT  TestSystemSmoke/parallel/0\n"}
+{"Time":"2026-11-12T21:29:03.710846296+03:00","Action":"cont","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/parallel/1"}
+{"Time":"2026-11-12T21:29:03.710849713+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/parallel/1","Output":"=== CONT  TestSystemSmoke/parallel/1\n"}
+{"Time":"2026-11-12T21:29:03.92561688+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/parallel/1","Output":"--- PASS: TestSystemSmoke/parallel/1 (0.21s)\n"}
+{"Time":"2026-11-12T21:29:03.92566763+03:00","Action":"pass","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/parallel/1","Elapsed":0.21}
+{"Time":"2026-11-12T21:29:03.92567838+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/parallel/0","Output":"--- PASS: TestSystemSmoke/parallel/0 (0.21s)\n"}
+{"Time":"2026-11-12T21:29:03.925698171+03:00","Action":"pass","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/parallel/0","Elapsed":0.21}
+{"Time":"2026-11-12T21:29:03.92570188+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/parallel","Output":"--- PASS: TestSystemSmoke/parallel (0.00s)\n"}
+{"Time":"2026-11-12T21:29:03.92570688+03:00","Action":"pass","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/parallel","Elapsed":0}
+{"Time":"2026-11-12T21:29:03.925764713+03:00","Action":"run","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/repeat"}
+{"Time":"2026-11-12T21:29:03.925782213+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/repeat","Output":"=== RUN   TestSystemSmoke/repeat\n"}
+{"Time":"2026-11-12T21:29:04.137257463+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/repeat","Output":"--- PASS: TestSystemSmoke/repeat (0.21s)\n"}
+{"Time":"2026-11-12T21:29:04.137306963+03:00","Action":"pass","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/repeat","Elapsed":0.21}
+{"Time":"2026-11-12T21:29:04.137317546+03:00","Action":"run","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/cancel-after-start"}
+{"Time":"2026-11-12T21:29:04.137320588+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/cancel-after-start","Output":"=== RUN   TestSystemSmoke/cancel-after-start\n"}
+{"Time":"2026-11-12T21:29:04.23288963+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/cancel-after-start","Output":"--- PASS: TestSystemSmoke/cancel-after-start (0.10s)\n"}
+{"Time":"2026-11-12T21:29:04.232934963+03:00","Action":"pass","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/cancel-after-start","Elapsed":0.1}
+{"Time":"2026-11-12T21:29:04.232948421+03:00","Action":"run","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/failure-with-map-running"}
+{"Time":"2026-11-12T21:29:04.232952671+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/failure-with-map-running","Output":"=== RUN   TestSystemSmoke/failure-with-map-running\n"}
+{"Time":"2026-11-12T21:29:04.379593046+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/failure-with-map-running","Output":"--- PASS: TestSystemSmoke/failure-with-map-running (0.15s)\n"}
+{"Time":"2026-11-12T21:29:04.37964488+03:00","Action":"pass","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/failure-with-map-running","Elapsed":0.15}
+{"Time":"2026-11-12T21:29:04.379655796+03:00","Action":"run","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/cli-signals"}
+{"Time":"2026-11-12T21:29:04.379659171+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/cli-signals","Output":"=== RUN   TestSystemSmoke/cli-signals\n"}
+{"Time":"2026-11-12T21:29:04.606773922+03:00","Action":"run","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/cli-signals/interrupt"}
+{"Time":"2026-11-12T21:29:04.606812588+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/cli-signals/interrupt","Output":"=== RUN   TestSystemSmoke/cli-signals/interrupt\n"}
+{"Time":"2026-11-12T21:29:04.635208213+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/cli-signals/interrupt","Output":"--- PASS: TestSystemSmoke/cli-signals/interrupt (0.03s)\n"}
+{"Time":"2026-11-12T21:29:04.635260588+03:00","Action":"pass","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/cli-signals/interrupt","Elapsed":0.03}
+{"Time":"2026-11-12T21:29:04.635271463+03:00","Action":"run","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/cli-signals/terminated"}
+{"Time":"2026-11-12T21:29:04.635275005+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/cli-signals/terminated","Output":"=== RUN   TestSystemSmoke/cli-signals/terminated\n"}
+{"Time":"2026-11-12T21:29:04.662855047+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/cli-signals/terminated","Output":"--- PASS: TestSystemSmoke/cli-signals/terminated (0.03s)\n"}
+{"Time":"2026-11-12T21:29:04.662895463+03:00","Action":"pass","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/cli-signals/terminated","Elapsed":0.03}
+{"Time":"2026-11-12T21:29:04.663443005+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/cli-signals","Output":"--- PASS: TestSystemSmoke/cli-signals (0.28s)\n"}
+{"Time":"2026-11-12T21:29:04.663459755+03:00","Action":"pass","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke/cli-signals","Elapsed":0.28}
+{"Time":"2026-11-12T21:29:04.664809797+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke","Output":"--- PASS: TestSystemSmoke (2.33s)\n"}
+{"Time":"2026-11-12T21:29:04.664830338+03:00","Action":"pass","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestSystemSmoke","Elapsed":2.33}
+{"Time":"2026-11-12T21:29:04.66483663+03:00","Action":"run","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestRunCancelledCleansDirectory"}
+{"Time":"2026-11-12T21:29:04.664839672+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestRunCancelledCleansDirectory","Output":"=== RUN   TestRunCancelledCleansDirectory\n"}
+{"Time":"2026-11-12T21:29:04.665077797+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestRunCancelledCleansDirectory","Output":"--- PASS: TestRunCancelledCleansDirectory (0.00s)\n"}
+{"Time":"2026-11-12T21:29:04.665098838+03:00","Action":"pass","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Test":"TestRunCancelledCleansDirectory","Elapsed":0}
+{"Time":"2026-11-12T21:29:04.665107755+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Output":"PASS\n"}
+{"Time":"2026-11-12T21:29:05.698109047+03:00","Action":"output","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Output":"ok  \tgithub.com/itmo-mobile-app/tac-os/tests/system-smoke\t3.370s\n"}
+{"Time":"2026-11-12T21:29:05.698263047+03:00","Action":"pass","Package":"github.com/itmo-mobile-app/tac-os/tests/system-smoke","Elapsed":3.372}
