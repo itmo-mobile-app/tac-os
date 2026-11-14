@@ -69,8 +69,31 @@ func decodeStrict[T any](input []byte, target *T) error {
 }
 
 func parseResult(raw string) (result, error) {
+	raw = strings.TrimSpace(raw)
+	var required map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(raw), &required); err != nil {
+		return result{}, errors.New("model output is not result JSON")
+	}
+	if _, ok := required["status"]; !ok {
+		return result{}, errors.New("model result missing status")
+	}
+	rawBox, ok := required["bbox"]
+	if !ok {
+		return result{}, errors.New("model result missing bbox")
+	}
+	if string(rawBox) != "null" {
+		var coords map[string]json.RawMessage
+		if err := json.Unmarshal(rawBox, &coords); err != nil {
+			return result{}, errors.New("bbox must be an object or null")
+		}
+		for _, k := range []string{"x", "y", "w", "h"} {
+			if _, ok := coords[k]; !ok {
+				return result{}, errors.New("bbox missing coordinate")
+			}
+		}
+	}
 	var v result
-	if err := decodeStrict([]byte(strings.TrimSpace(raw)), &v); err != nil {
+	if err := decodeStrict([]byte(raw), &v); err != nil {
 		return result{}, errors.New("model output is not strict result JSON")
 	}
 	switch v.Status {
