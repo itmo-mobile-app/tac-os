@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -30,9 +31,9 @@ func testPNG(t *testing.T) []byte {
 
 func TestVisionRequestAndResult(t *testing.T) {
 	data := testPNG(t)
-	called := 0
+	var called atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		called++
+		called.Add(1)
 		if r.Method != http.MethodPost || r.Header.Get("Authorization") != "Bearer test-key" {
 			t.Errorf("unexpected method or bearer token")
 		}
@@ -85,8 +86,8 @@ func TestVisionRequestAndResult(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if called != 1 || got.Status != "present" || got.BBox == nil || got.BBox.W != 0.3 {
-		t.Fatalf("unexpected result: %#v; calls=%d", got, called)
+	if called.Load() != 1 || got.Status != "present" || got.BBox == nil || got.BBox.W != 0.3 {
+		t.Fatalf("unexpected result: %#v; calls=%d", got, called.Load())
 	}
 }
 
