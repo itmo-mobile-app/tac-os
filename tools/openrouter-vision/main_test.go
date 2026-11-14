@@ -97,6 +97,8 @@ func TestModelResultValidation(t *testing.T) {
 		ok   bool
 	}{
 		{"no-player", `{"status":"absent","bbox":null}`, true},
+		{"missing-bbox", `{"status":"absent"}`, false},
+		{"missing-bbox-coordinate", `{"status":"present","bbox":{"x":0.2,"y":0.2,"w":0.5}}`, false},
 		{"uncertain", `{"status":"uncertain","bbox":null}`, true},
 		{"present-without-localization", `{"status":"present","bbox":null}`, true},
 		{"valid-bbox", `{"status":"present","bbox":{"x":0,"y":0,"w":1,"h":1}}`, true},
