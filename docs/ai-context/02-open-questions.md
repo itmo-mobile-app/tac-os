@@ -162,6 +162,12 @@ The minimal SQL subset is defined in `spec/sql.md` (approved by the SQL DBMS own
 
 ## AI target recognition (instructor update, October 2026)
 
+The OpenRouter **still-image PoC and proposed Analyzer handoff** are documented in
+`docs/vision/openrouter-integration.md` (issue #129) with a dependency-free Go
+CLI under `tools/openrouter-vision/`. Neither live model quality nor an approved
+camera/Runtime ABI is established by this prototype. The instructor's approval
+of a cloud-only exception to NFR-1/C-8 and the choice of model remain open.
+
 The instructor now requires AI-based visual recognition of players/targets during the final
 demonstration; ArUco-only detection is insufficient. The instructor suggested OpenRouter as
 one possible provider for a vision-capable model. This **does not** approve a model, public API,
