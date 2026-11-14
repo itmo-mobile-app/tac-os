@@ -6,7 +6,7 @@
   the diagrams are embedded in the Russian README.md.
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1060" viewBox="0 0 1200 1060" role="img" aria-labelledby="title description">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1164" viewBox="0 0 1200 1164" role="img" aria-labelledby="title description">
 <title id="title">От наблюдения игрока к общей карте команды</title>
 <desc id="description">Кадр камеры поступает на распознавание маркера. ID игрока и положение маркера в кадре вместе с координатами и ориентацией наблюдателя используются для вычисления координат цели. Наблюдения объединяются в состояние цели и отображаются на карте команды.</desc>
 <defs><marker id="b1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2f2a3a"/></marker></defs>
@@ -102,4 +102,11 @@ text { font-family: Helvetica, Arial, sans-serif; fill: #1f1c26; }
 <text class="name" x="675.0" y="1032" text-anchor="middle">
 <tspan x="675.0" dy="0">Команда</tspan>
 </text>
+
+  <!-- Local semantic legend (#123): viewpoint-specific, not a new system component. -->
+  <rect x="0" y="1060" width="1200" height="104" fill="#ffffff"/>
+  <line x1="16" y1="1068" x2="1184" y2="1068" stroke="#d3cfdd" stroke-width="1"/>
+  <text x="20" y="1088" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#2f2a3a">ЛЕГЕНДА МОДЕЛИ · 1/6</text>
+  <text x="20" y="1111" font-family="Arial, sans-serif" font-size="12.5" fill="#1f1c26">Сценарий: овал — участник; параллелограмм — данные; прямоугольник — действие.</text>
+  <text x="20" y="1134" font-family="Arial, sans-serif" font-size="12.5" fill="#625d70">Стрелки — смысловые зависимости, не IPC. Реальность: игрок, камера и датчики; исполнение здесь не моделируется.</text>
 </svg>
