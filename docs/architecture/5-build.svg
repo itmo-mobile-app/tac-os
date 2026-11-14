@@ -5,7 +5,7 @@
   Keep this diagram on its own level (see docs/architecture/README.md) and keep labels in Russian:
   the diagrams are embedded in the Russian README.md.
 -->
-<svg xmlns="http://www.w3.org/2000/svg" width="1010" height="240" font-family="IBM Plex Sans, Helvetica, Arial, sans-serif" color="#1f1c26" viewBox="0 0 1010 240" role="img" aria-label="Процесс tacc читает файл hello.tc и пишет файл hello.bc; процесс tacvm читает hello.bc, его VM вызывает Runtime, Runtime печатает hello в консоль.">
+<svg xmlns="http://www.w3.org/2000/svg" width="1010" height="344" font-family="IBM Plex Sans, Helvetica, Arial, sans-serif" color="#1f1c26" viewBox="0 0 1010 344" role="img" aria-label="Процесс tacc читает файл hello.tc и пишет файл hello.bc; процесс tacvm читает hello.bc, его VM вызывает Runtime, Runtime печатает hello в консоль.">
   <defs>
     <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
   </defs>
@@ -84,4 +84,11 @@
   <text class="t-arrow" x="927" y="104" text-anchor="middle">stdout</text>
   <text class="t-sub" x="948" y="114">консоль:</text>
   <text class="t-code" x="948" y="134">hello</text>
-  </svg>
+  
+  <!-- Local semantic legend (#123): viewpoint-specific, not a new system component. -->
+  <rect x="0" y="240" width="1010" height="104" fill="#ffffff"/>
+  <line x1="16" y1="248" x2="994" y2="248" stroke="#d3cfdd" stroke-width="1"/>
+  <text x="20" y="268" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#2f2a3a">ЛЕГЕНДА МОДЕЛИ · 5/6</text>
+  <text x="20" y="291" font-family="Arial, sans-serif" font-size="12.5" fill="#1f1c26">Сборка: лист с уголком — файл; блок с тёмной шапкой — процесс инструмента.</text>
+  <text x="20" y="314" font-family="Arial, sans-serif" font-size="12.5" fill="#625d70">Стрелки — чтение, запись и вызов по стадиям. Это не IPC, не бизнес-сценарий и не слои ОС.</text>
+</svg>
