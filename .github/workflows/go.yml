@@ -62,6 +62,9 @@ jobs:
           - component: Target Service
             directory: target-service
             packages: ./...
+          - component: OpenRouter Vision PoC
+            directory: tools/openrouter-vision
+            packages: ./...
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v6
