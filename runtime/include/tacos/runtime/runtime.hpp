@@ -73,7 +73,13 @@ public:
     const std::string& wm_socket_path() const;
     const std::string& ipc_socket_path() const;
 
+    void set_wm_event_socket_path(std::string path);
+    std::string window_poll_event(int timeout_ms);
+    void connect_wm_events();
     std::string camera_detect_markers();
+    void mark_wm_window_open();
+    bool is_wm_window_open() const;
+    void disconnect_wm_events();
 
     // IPC: Map
     void ipc_listen();
@@ -87,6 +93,11 @@ private:
     std::ostream& output_;
     std::string wm_socket_path_;
     std::string ipc_socket_path_;
+
+    std::string wm_event_socket_path_;
+    int wm_event_fd_ = -1;
+    std::string wm_event_buffer_;
+    bool wm_window_open_ = false;
 
     // -1 означает, что сокет ещё не открыт.
     int ipc_listen_fd_ = -1;

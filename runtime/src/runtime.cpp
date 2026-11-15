@@ -43,7 +43,75 @@ RuntimeError::RuntimeError(const std::string& message)
 
 namespace {
 
-    
+
+nlohmann::json read_wm_event_json(int fd, std::string &buffer, int timeout_ms) {
+  const auto deadline =
+      std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms);
+
+  while (true) {
+    const auto newline = buffer.find('\n');
+
+    if (newline != std::string::npos) {
+      std::string line = buffer.substr(0, newline);
+      buffer.erase(0, newline + 1);
+
+      try {
+        return nlohmann::json::parse(line);
+      } catch (const nlohmann::json::exception &) {
+        throw RuntimeError("invalid WM event JSON");
+      }
+    }
+
+    const auto now = std::chrono::steady_clock::now();
+    if (timeout_ms > 0 && now >= deadline) {
+      return nullptr;
+    }
+
+    const auto remaining =
+        std::chrono::duration_cast<std::chrono::milliseconds>(deadline - now)
+            .count();
+
+    pollfd pfd{};
+    pfd.fd = fd;
+    pfd.events = POLLIN;
+
+    const int wait_ms =
+        timeout_ms == 0
+            ? 0
+            : static_cast<int>(std::max<std::int64_t>(1, remaining));
+
+    const int result = ::poll(&pfd, 1, wait_ms);
+
+    if (result == 0) {
+      return nullptr;
+    }
+
+    if (result < 0) {
+      if (errno == EINTR) {
+        continue;
+      }
+      throw RuntimeError("WM event poll failed: " +
+                         std::string(std::strerror(errno)));
+    }
+
+    char chunk[4096];
+    const ssize_t count = ::recv(fd, chunk, sizeof(chunk), MSG_DONTWAIT);
+
+    if (count > 0) {
+      buffer.append(chunk, static_cast<std::size_t>(count));
+
+      if (buffer.size() > 65536) {
+        throw RuntimeError("WM event message too large");
+      }
+    } else if (count == 0) {
+      throw RuntimeError("WM event socket disconnected");
+    } else if (errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
+      throw RuntimeError("WM event receive failed: " +
+                         std::string(std::strerror(errno)));
+    }
+  }
+}
+
 void validate_observation(const std::string& text) {
     using json = nlohmann::json;
 
@@ -161,7 +229,7 @@ void validate_observation(const std::string& text) {
     }
 }
 
-    
+
 using IpcDeadline =
     std::chrono::steady_clock::time_point;
 
@@ -233,84 +301,158 @@ Value runtime_log(
     return Value::int_value_of(0);
 }
 
-Value window_create(
-    Runtime& runtime,
-    std::ostream&,
-    const std::vector<Value>& args
-) {
-    if (args[0].kind != ValueKind::String) {
-        throw RuntimeError(
-            "window.create expects title to be a String"
-        );
+Value window_create(Runtime &runtime, std::ostream &,
+                    const std::vector<Value> &args) {
+  if (args[0].kind != ValueKind::String) {
+    throw RuntimeError("window.create expects title to be a String");
+  }
+
+  if (args[1].kind != ValueKind::Int || args[2].kind != ValueKind::Int) {
+    throw RuntimeError("window.create expects width and height to be Int");
+  }
+
+  if (args[1].int_value <= 0 || args[2].int_value <= 0) {
+    throw RuntimeError("window.create expects positive width and height");
+  }
+  runtime.connect_wm_events();
+  detail::send_window_manager_command(runtime.wm_socket_path(), "CREATE", "map",
+                                      args[0].string_value, args[1].int_value,
+                                      args[2].int_value);
+  runtime.mark_wm_window_open();
+  return Value::int_value_of(0);
+}
+
+Value window_show(Runtime &runtime, std::ostream &,
+                  const std::vector<Value> &) {
+  detail::send_window_manager_command(runtime.wm_socket_path(), "SHOW", "map");
+
+  return Value::int_value_of(0);
+}
+
+Value window_close(Runtime &runtime, std::ostream &,
+                   const std::vector<Value> &) {
+  if (runtime.is_wm_window_open()) {
+    detail::send_window_manager_command(runtime.wm_socket_path(), "CLOSE",
+                                        "map");
+  }
+
+  runtime.disconnect_wm_events();
+
+  return Value::int_value_of(0);
+}
+
+Value window_quit(Runtime &runtime, std::ostream &,
+                  const std::vector<Value> &) {
+  detail::send_window_manager_command(runtime.wm_socket_path(), "QUIT");
+
+  runtime.disconnect_wm_events();
+
+  return Value::int_value_of(0);
+}
+
+Value window_begin_frame(Runtime &runtime, std::ostream &,
+                         const std::vector<Value> &args) {
+  for (const auto &arg : args) {
+    if (arg.kind != ValueKind::Int || arg.int_value < 0 ||
+        arg.int_value > 255) {
+      throw RuntimeError(
+          "window.beginFrame expects four RGBA integers in [0, 255]");
     }
+  }
 
-    if (args[1].kind != ValueKind::Int ||
-        args[2].kind != ValueKind::Int) {
-        throw RuntimeError(
-            "window.create expects width and height to be Int"
-        );
+  detail::send_window_manager_request(runtime.wm_socket_path(),
+                                      {{"command", "BEGIN_FRAME"},
+                                       {"window_id", "map"},
+                                       {"color",
+                                        {{"r", args[0].int_value},
+                                         {"g", args[1].int_value},
+                                         {"b", args[2].int_value},
+                                         {"a", args[3].int_value}}}});
+
+  return Value::int_value_of(0);
+}
+
+Value window_draw_image(Runtime &runtime, std::ostream &,
+                        const std::vector<Value> &args) {
+  if (args[0].kind != ValueKind::String) {
+    throw RuntimeError("window.drawImage expects an image path String");
+  }
+
+  for (std::size_t i = 1; i < args.size(); ++i) {
+    if (args[i].kind != ValueKind::Int) {
+      throw RuntimeError(
+          "window.drawImage expects integer coordinates and dimensions");
     }
+  }
 
-    if (args[1].int_value <= 0 ||
-        args[2].int_value <= 0) {
-        throw RuntimeError(
-            "window.create expects positive width and height"
-        );
+  if (args[0].string_value.empty() || args[3].int_value <= 0 ||
+      args[4].int_value <= 0) {
+    throw RuntimeError(
+        "window.drawImage expects a nonempty path and positive dimensions");
+  }
+
+  detail::send_window_manager_request(runtime.wm_socket_path(),
+                                      {{"command", "DRAW_IMAGE"},
+                                       {"window_id", "map"},
+                                       {"image_path", args[0].string_value},
+                                       {"x", args[1].int_value},
+                                       {"y", args[2].int_value},
+                                       {"width", args[3].int_value},
+                                       {"height", args[4].int_value}});
+
+  return Value::int_value_of(0);
+}
+
+Value window_draw_circle(Runtime &runtime, std::ostream &,
+                         const std::vector<Value> &args) {
+  for (const auto &arg : args) {
+    if (arg.kind != ValueKind::Int) {
+      throw RuntimeError("window.drawCircle expects seven Int arguments");
     }
+  }
 
-    detail::send_window_manager_command(
-        runtime.wm_socket_path(),
-        "CREATE",
-        "map",
-        args[0].string_value,
-        args[1].int_value,
-        args[2].int_value
-    );
+  if (args[2].int_value <= 0) {
+    throw RuntimeError("window.drawCircle expects a positive radius");
+  }
 
-    return Value::int_value_of(0);
+  for (std::size_t i = 3; i < 7; ++i) {
+    if (args[i].int_value < 0 || args[i].int_value > 255) {
+      throw RuntimeError("window.drawCircle expects RGBA values in [0, 255]");
+    }
+  }
+
+  detail::send_window_manager_request(runtime.wm_socket_path(),
+                                      {{"command", "DRAW_CIRCLE"},
+                                       {"window_id", "map"},
+                                       {"x", args[0].int_value},
+                                       {"y", args[1].int_value},
+                                       {"radius", args[2].int_value},
+                                       {"color",
+                                        {{"r", args[3].int_value},
+                                         {"g", args[4].int_value},
+                                         {"b", args[5].int_value},
+                                         {"a", args[6].int_value}}}});
+
+  return Value::int_value_of(0);
 }
 
-Value window_show(
-    Runtime& runtime,
-    std::ostream&,
-    const std::vector<Value>&
-) {
-    detail::send_window_manager_command(
-        runtime.wm_socket_path(),
-        "SHOW",
-        "map"
-    );
+Value window_present(Runtime &runtime, std::ostream &,
+                     const std::vector<Value> &) {
+  detail::send_window_manager_request(
+      runtime.wm_socket_path(), {{"command", "PRESENT"}, {"window_id", "map"}});
 
-    return Value::int_value_of(0);
+  return Value::int_value_of(0);
 }
+Value window_poll_event(Runtime &runtime, std::ostream &,
+                        const std::vector<Value> &args) {
+  if (args[0].kind != ValueKind::Int || args[0].int_value < 0 ||
+      args[0].int_value > 1000) {
+    throw RuntimeError("window.pollEvent expects timeout in [0, 1000] ms");
+  }
 
-Value window_close(
-    Runtime& runtime,
-    std::ostream&,
-    const std::vector<Value>&
-) {
-    detail::send_window_manager_command(
-        runtime.wm_socket_path(),
-        "CLOSE",
-        "map"
-    );
-
-    return Value::int_value_of(0);
+  return Value::string_value_of(
+      runtime.window_poll_event(static_cast<int>(args[0].int_value)));
 }
-
-Value window_quit(
-    Runtime& runtime,
-    std::ostream&,
-    const std::vector<Value>&
-) {
-    detail::send_window_manager_command(
-        runtime.wm_socket_path(),
-        "QUIT"
-    );
-
-    return Value::int_value_of(0);
-}
-
 
 Value camera_detect_markers_handler(
     Runtime& runtime,
@@ -361,31 +503,30 @@ Value ipc_send_handler(
 }
 
 
-const std::unordered_map<std::string, FunctionEntry>&
-function_table() {
-    
-static const std::unordered_map<
-    std::string, FunctionEntry
-> table = {
-    {"runtime.log",        {1, &runtime_log}},
-    {"camera.detectMarkers", {0, &camera_detect_markers_handler}},
-    {"window.create",      {3, &window_create}},
-    {"window.show",        {0, &window_show}},
-    {"window.close",       {0, &window_close}},
-    {"window.quit",        {0, &window_quit}},
+const std::unordered_map<std::string, FunctionEntry> &function_table() {
 
-    {"runtime.ipc_listen",  {0, &ipc_listen_handler}},
-    {"runtime.ipc_receive", {0, &ipc_receive_handler}},
-    {"runtime.ipc_send",    {1, &ipc_send_handler}},
-};
+  static const std::unordered_map<std::string, FunctionEntry> table = {
+      {"runtime.log", {1, &runtime_log}},
+      {"camera.detectMarkers", {0, &camera_detect_markers_handler}},
+      {"window.create", {3, &window_create}},
+      {"window.beginFrame", {4, &window_begin_frame}},
+      {"window.drawImage", {5, &window_draw_image}},
+      {"window.drawCircle", {7, &window_draw_circle}},
+      {"window.present", {0, &window_present}},
+      {"window.pollEvent", {1, &window_poll_event}},
+      {"window.show", {0, &window_show}},
+      {"window.close", {0, &window_close}},
+      {"window.quit", {0, &window_quit}},
 
+      {"runtime.ipc_listen", {0, &ipc_listen_handler}},
+      {"runtime.ipc_receive", {0, &ipc_receive_handler}},
+      {"runtime.ipc_send", {1, &ipc_send_handler}},
+  };
 
-    return table;
+  return table;
 }
 
 } // namespace
-
-
 
 Runtime::Runtime(
     std::ostream& output,
@@ -407,18 +548,26 @@ Runtime::Runtime(
 
 
 Runtime::~Runtime() {
-    camera_.reset();
-    if (ipc_connection_fd_ != -1) {
-        ::close(ipc_connection_fd_);
+  if (wm_window_open_) {
+    try {
+      detail::send_window_manager_command(wm_socket_path_, "CLOSE", "map");
+    } catch (...) {
+      // Cleanup must not throw if WM is unavailable or already closed.
     }
+  }
 
-    if (ipc_listen_fd_ != -1) {
-        ::close(ipc_listen_fd_);
-        ::unlink(ipc_socket_path_.c_str());
-    }
+  disconnect_wm_events();
+  camera_.reset();
+
+  if (ipc_connection_fd_ != -1) {
+    ::close(ipc_connection_fd_);
+  }
+
+  if (ipc_listen_fd_ != -1) {
+    ::close(ipc_listen_fd_);
+    ::unlink(ipc_socket_path_.c_str());
+  }
 }
-
-
 
 bool Runtime::has_function(
     const std::string& name,
@@ -453,10 +602,109 @@ Value Runtime::call(
     return it->second.handler(*this, output_, args);
 }
 
-const std::string& Runtime::wm_socket_path() const {
-    return wm_socket_path_;
+const std::string &Runtime::wm_socket_path() const { return wm_socket_path_; }
+void Runtime::set_wm_event_socket_path(std::string path) {
+  if (wm_event_fd_ != -1) {
+    throw RuntimeError("cannot change WM event socket path while connected");
+  }
+
+  if (path.empty()) {
+    throw RuntimeError("WM event socket path cannot be empty");
+  }
+
+  wm_event_socket_path_ = std::move(path);
 }
 
+void Runtime::connect_wm_events() {
+  if (wm_event_fd_ != -1) {
+    return;
+  }
+
+  const std::string path = wm_event_socket_path_.empty()
+                               ? "/tmp/tacos-wm-events.sock"
+                               : wm_event_socket_path_;
+
+  if (path.size() >= sizeof(sockaddr_un::sun_path)) {
+    throw RuntimeError("WM event socket path is too long");
+  }
+
+  int fd = ::socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+  if (fd < 0) {
+    throw RuntimeError("cannot create WM event socket: " +
+                       std::string(std::strerror(errno)));
+  }
+
+  sockaddr_un addr{};
+  addr.sun_family = AF_UNIX;
+  std::memcpy(addr.sun_path, path.c_str(), path.size() + 1);
+
+  if (::connect(fd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) != 0) {
+    const std::string error = std::strerror(errno);
+    ::close(fd);
+    throw RuntimeError("cannot connect to WM event socket: " + error);
+  }
+
+  try {
+    const auto response = read_wm_event_json(fd, wm_event_buffer_, 1000);
+
+    if (!response.is_object() || !response.value("ok", false) ||
+        response.value("message", std::string{}) != "subscribed") {
+      throw RuntimeError("WM event subscription was not confirmed");
+    }
+
+    wm_event_fd_ = fd;
+  } catch (...) {
+    ::close(fd);
+    wm_event_buffer_.clear();
+    throw;
+  }
+}
+
+std::string Runtime::window_poll_event(int timeout_ms) {
+  if (wm_event_fd_ == -1) {
+    throw RuntimeError("WM event socket is not connected");
+  }
+
+  if (timeout_ms < 0 || timeout_ms > 1000) {
+    throw RuntimeError("invalid WM event timeout");
+  }
+
+  const auto event =
+      read_wm_event_json(wm_event_fd_, wm_event_buffer_, timeout_ms);
+
+  if (event.is_null()) {
+    return "";
+  }
+
+  if (!event.is_object()) {
+    throw RuntimeError("invalid WM event response");
+  }
+
+  const std::string name = event.value("event", std::string{});
+
+  const std::string window_id = event.value("window_id", std::string{});
+
+  if (name == "window_close" && window_id == "map") {
+    wm_window_open_ = false;
+    return "window_close";
+  }
+
+  return "";
+}
+
+void Runtime::mark_wm_window_open() { wm_window_open_ = true; }
+
+bool Runtime::is_wm_window_open() const { return wm_window_open_; }
+
+void Runtime::disconnect_wm_events() {
+  if (wm_event_fd_ != -1) {
+    ::close(wm_event_fd_);
+    wm_event_fd_ = -1;
+  }
+
+  wm_event_buffer_.clear();
+  wm_window_open_ = false;
+}
 
 const std::string& Runtime::ipc_socket_path() const {
     return ipc_socket_path_;
@@ -728,7 +976,7 @@ std::string Runtime::ipc_receive() {
             std::string message = ipc_buffer_.substr(0, pos);
             ipc_buffer_.erase(0, pos + 1);
 
-            
+
 if (message.empty() ||
     message.find('\r') != std::string::npos ||
     message.find('\0') != std::string::npos) {
@@ -848,4 +1096,3 @@ return message;
 
 
 } // namespace tacos::runtime
-
