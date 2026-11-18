@@ -183,6 +183,89 @@ or offline queue.
 
 The wire schema is defined in spec/ipc.md.
 
+## Window API: one Map window
+
+Status: implemented for issue #136; pending Runtime owner review and
+alignment with #128.
+
+The `.tc` application accesses the existing Window Manager through Runtime.
+Runtime translates calls into the JSONL protocol in `spec/window-manager.md`.
+Rendering remains in WM. This API adds no WebView or Activity lifecycle.
+
+The current implementation supports one window with the fixed ID `map`.
+
+### Functions
+
+| Function | Arguments | Return | WM command |
+| --- | --- | --- | --- |
+| `window.create` | `title: String, width: Int, height: Int` | `Int` | `CREATE` |
+| `window.beginFrame` | `r: Int, g: Int, b: Int, a: Int` | `Int` | `BEGIN_FRAME` |
+| `window.drawImage` | `path: String, x: Int, y: Int, width: Int, height: Int` | `Int` | `DRAW_IMAGE` |
+| `window.drawCircle` | `x: Int, y: Int, radius: Int, r: Int, g: Int, b: Int, a: Int` | `Int` | `DRAW_CIRCLE` |
+| `window.present` | None | `Int` | `PRESENT` |
+| `window.show` | None | `Int` | `SHOW` |
+| `window.pollEvent` | `timeoutMs: Int` | `String` | Reads the event socket |
+| `window.close` | None | `Int` | `CLOSE`, unless closure is already known |
+
+Command calls return `Int 0` on success. Runtime rejects invalid argument
+types, nonpositive dimensions or radius, empty image paths, and RGBA
+components outside `0..255`.
+
+Image paths are passed to WM unchanged and must be accessible to its process.
+
+### Events and errors
+
+`window.pollEvent(timeoutMs)` accepts a timeout in `0..1000` milliseconds.
+It returns `"window_close"` when the close event for `map` is received.
+It returns `""` on timeout or when an unrelated event is consumed.
+A zero timeout checks available input without waiting. Incomplete event
+data is retained for the next call.
+
+Command transport uses a 1000 ms deadline covering connection, sending,
+and receiving a response. Event connection establishment is nonblocking
+and fails if it cannot complete immediately. Subscription confirmation
+is awaited for up to 1000 ms.
+
+Transport failures, rejected commands and malformed JSON are errors,
+not successful return values. There is no automatic command retry.
+An event-stream disconnection is an error, not a window-close event.
+
+### Lifecycle and ownership
+
+WM must already be running. Runtime does not start the WM process.
+
+1. `window.create` connects to the event socket and confirms subscription
+   before sending `CREATE`.
+2. The application prepares a frame with `beginFrame`, drawing calls and
+   `present`, then calls `show`.
+3. On native user close, WM destroys the window and sends `window_close`.
+   Once Runtime consumes that event, `window.close` disconnects events
+   without sending a duplicate `CLOSE`.
+4. Otherwise, `window.close` sends `CLOSE` and disconnects events.
+   It leaves the WM process running.
+5. The host/supervisor, not a `.tc` application, manages shutdown of the WM process.
+6. During Runtime destruction, an open window is closed on a best-effort
+   basis. Cleanup errors do not escape the destructor.
+
+Runtime owns its client descriptors. WM owns the command and event socket
+paths and removes them on shutdown. Closing a window alone does not remove
+the server socket paths.
+
+The command socket path is configured through the Runtime constructor.
+The event socket defaults to `/tmp/tacos-wm-events.sock`; a host-side caller
+can override it with `set_wm_event_socket_path` before connecting.
+Changing the command path does not automatically change the event path.
+
+### Verification
+
+`tests/map-wm/window-manager.tc` is the `.tc` integration scenario.
+The `map_runtime_wm_e2e` CTest test runs it through VM and Runtime against
+the production headless renderer.
+
+The test checks background and Target pixels, a simulated native close
+event, explicit closure, a second application launch against the same WM,
+and removal of both socket paths after WM shutdown.
+
 ## Open questions
 
 Not decided here; see `docs/ai-context/02-open-questions.md` → "Runtime":
