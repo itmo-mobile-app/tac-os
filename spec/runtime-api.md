@@ -22,6 +22,20 @@ Compiler → VM integration test. It does not cover IPC (see `spec/ipc.md`) or t
 - Calling an unknown `<namespace>.<function>` name is a load-time error (checked when the VM resolves
   Runtime calls after loading the bytecode, not at CALL_RUNTIME execution time).
 
+## Typed value transport (#133 implementation candidate)
+
+The shared C++ `Value` supports Int, String and finite binary64 Float. Its Float
+fields and factory match Runtime device PR #162; both VM conversion directions
+preserve the runtime kind and numeric payload. Int timestamps never pass through
+Float. Invalid kinds and non-finite Float values are errors. Existing functions
+keep their declared argument/result types; no JSON, device or window function is
+registered by this value-transport change.
+
+Strings crossing the boundary own their bytes rather than borrowing parser or
+frame memory. See `docs/testing/vm-data-133.md` for lifetime tests and the pending
+(#127/#128) validation/resource decisions. This subsection does not approve the
+pending helper signatures from PR #152 or the complete API proposal in #153.
+
 ## First Runtime function
 
 ```text

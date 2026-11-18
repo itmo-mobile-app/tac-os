@@ -52,7 +52,7 @@
 
   <!-- boundary note -->
   <text class="t-arrow" x="500" y="74" text-anchor="middle">интерфейс между ними:</text>
-  <text class="t-arrow" x="500" y="90" text-anchor="middle">runtime.hpp</text>
+  <text class="t-arrow" x="500" y="90" text-anchor="middle">runtime.hpp: Int / String / Float</text>
 
   <!-- calls -->
   <line class="edge" x1="352" y1="152" x2="646" y2="152" marker-end="url(#a3)"/>

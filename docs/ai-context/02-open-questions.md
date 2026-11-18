@@ -37,6 +37,12 @@ Runtime calls are defined in `spec/bytecode.md` (approved by the VM Core owner).
 
 ## VM
 
+- #133 adds finite Float VM/Runtime conversion compatible with Runtime #162.
+  Data-helper approval (#127), recoverable full-schema validation (#128) and
+  the real Compiler #132 Observation/Target E2E are still pending. See
+  `docs/testing/vm-data-133.md` for the proposed existing-RAII String ownership
+  rule; no GC or unreviewed validator API is implied.
+
 - The C++ independent-execution model is defined in `spec/vm-execution.md` (#93).
   The Runtime owner reviewed the resource-isolation restrictions in PR #117;
   shared camera, socket or WM usage remains outside the guaranteed scope.

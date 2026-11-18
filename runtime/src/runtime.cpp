@@ -38,6 +38,16 @@ Value Value::string_value_of(std::string value) {
     return result;
 }
 
+Value Value::float_value_of(double value) {
+    if (!std::isfinite(value)) {
+        throw RuntimeError("Runtime Float must be finite");
+    }
+    Value result;
+    result.kind = ValueKind::Float;
+    result.float_value = value;
+    return result;
+}
+
 RuntimeError::RuntimeError(const std::string& message)
     : std::runtime_error(message) {}
 

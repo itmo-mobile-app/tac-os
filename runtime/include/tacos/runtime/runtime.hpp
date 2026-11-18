@@ -21,15 +21,18 @@ struct CameraOptions {
 enum class ValueKind {
     Int,
     String,
+    Float,
 };
 
 struct Value {
     ValueKind kind;
     std::int64_t int_value = 0;
     std::string string_value;
+    double float_value = 0;
 
     static Value int_value_of(std::int64_t value);
     static Value string_value_of(std::string value);
+    static Value float_value_of(double value);
 };
 
 class RuntimeError : public std::runtime_error {

@@ -63,8 +63,10 @@ RET
 
 The instruction set is defined in `spec/bytecode.md`. VM #108 accepts v1 and
 Float v2, preserving a separate kind for each value. It rejects non-finite
-Float constants/results and division by signed zero. Compiler #107 is still
-required for the real Float source-to-bytecode integration test.
+Float constants/results and division by signed zero. Compiler #107 is now in
+main and its coordinate E2E is available. #133 additionally supports finite
+Float across Runtime calls, matching the Value extension in Runtime #162;
+see `docs/testing/vm-data-133.md` for ownership checks and data-helper gates.
 
 ## Runtime responsibility
 
