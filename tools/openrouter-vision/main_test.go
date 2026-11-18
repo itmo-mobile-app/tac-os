@@ -108,7 +108,7 @@ func TestModelResultValidation(t *testing.T) {
 		{"bbox-when-absent", `{"status":"absent","bbox":{"x":0,"y":0,"w":1,"h":1}}`, false},
 		{"overflow", `{"status":"present","bbox":{"x":0.9,"y":0.1,"w":0.4,"h":0.3}}`, false},
 		{"zero-width", `{"status":"present","bbox":{"x":0.2,"y":0.2,"w":0,"h":0.3}}`, false},
-		{"markdown-fence", "```json\n"+`{"status":"absent","bbox":null}`+"\n```", false},
+		{"markdown-fence", "```json\n" + `{"status":"absent","bbox":null}` + "\n```", false},
 		{"extra-object", `{"status":"absent","bbox":null}{}`, false},
 	}
 	for _, tc := range cases {
