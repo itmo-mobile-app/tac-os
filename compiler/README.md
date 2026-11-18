@@ -67,6 +67,8 @@ Usage: `tacc <input.tc> <output.bc>`. Write the output under `build/` (ignored b
 - `CheckerTest` — positive and negative tests of types, scopes, `const`, calls, and returns;
 - `CodeGenTest` — exact instruction sequences, `hello.tc` byte for byte against
   `tests/hello/hello.bc`, and the behavior of compiled programs.
+- `DataHelpersTest` — signatures of the Observation/Target data helpers, their type errors and
+  lowering, and compilation of every `.tc` source under `app/`, `docs/examples/` and `tests/`.
 
 Program behavior is checked with a small reference interpreter in `TestSupport.kt`. It is a test
 oracle for the compiler only, written against `spec/bytecode.md`; `tacvm` remains the VM.
@@ -79,6 +81,7 @@ CTest runs the full chain `.tc` → `tacc` → `.bc` → `tacvm` and compares st
 | `hello_e2e` | `tests/hello` | `PUSH_CONST`, `CALL_RUNTIME`, `POP`, `RET` |
 | `control_flow_e2e` | `tests/control-flow` | locals, arithmetic, comparisons, jumps (#62) |
 | `language_example_e2e` | `tests/language-example` (example from `spec/language.md`) | the above and `CALL` |
+| `data_tc_e2e` | `tests/data-tc` (Observation/Target, malformed inputs, type errors) | Float and the data helpers in Runtime |
 
 The VM tests in `tests/vm` (`vm_*_e2e`) also compile their programs with `tacc`.
 
@@ -99,3 +102,43 @@ left-to-right evaluation order using temporary local slots.
 Run `./gradlew test` (including `FloatTest`), then validate the coordinate
 example against a v2-capable `tacvm`. The VM from PR #116 must be merged or
 built separately before an actual end-to-end test can succeed.
+
+## Observation and Target data (issue #132)
+
+The Runtime signatures of `spec/runtime-api.md` → "Minimal String data helpers" are registered in
+`RuntimeFunctions` with their static types: `json.arrayLength`, `json.arrayObject`, `json.getInt`,
+`json.getFloat`, `json.getString`, `json.quote`, `text.concat`, `text.fromInt`, `text.fromFloat`,
+and the existing `camera.detectMarkers() -> String`. No syntax, opcode or bytecode version was
+added: each call lowers to `CALL_RUNTIME` like any other Runtime function. A call whose result is
+`Float` (`json.getFloat`) makes the module v2, as for every other Float construct.
+
+Wrong arity, wrong argument types, a `Float` result used with `Int`, `String + String` and
+unknown helper names are compile-time errors.
+
+## Language limitations (issue #144)
+
+What the final Analyzer and Map sources have to work around. These are properties of the `.tc`
+language and its Runtime, not of the Go reference implementation in `app/map/*.go`:
+
+- **No structs, arrays or collections.** Domain records are separate scalar locals and
+  parameters; detector results and messages are JSON `String` values read and built with the
+  data helpers. A detector array has at most 72 objects; every helper input and output is at
+  most 65,536 bytes.
+- **Flat JSON only.** The helpers accept objects of String and number fields, and arrays of
+  such objects. Nested values, `true`/`false` and `null` are errors.
+- **No recoverable errors.** Malformed JSON, a missing key or a wrong field type raises a
+  RuntimeError and `tacvm` exits with status 1. Map cannot yet skip one bad update and keep its
+  window; this is an open question in `spec/runtime-api.md`. `runtime.ipc_send` still reports
+  delivery failure as `-1` instead.
+- **No string operations besides the helpers:** no length, indexing, substring, search or
+  ordering; only `==` and `!=`. `String + String` is an error; use `text.concat`.
+- **No numeric conversions.** There is no `Int` ↔ `Float` conversion, implicit or explicit,
+  and no rounding function. Integer JSON tokens can be read as `Float` with `json.getFloat`.
+- **No math library:** no `sin`, `cos`, `sqrt`; Analyzer computes them with series in `.tc`.
+- **Literals:** `Float` literals need digits on both sides of the point and have no exponent;
+  String escapes are only `\"`, `\\` and `\n`, so other characters are written as UTF-8.
+- **Control flow:** `if` / `else if` / `else`, `while` and `return`; no `&&`, `||`, `for`,
+  `break` or `continue`. Conditions are combined with nested `if` or Bool locals.
+- **Limits:** 255 parameters and local slots per function, 65,536 distinct constants and
+  functions per module.
+- **No device APIs yet:** location, heading and time come from fixtures until #134.
