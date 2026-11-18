@@ -7,6 +7,8 @@ No Compiler, Runtime, IPC, Map, Broker, DBMS or detector source is changed.
 Float has a VM-owned kind and binary64 payload. Calls to the existing Runtime
 convert only Int/String values; Float arguments to the current Runtime API are
 rejected. Existing Runtime signatures and bytecode-v1 instructions are unchanged.
+Later, #132/#133 added finite Float to the Runtime `Value` for the data helpers;
+`runtime.log` and the other existing functions still reject a Float argument.
 
 ## Reproduce on Linux
 

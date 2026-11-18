@@ -276,6 +276,12 @@ treated as approved solely because they appear in this subsection.
 Selection rationale and source examples are in
 [`language.md`](language.md#observation-and-target-data-access-127-proposal).
 
+Implementation status: the nine helpers below are implemented in
+`runtime/src/data_helpers.cpp` and registered in Compiler #132, so that the
+proposal can be checked end to end (`runtime_data_helpers`, `data_tc_e2e`).
+Runtime `Value` carries a finite `Float` kind in both directions, as in #133.
+This does not record owner approval: the approval gates below stay open.
+
 | Proposed signature | Result and concrete use |
 | --- | --- |
 | `json.arrayLength(source: String) -> Int` | Number of detector objects; `[]` gives 0 |

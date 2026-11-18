@@ -67,6 +67,8 @@ Usage: `tacc <input.tc> <output.bc>`. Write the output under `build/` (ignored b
 - `CheckerTest` — positive and negative tests of types, scopes, `const`, calls, and returns;
 - `CodeGenTest` — exact instruction sequences, `hello.tc` byte for byte against
   `tests/hello/hello.bc`, and the behavior of compiled programs.
+- `DataHelpersTest` — signatures of the Observation/Target data helpers, their type errors and
+  lowering.
 
 Program behavior is checked with a small reference interpreter in `TestSupport.kt`. It is a test
 oracle for the compiler only, written against `spec/bytecode.md`; `tacvm` remains the VM.
@@ -79,6 +81,7 @@ CTest runs the full chain `.tc` → `tacc` → `.bc` → `tacvm` and compares st
 | `hello_e2e` | `tests/hello` | `PUSH_CONST`, `CALL_RUNTIME`, `POP`, `RET` |
 | `control_flow_e2e` | `tests/control-flow` | locals, arithmetic, comparisons, jumps (#62) |
 | `language_example_e2e` | `tests/language-example` (example from `spec/language.md`) | the above and `CALL` |
+| `data_tc_e2e` | `tests/data-tc` (Observation/Target, malformed inputs, type errors) | Float and the data helpers in Runtime |
 
 The VM tests in `tests/vm` (`vm_*_e2e`) also compile their programs with `tacc`.
 
@@ -99,3 +102,15 @@ left-to-right evaluation order using temporary local slots.
 Run `./gradlew test` (including `FloatTest`), then validate the coordinate
 example against a v2-capable `tacvm`. The VM from PR #116 must be merged or
 built separately before an actual end-to-end test can succeed.
+
+## Observation and Target data (issue #132)
+
+The Runtime signatures of `spec/runtime-api.md` → "Minimal String data helpers" are registered in
+`RuntimeFunctions` with their static types: `json.arrayLength`, `json.arrayObject`, `json.getInt`,
+`json.getFloat`, `json.getString`, `json.quote`, `text.concat`, `text.fromInt`, `text.fromFloat`,
+and the existing `camera.detectMarkers() -> String`. No syntax, opcode or bytecode version was
+added: each call lowers to `CALL_RUNTIME` like any other Runtime function. A call whose result is
+`Float` (`json.getFloat`) makes the module v2, as for every other Float construct.
+
+Wrong arity, wrong argument types, a `Float` result used with `Int`, `String + String` and
+unknown helper names are compile-time errors.

@@ -23,8 +23,9 @@ Remaining open:
   `spec/runtime-api.md` for the unapproved signatures and limits, and
   `docs/data-contract-review.md` for owner review. Exact-field-set validation,
   recoverable rejection of malformed messages, and bounded String reclamation
-  must be decided before #132/#133 implement this proposal. Device/network/WM
-  signatures remain with #128. No owner approval is inferred from these docs.
+  remain open approval gates. #132 implements the helpers in Compiler and
+  Runtime to make the proposal testable end to end; this is not approval.
+  Device/network/WM signatures remain with #128.
 
 ## Compiler
 

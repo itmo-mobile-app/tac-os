@@ -1,6 +1,7 @@
 #include "tacos/runtime/runtime.hpp"
 #include "window_manager_client.hpp"
 #include "camera_detector_client.hpp"
+#include "data_helpers.hpp"
 
 #include <ostream>
 #include <iostream>
@@ -35,6 +36,16 @@ Value Value::string_value_of(std::string value) {
     Value result;
     result.kind = ValueKind::String;
     result.string_value = std::move(value);
+    return result;
+}
+
+Value Value::float_value_of(double value) {
+    if (!std::isfinite(value)) {
+        throw RuntimeError("Runtime Float must be finite");
+    }
+    Value result;
+    result.kind = ValueKind::Float;
+    result.float_value = value;
     return result;
 }
 
@@ -521,6 +532,16 @@ const std::unordered_map<std::string, FunctionEntry> &function_table() {
       {"runtime.ipc_listen", {0, &ipc_listen_handler}},
       {"runtime.ipc_receive", {0, &ipc_receive_handler}},
       {"runtime.ipc_send", {1, &ipc_send_handler}},
+
+      {"json.arrayLength", {1, &detail::json_array_length}},
+      {"json.arrayObject", {2, &detail::json_array_object}},
+      {"json.getInt", {2, &detail::json_get_int}},
+      {"json.getFloat", {2, &detail::json_get_float}},
+      {"json.getString", {2, &detail::json_get_string}},
+      {"json.quote", {1, &detail::json_quote}},
+      {"text.concat", {2, &detail::text_concat}},
+      {"text.fromInt", {1, &detail::text_from_int}},
+      {"text.fromFloat", {1, &detail::text_from_float}},
   };
 
   return table;

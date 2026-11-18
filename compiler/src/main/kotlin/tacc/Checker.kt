@@ -49,6 +49,17 @@ object RuntimeFunctions {
         "window.show" to Signature(emptyList(), Type.INT),
         "window.pollEvent" to Signature(listOf(Type.INT), Type.STRING),
         "window.close" to Signature(emptyList(), Type.INT),
+        "camera.detectMarkers" to Signature(emptyList(), Type.STRING),
+        // String/JSON data helpers for Observation and Target (#127, #132).
+        "json.arrayLength" to Signature(listOf(Type.STRING), Type.INT),
+        "json.arrayObject" to Signature(listOf(Type.STRING, Type.INT), Type.STRING),
+        "json.getInt" to Signature(listOf(Type.STRING, Type.STRING), Type.INT),
+        "json.getFloat" to Signature(listOf(Type.STRING, Type.STRING), Type.FLOAT),
+        "json.getString" to Signature(listOf(Type.STRING, Type.STRING), Type.STRING),
+        "json.quote" to Signature(listOf(Type.STRING), Type.STRING),
+        "text.concat" to Signature(listOf(Type.STRING, Type.STRING), Type.STRING),
+        "text.fromInt" to Signature(listOf(Type.INT), Type.STRING),
+        "text.fromFloat" to Signature(listOf(Type.FLOAT), Type.STRING),
     )
 }
 
