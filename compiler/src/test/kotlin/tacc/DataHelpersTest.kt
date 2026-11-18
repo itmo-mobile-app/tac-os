@@ -1,8 +1,10 @@
 package tacc
 
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 /**
  * Observation/Target data helpers (#127, #132): signatures, type errors and lowering onto the
@@ -153,5 +155,25 @@ class DataHelpersTest {
     fun syntaxIsUnchanged() {
         assertIs<ParseError>(compileError(inMain("let s = json.a.b(\"{}\");")))
         assertIs<CompileError>(compileError(inMain("let s = json.getInt(\"{}\")[0];")))
+    }
+
+    // ---- Real sources (#144) ----
+
+    @Test
+    fun repositoryTcSourcesCompile() {
+        val root = File("..").canonicalFile
+        val sources = listOf("app", "docs/examples", "tests")
+            .map { File(root, it) }
+            .flatMap { dir -> dir.walkTopDown().filter { it.isFile && it.extension == "tc" }.toList() }
+            .filterNot { it.path.contains("${File.separator}negative${File.separator}") }
+        assertTrue(sources.any { it.path.endsWith("app/analyzer/tc/observation.tc") }, "Analyzer source not found")
+        assertTrue(sources.any { it.path.endsWith("app/map/tc/projection.tc") }, "Map source not found")
+        for (source in sources) {
+            try {
+                compile(source.readText())
+            } catch (e: CompileError) {
+                throw AssertionError("${source.relativeTo(root)}:${e.line}: ${e.message}", e)
+            }
+        }
     }
 }

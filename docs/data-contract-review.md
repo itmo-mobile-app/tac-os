@@ -30,7 +30,8 @@ must not be used as evidence of approval by all five owners.
 
 The complete `.tc` sketches in `docs/examples/data-contract/` use existing
 syntax and the proposed signatures. They are documentation inputs; the
-executed acceptance programs are in `tests/data-tc/`.
+executed acceptance programs are in `tests/data-tc/`. Compiler #132 registers
+the nine helpers, so `DataHelpersTest` compiles these sketches as well.
 
 - `analyzer.tc`: zero detections produce no sends. For marker 17, zero relative
   angle, 10 meters, device coordinates 0/0 and heading north, the resulting
