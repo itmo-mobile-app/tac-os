@@ -110,6 +110,20 @@ This source does not draw windows, use Broker or replace the Go Map. See `app/ma
 for exact revisions, verification results and outstanding dependency checks. The independent #99
 Broker integration and Runtime-to-WM contracts are unchanged.
 
+### First .tc Map screen (#139)
+
+`app/map/tc/map.tc` renders one fixed Target through the Window Runtime from #136.
+Projection, inclusive geographic bounds, nonnegative nearest-pixel rounding/clamping and marker
+opacity are calculated in `.tc`, using existing scalar operations. No Float cast or new Runtime
+math API is added. The required `map_tc_window_e2e` checks real WM/headless frame pixels,
+outside-target omission, native/explicit closure and repeated launches.
+
+This increment depends on the unmerged Window Runtime PR #156 and its owner review; it does not
+assert that the proposed #128 interface is approved. Target data is a five-field scalar fixture,
+not JSON parsed through the pending #127/#132/#133 APIs. Broker/IPC reception on `.tc` belongs to
+the next increment; the working Go Map (#99) and coordinate regression (#109) remain available.
+See `app/map/tc/WINDOW.md` for the dependency revision, Linux commands and verification evidence.
+
 ## IPC scenario
 
 The primary local IPC scenario is:
