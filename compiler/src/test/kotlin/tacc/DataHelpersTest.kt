@@ -170,9 +170,20 @@ class DataHelpersTest {
             .filterNot { it.path.contains("${File.separator}negative${File.separator}") || it.canonicalFile == proposedMap }
         assertTrue(sources.any { it.path.endsWith("app/analyzer/tc/observation.tc") }, "Analyzer source not found")
         assertTrue(sources.any { it.path.endsWith("app/map/tc/map.tc") }, "Windowed Map source not found")
+        val brokerTemplate = File(root, "tests/broker/map.tc").canonicalFile
+        assertTrue(brokerTemplate.isFile, "Broker source template is missing")
         for (source in sources) {
+            // The real Broker E2E injects an ephemeral port before compilation.
+            // Use a valid fixture port here, rather than hiding this source.
+            val program = if (source.canonicalFile == brokerTemplate) {
+                val template = source.readText()
+                assertTrue(template.contains("BROKER_PORT"), "Broker port placeholder is missing")
+                template.replace("BROKER_PORT", "5000")
+            } else {
+                source.readText()
+            }
             try {
-                compile(source.readText())
+                compile(program)
             } catch (e: CompileError) {
                 throw AssertionError("${source.relativeTo(root)}:${e.line}: ${e.message}", e)
             }
