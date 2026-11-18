@@ -206,7 +206,6 @@ The current implementation supports one window with the fixed ID `map`.
 | `window.show` | None | `Int` | `SHOW` |
 | `window.pollEvent` | `timeoutMs: Int` | `String` | Reads the event socket |
 | `window.close` | None | `Int` | `CLOSE`, unless closure is already known |
-| `window.quit` | None | `Int` | `QUIT` |
 
 Command calls return `Int 0` on success. Runtime rejects invalid argument
 types, nonpositive dimensions or radius, empty image paths, and RGBA
@@ -244,7 +243,7 @@ WM must already be running. Runtime does not start the WM process.
    without sending a duplicate `CLOSE`.
 4. Otherwise, `window.close` sends `CLOSE` and disconnects events.
    It leaves the WM process running.
-5. `window.quit` requests shutdown of the WM process.
+5. The host/supervisor, not a `.tc` application, manages shutdown of the WM process.
 6. During Runtime destruction, an open window is closed on a best-effort
    basis. Cleanup errors do not escape the destructor.
 
