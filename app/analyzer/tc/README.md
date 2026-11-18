@@ -29,8 +29,7 @@ missing language and Runtime features, each of which needs its owner's decision:
 
 | Missing | Needed for | Where it is tracked |
 | --- | --- | --- |
-| String assembly and `Float`/`Int` formatting (`String + String` is a compile-time error) | Building the one-line `OBSERVATION` JSON for `runtime.ipc_send` | Proposal #127 (`text.concat`, `text.fromFloat`, `text.fromInt`, `json.quote`), not approved or implemented; Compiler #132, VM #133 |
-| JSON access to `camera.detectMarkers()` and its signature in the Compiler | Reading `id`, `relativeAngle` and `distance` instead of fixtures | #127, #132 |
+| Owner approval of the String/JSON helpers (`text.concat`, `text.fromFloat`, `text.fromInt`, `json.quote`, `json.*` readers) | Building the one-line `OBSERVATION` JSON for `runtime.ipc_send` and reading `camera.detectMarkers()` fields | Proposal #127; implemented in Compiler and Runtime by #132 and covered by `data_tc_e2e`, using them here is #138 |
 | Runtime location, orientation and time | Device position, heading and `timestamp` instead of fixtures | #134 |
 
 Until then the inputs are literals in the vector functions, and no message is built or sent. Nothing
