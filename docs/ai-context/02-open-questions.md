@@ -18,6 +18,13 @@ Remaining open:
 - Exact representation of structs or objects.
 - Error handling model.
 - Standard library scope.
+- Issue #127 proposes nine narrow String/JSON Runtime helpers using existing
+  scalar values, not structs or a JSON DOM. See `spec/language.md` and
+  `spec/runtime-api.md` for the unapproved signatures and limits, and
+  `docs/data-contract-review.md` for owner review. Exact-field-set validation,
+  recoverable rejection of malformed messages, and bounded String reclamation
+  must be decided before #132/#133 implement this proposal. Device/network/WM
+  signatures remain with #128. No owner approval is inferred from these docs.
 
 ## Compiler
 
