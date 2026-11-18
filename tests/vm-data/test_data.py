@@ -60,7 +60,7 @@ with tempfile.TemporaryDirectory() as temp:
         path = folder / ('invalid' + str(index) + '.tc')
         path.write_text('fun main() { ' + statement + ' }\n')
         result = run([compiler, str(path), str(folder / 'invalid.bc')])
-        assert result.returncode != 0, 'Compiler accepted invalid data-helper types'
+        assert result.returncode == 1, 'Compiler did not report a controlled type error: ' + result.stderr
     # Candidate #152 runtime errors: no fabricated defaults or silent coercions.
     invalid_expressions = (
         'text.fromInt(json.getInt("{}", "id"))',
@@ -79,8 +79,9 @@ with tempfile.TemporaryDirectory() as temp:
         compiled = run([compiler, str(path), str(output)])
         assert compiled.returncode == 0, compiled.stderr
         executed = run([vm, str(output)])
-        assert executed.returncode != 0, 'Runtime accepted malformed/unsupported data'
+        assert executed.returncode == 1, 'Runtime did not report a controlled error: ' + executed.stderr
         assert executed.stdout == '', 'Failed helper fabricated a printable result'
+        assert executed.stderr.startswith('tacvm:'), executed.stderr
         assert 'Sanitizer' not in executed.stderr, executed.stderr
 
     # These bounds are from the proposal; run only once that contract is approved.
@@ -95,5 +96,7 @@ with tempfile.TemporaryDirectory() as temp:
             assert executed.returncode == 0, executed.stderr
             assert executed.stdout == 'x' * size + '\n'
         else:
-            assert executed.returncode != 0, 'Runtime ignored the approved byte limit'
+            assert executed.returncode == 1, 'Runtime did not report a controlled limit error: ' + executed.stderr
+            assert executed.stderr.startswith('tacvm:'), executed.stderr
+            assert 'Sanitizer' not in executed.stderr, executed.stderr
 print('Observation/Target real Compiler-to-VM acceptance passed')

@@ -1,5 +1,5 @@
-# Compiler #107 is a separate task; enable this against its real tacc launcher.
-option(TACOS_VM_FLOAT_E2E "Compile Float source with a Compiler #107 launcher" OFF)
+# Compiler #107 is integrated in main; exercise the real Float pipeline in CI.
+option(TACOS_VM_FLOAT_E2E "Compile Float source with a Compiler #107 launcher" ON)
 if(TACOS_VM_FLOAT_E2E)
     add_test(NAME float_coordinates_e2e
         COMMAND ${CMAKE_COMMAND}
