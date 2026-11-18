@@ -29,8 +29,9 @@ must not be used as evidence of approval by all five owners.
 ## Example expectations
 
 The complete `.tc` sketches in `docs/examples/data-contract/` use existing
-syntax and the proposed signatures. They are documentation inputs; the
-executed acceptance programs are in `tests/data-tc/`.
+syntax and the proposed signatures. They are documentation inputs, not tests
+of the current toolchain. Current Compiler must reject unregistered helpers;
+registering fake helpers in production to compile these docs is not intended.
 
 - `analyzer.tc`: zero detections produce no sends. For marker 17, zero relative
   angle, 10 meters, device coordinates 0/0 and heading north, the resulting
@@ -51,11 +52,8 @@ executed acceptance programs are in `tests/data-tc/`.
 
 ## Implementation acceptance vectors for #132/#133
 
-They are covered by `runtime/tests/data_helpers_tests.cpp`
-(`runtime_data_helpers`) and, through real `tacc`/`tacvm`, by
-`tests/data-tc/test_data_tc.py` (`data_tc_e2e`). Wrong arity/type cases are in
-`compiler/src/test/kotlin/tacc/DataHelpersTest.kt`. Bytecode naming a helper
-that the Runtime lacks still fails at load time.
+These are requirements for subsequent implementation tests, not results of
+running helpers that do not exist yet.
 
 | Case | Expected |
 | --- | --- |

@@ -326,10 +326,10 @@ serializes all six Observation fields and checks `runtime.ipc_send`'s result.
 The second extracts all five Target fields, validates their ranges and computes
 map coordinates in `.tc`. Its input is one Broker **payload**, not a `MSG` line.
 
-Compiler #132 registers exactly these helper signatures, including return
-types usable in expressions, and the existing zero-argument
-`camera.detectMarkers() -> String`, which was previously absent from the
-Compiler signature table. Wrong arity, wrong
+Compiler #132 would register exactly the approved helper signatures, including
+return types usable in expressions, and the existing zero-argument
+`camera.detectMarkers() -> String`. That Camera function exists in Runtime
+but is absent from the current Compiler signature table. Wrong arity, wrong
 argument types, unknown helpers and mixed Int/Float remain compile-time errors.
 Calls evaluate arguments left to right and lower to the existing
 `CALL_RUNTIME`; no source syntax or bytecode signature metadata is added.

@@ -1,7 +1,9 @@
 #include "tacos/runtime/runtime.hpp"
+#include "broker_client.hpp"
+#include "device_state.hpp"
+#include "data_helpers.hpp"
 #include "window_manager_client.hpp"
 #include "camera_detector_client.hpp"
-#include "data_helpers.hpp"
 
 #include <ostream>
 #include <iostream>
@@ -19,6 +21,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <initializer_list>
 #include <unordered_set>
 #include <nlohmann/json.hpp>
 
@@ -292,11 +295,6 @@ using Handler = Value (*)(
     const std::vector<Value>&
 );
 
-struct FunctionEntry {
-    std::uint8_t arg_count;
-    Handler handler;
-};
-
 Value runtime_log(
     Runtime&,
     std::ostream& output,
@@ -454,7 +452,7 @@ Value window_present(Runtime &runtime, std::ostream &,
 
   return Value::int_value_of(0);
 }
-Value window_poll_event(Runtime &runtime, std::ostream &,
+Value window_poll_event_handler(Runtime &runtime, std::ostream &,
                         const std::vector<Value> &args) {
   if (args[0].kind != ValueKind::Int || args[0].int_value < 0 ||
       args[0].int_value > 1000) {
@@ -514,40 +512,105 @@ Value ipc_send_handler(
 }
 
 
-const std::unordered_map<std::string, FunctionEntry> &function_table() {
+void check_broker_arguments(const char* function, const std::vector<Value>& args,
+                            std::initializer_list<ValueKind> expected) {
+    if (!std::equal(expected.begin(), expected.end(), args.begin(), args.end(),
+                    [](ValueKind kind, const Value& arg) { return kind == arg.kind; })) {
+        throw RuntimeError(std::string(function) + ": invalid argument types");
+    }
+}
 
-  static const std::unordered_map<std::string, FunctionEntry> table = {
-      {"runtime.log", {1, &runtime_log}},
-      {"camera.detectMarkers", {0, &camera_detect_markers_handler}},
-      {"window.create", {3, &window_create}},
-      {"window.beginFrame", {4, &window_begin_frame}},
-      {"window.drawImage", {5, &window_draw_image}},
-      {"window.drawCircle", {7, &window_draw_circle}},
-      {"window.present", {0, &window_present}},
-      {"window.pollEvent", {1, &window_poll_event}},
-      {"window.show", {0, &window_show}},
-      {"window.close", {0, &window_close}},
-      {"window.quit", {0, &window_quit}},
-
-      {"runtime.ipc_listen", {0, &ipc_listen_handler}},
-      {"runtime.ipc_receive", {0, &ipc_receive_handler}},
-      {"runtime.ipc_send", {1, &ipc_send_handler}},
-
-      {"json.arrayLength", {1, &detail::json_array_length}},
-      {"json.arrayObject", {2, &detail::json_array_object}},
-      {"json.getInt", {2, &detail::json_get_int}},
-      {"json.getFloat", {2, &detail::json_get_float}},
-      {"json.getString", {2, &detail::json_get_string}},
-      {"json.quote", {1, &detail::json_quote}},
-      {"text.concat", {2, &detail::text_concat}},
-      {"text.fromInt", {1, &detail::text_from_int}},
-      {"text.fromFloat", {1, &detail::text_from_float}},
-  };
-
-  return table;
+std::int64_t device_timeout(const char* function, const Value& value) {
+    if (value.kind != ValueKind::Int) {
+        throw RuntimeError(std::string(function) + " expects an Int timeout");
+    }
+    return value.int_value;
 }
 
 } // namespace
+
+struct Runtime::FunctionEntry {
+    std::uint8_t arg_count;
+    Handler handler;
+};
+
+const Runtime::FunctionEntry* Runtime::find_function(const std::string& name) {
+    using Kind = ValueKind;
+    static const std::unordered_map<std::string, FunctionEntry> table = {
+        {"runtime.log", {1, &runtime_log}},
+        {"camera.detectMarkers", {0, &camera_detect_markers_handler}},
+        {"window.create", {3, &window_create}},
+        {"window.beginFrame", {4, &window_begin_frame}},
+        {"window.drawImage", {5, &window_draw_image}},
+        {"window.drawCircle", {7, &window_draw_circle}},
+        {"window.present", {0, &window_present}},
+        {"window.pollEvent", {1, &window_poll_event_handler}},
+        {"window.show", {0, &window_show}},
+        {"window.close", {0, &window_close}},
+        {"window.quit", {0, &window_quit}},
+        {"runtime.ipc_listen", {0, &ipc_listen_handler}},
+        {"runtime.ipc_receive", {0, &ipc_receive_handler}},
+        {"runtime.ipc_send", {1, &ipc_send_handler}},
+        {"broker.connect", {3, [](Runtime& runtime, std::ostream&, const std::vector<Value>& args) {
+            check_broker_arguments("broker.connect", args, {Kind::String, Kind::Int, Kind::Int});
+            return Value::int_value_of(runtime.broker_->connect(
+                args[0].string_value, args[1].int_value, args[2].int_value));
+        }}},
+        {"broker.subscribe", {1, [](Runtime& runtime, std::ostream&, const std::vector<Value>& args) {
+            check_broker_arguments("broker.subscribe", args, {Kind::String});
+            return Value::int_value_of(runtime.broker_->subscribe(args[0].string_value));
+        }}},
+        {"broker.publish", {2, [](Runtime& runtime, std::ostream&, const std::vector<Value>& args) {
+            check_broker_arguments("broker.publish", args, {Kind::String, Kind::String});
+            return Value::int_value_of(runtime.broker_->publish(args[0].string_value, args[1].string_value));
+        }}},
+        {"broker.receive", {1, [](Runtime& runtime, std::ostream&, const std::vector<Value>& args) {
+            check_broker_arguments("broker.receive", args, {Kind::Int});
+            return Value::int_value_of(runtime.broker_->receive(args[0].int_value));
+        }}},
+        {"broker.topic", {0, [](Runtime& runtime, std::ostream&, const std::vector<Value>&) {
+            return Value::string_value_of(runtime.broker_->topic());
+        }}},
+        {"broker.payload", {0, [](Runtime& runtime, std::ostream&, const std::vector<Value>&) {
+            return Value::string_value_of(runtime.broker_->payload());
+        }}},
+        {"broker.close", {0, [](Runtime& runtime, std::ostream&, const std::vector<Value>&) {
+            runtime.broker_->close();
+            return Value::int_value_of(0);
+        }}},
+        {"location.read", {1, [](Runtime& runtime, std::ostream&, const std::vector<Value>& args) {
+            const auto timeout = device_timeout("location.read", args[0]);
+            return Value::int_value_of(runtime.device_->read_position(timeout));
+        }}},
+        {"location.latitude", {0, [](Runtime& runtime, std::ostream&, const std::vector<Value>&) {
+            return Value::float_value_of(runtime.device_->position().latitude);
+        }}},
+        {"location.longitude", {0, [](Runtime& runtime, std::ostream&, const std::vector<Value>&) {
+            return Value::float_value_of(runtime.device_->position().longitude);
+        }}},
+        {"orientation.read", {1, [](Runtime& runtime, std::ostream&, const std::vector<Value>& args) {
+            const auto timeout = device_timeout("orientation.read", args[0]);
+            return Value::int_value_of(runtime.device_->read_heading(timeout));
+        }}},
+        {"orientation.heading", {0, [](Runtime& runtime, std::ostream&, const std::vector<Value>&) {
+            return Value::float_value_of(runtime.device_->heading());
+        }}},
+        {"time.nowMs", {0, [](Runtime& runtime, std::ostream&, const std::vector<Value>&) {
+            return Value::int_value_of(runtime.device_->now_ms());
+        }}},
+        {"json.arrayLength", {1, &detail::json_array_length}},
+        {"json.arrayObject", {2, &detail::json_array_object}},
+        {"json.getInt", {2, &detail::json_get_int}},
+        {"json.getFloat", {2, &detail::json_get_float}},
+        {"json.getString", {2, &detail::json_get_string}},
+        {"json.quote", {1, &detail::json_quote}},
+        {"text.concat", {2, &detail::text_concat}},
+        {"text.fromInt", {1, &detail::text_from_int}},
+        {"text.fromFloat", {1, &detail::text_from_float}},
+    };
+    const auto it = table.find(name);
+    return it == table.end() ? nullptr : &it->second;
+}
 
 Runtime::Runtime(
     std::ostream& output,
@@ -562,10 +625,22 @@ Runtime::Runtime(
     std::string ipc_socket_path,
     CameraOptions camera_options
 )
+    : Runtime(output, std::move(wm_socket_path), std::move(ipc_socket_path),
+              std::move(camera_options), DeviceOptions{}) {}
+
+Runtime::Runtime(
+    std::ostream& output,
+    std::string wm_socket_path,
+    std::string ipc_socket_path,
+    CameraOptions camera_options,
+    DeviceOptions device_options
+)
     : output_(output),
       wm_socket_path_(std::move(wm_socket_path)),
       ipc_socket_path_(std::move(ipc_socket_path)),
-      camera_(std::make_unique<detail::CameraDetectorClient>(std::move(camera_options))) {}
+      camera_(std::make_unique<detail::CameraDetectorClient>(std::move(camera_options))),
+      broker_(std::make_unique<detail::BrokerClient>()),
+      device_(std::make_unique<detail::DeviceState>(std::move(device_options))) {}
 
 
 Runtime::~Runtime() {
@@ -594,33 +669,28 @@ bool Runtime::has_function(
     const std::string& name,
     std::uint8_t arg_count
 ) const {
-    const auto& table = function_table();
-    const auto it = table.find(name);
-
-    return it != table.end() &&
-           it->second.arg_count == arg_count;
+    const auto* entry = find_function(name);
+    return entry != nullptr && entry->arg_count == arg_count;
 }
 
 Value Runtime::call(
     const std::string& name,
     const std::vector<Value>& args
 ) {
-    const auto& table = function_table();
-    const auto it = table.find(name);
-
-    if (it == table.end()) {
+    const auto* entry = find_function(name);
+    if (entry == nullptr) {
         throw RuntimeError(
             "unknown runtime function: " + name
         );
     }
 
-    if (args.size() != it->second.arg_count) {
+    if (args.size() != entry->arg_count) {
         throw RuntimeError(
             "wrong argument count for runtime function: " + name
         );
     }
 
-    return it->second.handler(*this, output_, args);
+    return entry->handler(*this, output_, args);
 }
 
 const std::string &Runtime::wm_socket_path() const { return wm_socket_path_; }

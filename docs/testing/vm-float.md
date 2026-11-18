@@ -4,11 +4,9 @@
 
 This branch implements the bytecode-v2 VM side of the contract merged in #111.
 No Compiler, Runtime, IPC, Map, Broker, DBMS or detector source is changed.
-Float has a VM-owned kind and binary64 payload. Calls to the existing Runtime
-convert only Int/String values; Float arguments to the current Runtime API are
-rejected. Existing Runtime signatures and bytecode-v1 instructions are unchanged.
-Later, #132/#133 added finite Float to the Runtime `Value` for the data helpers;
-`runtime.log` and the other existing functions still reject a Float argument.
+Float has a distinct kind and binary64 payload. At the time of #108, calls to
+Runtime converted Int and String values. The device API in #134 extends Runtime
+value conversion to Float. See [Runtime API](../../spec/runtime-api.md#device-position-orientation-and-time-134).
 
 ## Reproduce on Linux
 
