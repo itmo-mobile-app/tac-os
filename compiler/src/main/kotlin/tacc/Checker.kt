@@ -12,28 +12,67 @@ class SemanticError(message: String, line: Int) : CompileError(message, line)
 
 /** Runtime functions the compiler can call, with their signatures from spec/runtime-api.md. */
 object RuntimeFunctions {
-    /** `returnType == null`: the function has no result usable as a value (it pushes `Int 0`). */
+    /** `returnType == null`: no usable result; the call pushes `Int 0`. */
     data class Signature(val params: List<Type>, val returnType: Type?)
 
-    
-val all: Map<String, Signature> = mapOf(
-    "runtime.log" to Signature(
-        listOf(Type.STRING), null
-    ),
-
-    "runtime.ipc_listen" to Signature(
-        emptyList(), Type.INT
-    ),
-
-    "runtime.ipc_receive" to Signature(
-        emptyList(), Type.STRING
-    ),
-
-    "runtime.ipc_send" to Signature(
-        listOf(Type.STRING), Type.INT
-    ),
-)
-
+    val all: Map<String, Signature> = mapOf(
+        "runtime.log" to Signature(
+            listOf(Type.STRING), null
+        ),
+        "runtime.ipc_listen" to Signature(
+            emptyList(), Type.INT
+        ),
+        "runtime.ipc_receive" to Signature(
+            emptyList(), Type.STRING
+        ),
+        "runtime.ipc_send" to Signature(
+            listOf(Type.STRING), Type.INT
+        ),
+        "location.read" to Signature(listOf(Type.INT), Type.INT),
+        "location.latitude" to Signature(emptyList(), Type.FLOAT),
+        "location.longitude" to Signature(emptyList(), Type.FLOAT),
+        "orientation.read" to Signature(listOf(Type.INT), Type.INT),
+        "orientation.heading" to Signature(emptyList(), Type.FLOAT),
+        "time.nowMs" to Signature(emptyList(), Type.INT),
+        "broker.connect" to Signature(listOf(Type.STRING, Type.INT, Type.INT), Type.INT),
+        "broker.subscribe" to Signature(listOf(Type.STRING), Type.INT),
+        "broker.publish" to Signature(listOf(Type.STRING, Type.STRING), Type.INT),
+        "broker.receive" to Signature(listOf(Type.INT), Type.INT),
+        "broker.topic" to Signature(emptyList(), Type.STRING),
+        "broker.payload" to Signature(emptyList(), Type.STRING),
+        "broker.close" to Signature(emptyList(), Type.INT),
+        "window.create" to Signature(
+            listOf(Type.STRING, Type.INT, Type.INT), Type.INT
+        ),
+        "window.beginFrame" to Signature(
+            listOf(Type.INT, Type.INT, Type.INT, Type.INT), Type.INT
+        ),
+        "window.drawImage" to Signature(
+            listOf(Type.STRING, Type.INT, Type.INT, Type.INT, Type.INT),
+            Type.INT
+        ),
+        "window.drawCircle" to Signature(
+            listOf(
+                Type.INT, Type.INT, Type.INT,
+                Type.INT, Type.INT, Type.INT, Type.INT
+            ),
+            Type.INT
+        ),
+        "window.present" to Signature(emptyList(), Type.INT),
+        "window.show" to Signature(emptyList(), Type.INT),
+        "window.pollEvent" to Signature(listOf(Type.INT), Type.STRING),
+        "window.close" to Signature(emptyList(), Type.INT),
+        "camera.detectMarkers" to Signature(emptyList(), Type.STRING),
+        "json.arrayLength" to Signature(listOf(Type.STRING), Type.INT),
+        "json.arrayObject" to Signature(listOf(Type.STRING, Type.INT), Type.STRING),
+        "json.getInt" to Signature(listOf(Type.STRING, Type.STRING), Type.INT),
+        "json.getFloat" to Signature(listOf(Type.STRING, Type.STRING), Type.FLOAT),
+        "json.getString" to Signature(listOf(Type.STRING, Type.STRING), Type.STRING),
+        "json.quote" to Signature(listOf(Type.STRING), Type.STRING),
+        "text.concat" to Signature(listOf(Type.STRING, Type.STRING), Type.STRING),
+        "text.fromInt" to Signature(listOf(Type.INT), Type.STRING),
+        "text.fromFloat" to Signature(listOf(Type.FLOAT), Type.STRING),
+    )
 }
 
 class Checker {

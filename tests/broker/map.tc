@@ -1,0 +1,33 @@
+// The test supplies a loopback port. The Observation is a synthetic fixture.
+fun main() {
+    if (broker.connect("127.0.0.1", BROKER_PORT, 1000) != 0) {
+        runtime.log("connect failed");
+        return;
+    }
+    if (broker.subscribe("targets.updated") != 0) {
+        runtime.log("subscribe failed");
+        return;
+    }
+    let observation = "{\"targetId\":\"17\",\"observerId\":\"fixture\",\"latitude\":0.5,\"longitude\":0.25,\"confidence\":0.8,\"timestamp\":1800000000000}";
+    if (broker.publish("observations", observation) != 0) {
+        runtime.log("publish failed");
+        return;
+    }
+    if (broker.receive(1000) != 1) {
+        runtime.log("first receive failed");
+        return;
+    }
+    let firstTopic = broker.topic();
+    let firstPayload = broker.payload();
+    if (broker.receive(1000) != 1) {
+        runtime.log("second receive failed");
+        return;
+    }
+    runtime.log(firstTopic);
+    runtime.log(firstPayload);
+    runtime.log(broker.topic());
+    runtime.log(broker.payload());
+    if (broker.close() == 0) {
+        runtime.log("closed");
+    }
+}

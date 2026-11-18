@@ -1,0 +1,20 @@
+// Candidate #127 signatures, executed only after owner approval and implementation.
+fun main() {
+    const detections = "[{\"id\":17,\"relativeAngle\":0.0,\"distance\":10.0}]";
+    const detection = json.arrayObject(detections, 0);
+    const id = json.getInt(detection, "id");
+    const distance = json.getFloat(detection, "distance");
+    const latitude = distance / 6371000.0 * 180.0 / 3.141592653589793;
+    const confidence = 0.9 / (1.0 + distance / 25.0);
+    let message = "{\"targetId\":";
+    message = text.concat(message, json.quote(text.fromInt(id)));
+    message = text.concat(message, ",\"observerId\":");
+    message = text.concat(message, json.quote("device\"\\\nцель"));
+    message = text.concat(message, ",\"latitude\":");
+    message = text.concat(message, text.fromFloat(latitude));
+    message = text.concat(message, ",\"longitude\":0.0,\"confidence\":");
+    message = text.concat(message, text.fromFloat(confidence));
+    message = text.concat(message, ",\"timestamp\":");
+    message = text.concat(message, text.fromInt(9007199254740993));
+    runtime.log(text.concat(message, "}"));
+}

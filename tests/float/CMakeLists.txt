@@ -1,5 +1,5 @@
-# Compiler #107 is a separate task; enable this against its real tacc launcher.
-option(TACOS_VM_FLOAT_E2E "Compile Float source with a Compiler #107 launcher" OFF)
+# Compiler #107 is merged; exercise the real Float source E2E by default.
+option(TACOS_VM_FLOAT_E2E "Compile Float source with the merged Compiler #107" ON)
 if(TACOS_VM_FLOAT_E2E)
     add_test(NAME float_coordinates_e2e
         COMMAND ${CMAKE_COMMAND}

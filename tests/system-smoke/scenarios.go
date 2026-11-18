@@ -97,7 +97,20 @@ func positiveScenario(parent context.Context, root, dir string, b binaries, outp
 	if err != nil {
 		return err
 	}
-	target, err := s.start("Target Service", b.target, "-broker", address)
+	// Each invocation owns a DBMS server and its socket; parallel smoke runs
+	// must not race on the default /tmp/tac-os-dbms.sock pathname.
+	dbSocket := filepath.Join(dir, "dbms.sock")
+	s.sockets = append(s.sockets, dbSocket)
+	db, err := s.start("DBMS", b.dbms, "-socket", dbSocket)
+	if err != nil {
+		return err
+	}
+	if err := waitFor(ctx, "DBMS startup", s.processes, func() (bool, error) {
+		return strings.Contains(db.logs.String(), "Listening on "+dbSocket), nil
+	}); err != nil {
+		return err
+	}
+	target, err := s.start("Target Service", b.target, "-broker", address, "-dbms", dbSocket)
 	if err != nil {
 		return err
 	}
@@ -121,7 +134,9 @@ func positiveScenario(parent context.Context, root, dir string, b binaries, outp
 	if err != nil {
 		return err
 	}
-	want := fmt.Sprintf("observation stored targetId=%q observerId=%q timestamp=%d ", "17", observer, timestamp)
+	// New Target Service logs successful persistence/publication, not its
+	// previous in-memory "observation stored" line.
+	want := "observation processed"
 	if err := waitFor(ctx, "Observation delivery", s.processes, func() (bool, error) {
 		if strings.Contains(target.logs.String(), want) {
 			return true, nil
@@ -139,7 +154,7 @@ func positiveScenario(parent context.Context, root, dir string, b binaries, outp
 	}
 	fmt.Fprintln(output, "PASS Broker -> Target Service (matching Observation receipt)")
 	commandSocket, eventSocket := filepath.Join(dir, "wm.sock"), filepath.Join(dir, "events.sock")
-	s.sockets = []string{commandSocket, eventSocket}
+	s.sockets = append(s.sockets, commandSocket, eventSocket)
 	wm, err := s.start("Window Manager", b.wm, "-socket", commandSocket, "-events", eventSocket)
 	if err != nil {
 		return err
@@ -189,7 +204,7 @@ func positiveScenario(parent context.Context, root, dir string, b binaries, outp
 			return fmt.Errorf("WM reuse after Map exit: %w", err)
 		}
 	}
-	for _, p := range []*process{broker, target, wm} {
+	for _, p := range []*process{broker, target, db, wm} {
 		if err := p.alive(); err != nil {
 			return err
 		}

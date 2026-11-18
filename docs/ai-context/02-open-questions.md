@@ -18,6 +18,13 @@ Remaining open:
 - Exact representation of structs or objects.
 - Error handling model.
 - Standard library scope.
+- Issue #127 proposes nine narrow String/JSON Runtime helpers using existing
+  scalar values, not structs or a JSON DOM. See `spec/language.md` and
+  `spec/runtime-api.md` for the unapproved signatures and limits, and
+  `docs/data-contract-review.md` for owner review. Exact-field-set validation,
+  recoverable rejection of malformed messages, and bounded String reclamation
+  must be decided before #132/#133 implement this proposal. Device/network/WM
+  signatures remain with #128. No owner approval is inferred from these docs.
 
 ## Compiler
 
@@ -36,6 +43,10 @@ Runtime calls are defined in `spec/bytecode.md` (approved by the VM Core owner).
 - Compatibility policy for bytecode versions beyond proposed Float v2.
 
 ## VM
+
+- VM #133 adds dedicated Float/String ownership and real data E2E tests from
+  PR #164 over the implementation from #165. The remaining decisions are
+  recoverable validation and bounded live-memory policy (#127/#128).
 
 - The C++ independent-execution model is defined in `spec/vm-execution.md` (#93).
   The Runtime owner reviewed the resource-isolation restrictions in PR #117;
@@ -57,7 +68,11 @@ The Runtime call ABI and the first function (`runtime.log`) are defined in `spec
 mechanism and message format for the Analyzer↔Map scenario are defined in `spec/ipc.md` (both approved by
 the Runtime owner). Remaining open:
 
-- Exact Runtime API (beyond `runtime.log`).
+- Device #134, Broker #135 and WM #136 APIs are implemented, but the remaining
+  design decisions for #128 require owner review (see `spec/runtime-api.md`).
+  In particular, a nonblocking `runtime.ipc_poll`/`runtime.ipc_message` pair
+  is still only a proposal; the current blocking `ipc_receive` is unsuitable
+  for the final Map event loop without separate scheduling.
 - Linux threading primitive.
 - Thread synchronization primitives.
 The camera architecture and the **initial** `camera.detectMarkers() -> String`
@@ -65,20 +80,18 @@ API are fixed in `spec/runtime-api.md`; the private Unix-domain socket
 protocol, timeout and helper lifecycle are fixed in
 `spec/camera-detector-protocol.md`. Still unresolved:
 
-- The proposed Float contract is described in `spec/language.md` and
-  `spec/bytecode.md` (#106); VM execution is implemented in #108; Compiler support and the real Float
-  Compiler-to-VM E2E remain pending in #107.
+- Float is implemented in Compiler #107 and VM #108 and is passed through the
+  Runtime Value boundary by #134. There is no new bytecode ABI; VM/Runtime
+  validation and generated String ownership still need data-integration review.
   Native collections/`Detection[]` remain unresolved, and the current
   Camera API continues returning JSON as `String`.
 - A recoverable error mechanism visible to `.tc` beyond an initial Runtime failure.
 - Production camera configuration and device-calibration strategy; initial
   defaults are only for the prototype.
 - Approval from the course instructor for OpenCV/gocv usage in the detector.
-- Location API.
-- Orientation API.
-- Networking API.
+- Review of implemented location, orientation and time calls from #134 / PR #162; Linux test providers are explicit, while production sensor calibration and permitted sample age still need a decision.
+- Additional networking API beyond the implemented Broker transport.
 - File API.
-- Time API.
 
 ## Window Manager
 
@@ -148,7 +161,6 @@ Remaining open:
 
 The minimal SQL subset is defined in `spec/sql.md` (approved by the SQL DBMS owner). Remaining open:
 
-- Storage format.
 - Table representation.
 - Whether indexes are required.
 - Whether transactions are required.
@@ -163,10 +175,11 @@ The minimal SQL subset is defined in `spec/sql.md` (approved by the SQL DBMS own
 ## AI target recognition (instructor update, October 2026)
 
 The OpenRouter **still-image PoC and proposed Analyzer handoff** are documented in
-`docs/vision/openrouter-integration.md` (issue #129) with a dependency-free Go
-CLI under `tools/openrouter-vision/`. Neither live model quality nor an approved
-camera/Runtime ABI is established by this prototype. The instructor's approval
-of a cloud-only exception to NFR-1/C-8 and the choice of model remain open.
+`docs/vision/openrouter-integration.md` (issue #129), with a standalone Go CLI
+in `tools/openrouter-vision/`. Offline mocked HTTP tests verify the request
+and output contract, **not** real model accuracy or approved camera/Runtime
+integration. An instructor decision on cloud usage under NFR-1/C-8 and
+real-model image evaluation are still required.
 
 The instructor now requires AI-based visual recognition of players/targets during the final
 demonstration; ArUco-only detection is insufficient. The instructor suggested OpenRouter as

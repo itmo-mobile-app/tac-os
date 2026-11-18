@@ -41,9 +41,9 @@ versions and checks Float constants, all seven Float instructions, mixed-type
 errors, locals/arguments/returns, signed zero, subnormals, ties-to-even rounding,
 overflow, non-finite constants and truncated data. v1 rejects Float instructions
 even when unreachable. Float values are owned by the VM and share numeric 64-bit storage with Int,
-but have a distinct kind. Existing Int/String values are converted at the
-Runtime boundary. Float arguments are rejected because the current Runtime
-signatures define no Float parameters; Runtime sources and ABI are unchanged.
+but have a distinct kind. The Runtime boundary preserves Int, String and Float kinds.
+The device API returns Float readings to version 2 programs. Existing calls such as
+`runtime.log(String)` still check their declared argument kinds.
 
 The VM sets round-to-nearest for each run and restores the embedding thread's
 rounding mode on success or error. Build without fast-math; the VM target disables

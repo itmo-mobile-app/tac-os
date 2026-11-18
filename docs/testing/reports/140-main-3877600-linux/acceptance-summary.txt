@@ -1,0 +1,18 @@
+Recorded run: 2026-11-12 (not rerun during evidence compaction)
+Production baseline: 3877600e4e4a6fa06bc8081d849aa5f4913fcf96
+Host: Ubuntu 26.04.1 arm64, Go 1.26.8
+PASS TestServerE2E/DBMSProtocol (0.03s)
+FAIL TestServerE2E/OneObserver (8.1s)
+FAIL TestServerE2E/TwoObserversAndDuplicate (8.12s)
+FAIL TestServerE2E/InvalidObservation (8.1s)
+FAIL TestServerE2E/TimeDecay (8.08s)
+FAIL TestServerE2E/MapRedraw (8.21s)
+SKIP TestServerE2E/SQLIntegration (0s)
+FAIL TestServerE2E (41.43s)
+FAIL github.com/itmo-mobile-app/tac-os/tests/system-smoke (41.447s)
+Race detector warnings: 0
+Subtests: 1 PASS, 5 FAIL at missing first Target, 1 BLOCKED-CONTRACT/SKIP
+No server-produced targets.updated for target 17 within 8 seconds.
+Later assertions are not reached; failures are not five independent defects.
+Cleanup confirmations: 6
+Parent explicitly fails for missing SQL contract configuration.

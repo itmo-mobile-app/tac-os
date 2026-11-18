@@ -1,0 +1,52 @@
+// Compiler #132 / VM #133 E2E: builds the six Observation fields from detector JSON with the
+// String/JSON helpers of spec/runtime-api.md. Logs instead of sending: IPC delivery is #138.
+// Fixture geometry only (heading north, relativeAngle 0); the real formulas are in
+// app/analyzer/tc/observation.tc.
+
+fun observationJson(targetId: String, observerId: String, latitude: Float, longitude: Float,
+                    confidence: Float, timestamp: Int, forIpc: Bool): String {
+    let result = "{";
+    if (forIpc) {
+        result = text.concat(result, "\"type\":\"OBSERVATION\",");
+    }
+    result = text.concat(result, "\"targetId\":");
+    result = text.concat(result, json.quote(targetId));
+    result = text.concat(result, ",\"observerId\":");
+    result = text.concat(result, json.quote(observerId));
+    result = text.concat(result, ",\"latitude\":");
+    result = text.concat(result, text.fromFloat(latitude));
+    result = text.concat(result, ",\"longitude\":");
+    result = text.concat(result, text.fromFloat(longitude));
+    result = text.concat(result, ",\"confidence\":");
+    result = text.concat(result, text.fromFloat(confidence));
+    result = text.concat(result, ",\"timestamp\":");
+    result = text.concat(result, text.fromInt(timestamp));
+    return text.concat(result, "}");
+}
+
+fun analyze(label: String, detections: String, observerId: String, timestamp: Int) {
+    let index = 0;
+    const count = json.arrayLength(detections);
+    runtime.log(text.concat(text.concat(label, " count="), text.fromInt(count)));
+    while (index < count) {
+        const detection = json.arrayObject(detections, index);
+        const id = json.getInt(detection, "id");
+        const distance = json.getFloat(detection, "distance");
+        const latitude = distance / 6371000.0 * 180.0 / 3.141592653589793;
+        const confidence = 0.9 / (1.0 + distance / 25.0);
+        runtime.log(observationJson(text.fromInt(id), observerId, latitude, 0.0, confidence,
+            timestamp, true));
+        index = index + 1;
+    }
+}
+
+fun main() {
+    analyze("zero", "[]", "device-1", 1800000000100);
+    analyze("one", "[{\"id\":17,\"relativeAngle\":0.0,\"distance\":10.0}]", "device-1",
+        1800000000100);
+    analyze("two", " [ {\"distance\":25,\"id\":3,\"relativeAngle\":0.0},\n{\"id\":71,\"relativeAngle\":0.0,\"distance\":100.0} ] ",
+        "obs \"q\" \\ é", 9007199254740993);
+    // Broker form: the same six fields without the IPC type.
+    runtime.log(observationJson("17", "device-1", 59.95050012345678, 30.311, 0.85,
+        1800000000100, false));
+}

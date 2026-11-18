@@ -1,0 +1,496 @@
+// First Analyzer calculation on .tc (#138), following spec/analyzer-observation.md (#98).
+// Requires Float in Compiler #107 and VM #108 (both in main).
+//
+// The program computes the target position and the local confidence from the device pose
+// and one detection, validates the input and checks the results against the shared vectors
+// in spec/analyzer-observation-vectors.json.
+//
+// Not done here: building the Observation JSON String and sending it with runtime.ipc_send.
+// That needs String assembly and Float formatting, which `.tc` does not have yet (see README.md).
+
+// ---- Constants of spec/analyzer-observation.md ----
+
+fun earthRadiusM(): Float {
+    return 6371000.0;
+}
+
+fun maxRangeM(): Float {
+    return 100.0;
+}
+
+fun maxAbsLatitude(): Float {
+    return 80.0;
+}
+
+fun maxAbsRelativeAngle(): Float {
+    return 90.0;
+}
+
+fun confidenceMax(): Float {
+    return 0.9;
+}
+
+fun confidenceDistanceScaleM(): Float {
+    return 25.0;
+}
+
+fun pi(): Float {
+    return 3.141592653589793;
+}
+
+// ---- sin and cos: the language and the Runtime have no trigonometry ----
+
+// Maclaurin series, valid and accurate to about 1e-16 for |x| <= pi / 2 (12 terms).
+fun sinSeries(x: Float): Float {
+    const x2: Float = x * x;
+    let term: Float = x;
+    let sum: Float = x;
+    let n: Float = 1.0;
+    let i: Int = 0;
+    while (i < 12) {
+        term = -term * x2 / ((n + 1.0) * (n + 2.0));
+        sum = sum + term;
+        n = n + 2.0;
+        i = i + 1;
+    }
+    return sum;
+}
+
+// Sine of an angle in degrees. The angle is brought into [-90, 90] with exact
+// degree arithmetic before it is converted to radians.
+fun sinDeg(degrees: Float): Float {
+    let d: Float = degrees;
+    while (d >= 180.0) {
+        d = d - 360.0;
+    }
+    while (d < -180.0) {
+        d = d + 360.0;
+    }
+    if (d > 90.0) {
+        d = 180.0 - d;
+    }
+    if (d < -90.0) {
+        d = -180.0 - d;
+    }
+    return sinSeries(d * pi() / 180.0);
+}
+
+fun cosDeg(degrees: Float): Float {
+    return sinDeg(90.0 + degrees);
+}
+
+// ---- Calculation ----
+
+// Degrees clockwise from true north, in [0, 360).
+fun bearingDeg(heading: Float, relativeAngle: Float): Float {
+    let bearing: Float = heading + relativeAngle;
+    while (bearing >= 360.0) {
+        bearing = bearing - 360.0;
+    }
+    while (bearing < 0.0) {
+        bearing = bearing + 360.0;
+    }
+    return bearing;
+}
+
+fun radiansToDegrees(radians: Float): Float {
+    return radians * 180.0 / pi();
+}
+
+fun targetLatitude(deviceLatitude: Float, heading: Float, relativeAngle: Float,
+                   distance: Float): Float {
+    const bearing: Float = bearingDeg(heading, relativeAngle);
+    const north: Float = distance * cosDeg(bearing);
+    return deviceLatitude + radiansToDegrees(north / earthRadiusM());
+}
+
+fun targetLongitude(deviceLatitude: Float, deviceLongitude: Float, heading: Float,
+                    relativeAngle: Float, distance: Float): Float {
+    const bearing: Float = bearingDeg(heading, relativeAngle);
+    const east: Float = distance * sinDeg(bearing);
+    return deviceLongitude
+        + radiansToDegrees(east / (earthRadiusM() * cosDeg(deviceLatitude)));
+}
+
+fun localConfidence(distance: Float): Float {
+    return confidenceMax() / (1.0 + distance / confidenceDistanceScaleM());
+}
+
+// ---- Validation ----
+// Reason codes label the test vectors; they are not a wire value.
+//   0 valid
+//   1 INVALID_POSITION   2 INVALID_HEADING   3 INVALID_ID
+//   4 INVALID_ANGLE      5 INVALID_DISTANCE  6 INVALID_RESULT
+// Conditions are written in the positive form (`x >= low`, then `x <= high`), so a value that
+// is not a number fails them instead of slipping through.
+
+fun positionStatus(available: Bool, latitude: Float, longitude: Float): Int {
+    if (available) {
+        if (latitude >= -maxAbsLatitude()) {
+            if (latitude <= maxAbsLatitude()) {
+                if (longitude >= -180.0) {
+                    if (longitude <= 180.0) {
+                        return 0;
+                    }
+                }
+            }
+        }
+    }
+    return 1;
+}
+
+fun headingStatus(available: Bool, heading: Float): Int {
+    if (available) {
+        if (heading >= 0.0) {
+            if (heading < 360.0) {
+                return 0;
+            }
+        }
+    }
+    return 2;
+}
+
+fun idStatus(id: Int): Int {
+    if (id >= 0) {
+        if (id <= 71) {
+            return 0;
+        }
+    }
+    return 3;
+}
+
+fun angleStatus(relativeAngle: Float): Int {
+    if (relativeAngle > -maxAbsRelativeAngle()) {
+        if (relativeAngle < maxAbsRelativeAngle()) {
+            return 0;
+        }
+    }
+    return 4;
+}
+
+fun distanceStatus(distance: Float): Int {
+    if (distance > 0.0) {
+        if (distance <= maxRangeM()) {
+            return 0;
+        }
+    }
+    return 5;
+}
+
+fun resultStatus(longitude: Float): Int {
+    if (longitude >= -180.0) {
+        if (longitude <= 180.0) {
+            return 0;
+        }
+    }
+    return 6;
+}
+
+// The first failed rule wins: the device state applies to the whole result, then the detection
+// rules, then the calculated longitude. 0 means the detection produces an Observation.
+fun status(positionAvailable: Bool, latitude: Float, longitude: Float,
+           headingAvailable: Bool, heading: Float,
+           id: Int, relativeAngle: Float, distance: Float): Int {
+    const position: Int = positionStatus(positionAvailable, latitude, longitude);
+    if (position != 0) {
+        return position;
+    }
+    const direction: Int = headingStatus(headingAvailable, heading);
+    if (direction != 0) {
+        return direction;
+    }
+    const idResult: Int = idStatus(id);
+    if (idResult != 0) {
+        return idResult;
+    }
+    const angle: Int = angleStatus(relativeAngle);
+    if (angle != 0) {
+        return angle;
+    }
+    const range: Int = distanceStatus(distance);
+    if (range != 0) {
+        return range;
+    }
+    return resultStatus(targetLongitude(latitude, longitude, heading, relativeAngle, distance));
+}
+
+// ---- Self-check helpers ----
+
+// Absolute tolerance of the vectors: 1e-9 (spec/analyzer-observation.md).
+fun near(actual: Float, expected: Float): Bool {
+    const difference: Float = actual - expected;
+    if (difference < -0.000000001) {
+        return false;
+    }
+    if (difference > 0.000000001) {
+        return false;
+    }
+    return true;
+}
+
+fun check(ok: Bool): Int {
+    if (ok) {
+        return 0;
+    }
+    return 1;
+}
+
+fun report(ok: Bool, label: String): Int {
+    if (ok) {
+        runtime.log(label);
+        return 0;
+    }
+    runtime.log("FAIL");
+    runtime.log(label);
+    return 1;
+}
+
+// ---- Vectors of spec/analyzer-observation-vectors.json ----
+// Generated from that file; one function per vector.
+
+
+// no-detections: A frame without markers is a successful empty result: no Observation, nothing rejected.
+fun vector01(): Int {
+    let failures: Int = 0;
+    let produced: Int = 0;
+    failures = failures + check(produced == 0);
+    return report(failures == 0, "no-detections-ok");
+}
+
+// single-east: The camera looks east and the marker is in the center of the frame, 10 m away: the target is 10 m east.
+fun vector02(): Int {
+    let failures: Int = 0;
+    let produced: Int = 0;
+    // detection 1: id 17
+    const status1: Int = status(true, 59.9505, 30.311, true, 90.0, 17, 0.0, 10.0);
+    if (status1 == 0) {
+        produced = produced + 1;
+        failures = failures + check(near(targetLatitude(59.9505, 90.0, 0.0, 10.0), 59.9505));
+        failures = failures + check(near(targetLongitude(59.9505, 30.311, 90.0, 0.0, 10.0), 30.311179595644));
+        failures = failures + check(near(localConfidence(10.0), 0.642857142857));
+    } else {
+        failures = failures + 1;
+    }
+    failures = failures + check(produced == 1);
+    return report(failures == 0, "single-east-ok");
+}
+
+// two-detections-heading-wraps: Same detections as the detector test mode `two`. Heading 350 plus 12.5 wraps to bearing 2.5.
+fun vector03(): Int {
+    let failures: Int = 0;
+    let produced: Int = 0;
+    // detection 1: id 17
+    const status1: Int = status(true, 59.9505, 30.311, true, 350.0, 17, 12.5, 3.2);
+    if (status1 == 0) {
+        produced = produced + 1;
+        failures = failures + check(near(targetLatitude(59.9505, 350.0, 12.5, 3.2), 59.950528750901));
+        failures = failures + check(near(targetLongitude(59.9505, 30.311, 350.0, 12.5, 3.2), 30.311002506833));
+        failures = failures + check(near(localConfidence(3.2), 0.797872340426));
+    } else {
+        failures = failures + 1;
+    }
+    // detection 2: id 23
+    const status2: Int = status(true, 59.9505, 30.311, true, 350.0, 23, -8.4, 5.7);
+    if (status2 == 0) {
+        produced = produced + 1;
+        failures = failures + check(near(targetLatitude(59.9505, 350.0, -8.4, 5.7), 59.950548640648));
+        failures = failures + check(near(targetLongitude(59.9505, 30.311, 350.0, -8.4, 5.7), 30.310967687161));
+        failures = failures + check(near(localConfidence(5.7), 0.732899022801));
+    } else {
+        failures = failures + 1;
+    }
+    failures = failures + check(produced == 2);
+    return report(failures == 0, "two-detections-heading-wraps-ok");
+}
+
+// southwest-in-southern-western-hemisphere: Negative latitude and longitude: the camera looks south, the marker is 30 degrees to the right (bearing 210, south-west), 40 m away.
+fun vector04(): Int {
+    let failures: Int = 0;
+    let produced: Int = 0;
+    // detection 1: id 5
+    const status1: Int = status(true, -22.9068, -43.1729, true, 180.0, 5, 30.0, 40.0);
+    if (status1 == 0) {
+        produced = produced + 1;
+        failures = failures + check(near(targetLatitude(-22.9068, 180.0, 30.0, 40.0), -22.907111534143));
+        failures = failures + check(near(targetLongitude(-22.9068, -43.1729, 180.0, 30.0, 40.0), -43.173095262907));
+        failures = failures + check(near(localConfidence(40.0), 0.346153846154));
+    } else {
+        failures = failures + 1;
+    }
+    failures = failures + check(produced == 1);
+    return report(failures == 0, "southwest-in-southern-western-hemisphere-ok");
+}
+
+// maximum-range-north: Distance exactly MAX_RANGE_M is accepted. At the equator 100 m north is 100 / R radians of latitude.
+fun vector05(): Int {
+    let failures: Int = 0;
+    let produced: Int = 0;
+    // detection 1: id 71
+    const status1: Int = status(true, 0.0, 0.0, true, 0.0, 71, 0.0, 100.0);
+    if (status1 == 0) {
+        produced = produced + 1;
+        failures = failures + check(near(targetLatitude(0.0, 0.0, 0.0, 100.0), 0.000899321606));
+        failures = failures + check(near(targetLongitude(0.0, 0.0, 0.0, 0.0, 100.0), 0.0));
+        failures = failures + check(near(localConfidence(100.0), 0.18));
+    } else {
+        failures = failures + 1;
+    }
+    failures = failures + check(produced == 1);
+    return report(failures == 0, "maximum-range-north-ok");
+}
+
+// position-unavailable: No device position: nothing is guessed, no Observation is created.
+fun vector06(): Int {
+    let failures: Int = 0;
+    let produced: Int = 0;
+    // detection 1: id 17
+    const status1: Int = status(false, 0.0, 0.0, true, 90.0, 17, 0.0, 10.0);
+    failures = failures + check(status1 == 1);  // INVALID_POSITION
+    failures = failures + check(produced == 0);
+    return report(failures == 0, "position-unavailable-ok");
+}
+
+// latitude-out-of-range: Latitude 91 is not a valid position.
+fun vector07(): Int {
+    let failures: Int = 0;
+    let produced: Int = 0;
+    // detection 1: id 17
+    const status1: Int = status(true, 91.0, 30.311, true, 90.0, 17, 0.0, 10.0);
+    failures = failures + check(status1 == 1);  // INVALID_POSITION
+    failures = failures + check(produced == 0);
+    return report(failures == 0, "latitude-out-of-range-ok");
+}
+
+// latitude-beyond-supported: |latitude| above MAX_ABS_LATITUDE (80) is outside the validity of the local approximation.
+fun vector08(): Int {
+    let failures: Int = 0;
+    let produced: Int = 0;
+    // detection 1: id 17
+    const status1: Int = status(true, 80.5, 30.311, true, 90.0, 17, 0.0, 10.0);
+    failures = failures + check(status1 == 1);  // INVALID_POSITION
+    failures = failures + check(produced == 0);
+    return report(failures == 0, "latitude-beyond-supported-ok");
+}
+
+// heading-unavailable: No device heading: no Observation.
+fun vector09(): Int {
+    let failures: Int = 0;
+    let produced: Int = 0;
+    // detection 1: id 17
+    const status1: Int = status(true, 59.9505, 30.311, false, 0.0, 17, 0.0, 10.0);
+    failures = failures + check(status1 == 2);  // INVALID_HEADING
+    failures = failures + check(produced == 0);
+    return report(failures == 0, "heading-unavailable-ok");
+}
+
+// heading-360: Heading must be in [0, 360): 360.0 is rejected, it is not silently wrapped.
+fun vector10(): Int {
+    let failures: Int = 0;
+    let produced: Int = 0;
+    // detection 1: id 17
+    const status1: Int = status(true, 59.9505, 30.311, true, 360.0, 17, 0.0, 10.0);
+    failures = failures + check(status1 == 2);  // INVALID_HEADING
+    failures = failures + check(produced == 0);
+    return report(failures == 0, "heading-360-ok");
+}
+
+// id-out-of-range: ArUco id 72 is not a game marker (valid ids are 0..71).
+fun vector11(): Int {
+    let failures: Int = 0;
+    let produced: Int = 0;
+    // detection 1: id 72
+    const status1: Int = status(true, 59.9505, 30.311, true, 90.0, 72, 0.0, 10.0);
+    failures = failures + check(status1 == 3);  // INVALID_ID
+    failures = failures + check(produced == 0);
+    return report(failures == 0, "id-out-of-range-ok");
+}
+
+// angle-out-of-range: A relative angle of 90 degrees or more cannot be inside a camera frame.
+fun vector12(): Int {
+    let failures: Int = 0;
+    let produced: Int = 0;
+    // detection 1: id 17
+    const status1: Int = status(true, 59.9505, 30.311, true, 90.0, 17, 90.0, 10.0);
+    failures = failures + check(status1 == 4);  // INVALID_ANGLE
+    failures = failures + check(produced == 0);
+    return report(failures == 0, "angle-out-of-range-ok");
+}
+
+// zero-distance: Distance must be greater than 0.
+fun vector13(): Int {
+    let failures: Int = 0;
+    let produced: Int = 0;
+    // detection 1: id 17
+    const status1: Int = status(true, 59.9505, 30.311, true, 90.0, 17, 0.0, 0.0);
+    failures = failures + check(status1 == 5);  // INVALID_DISTANCE
+    failures = failures + check(produced == 0);
+    return report(failures == 0, "zero-distance-ok");
+}
+
+// beyond-maximum-range: Distance above MAX_RANGE_M is rejected.
+fun vector14(): Int {
+    let failures: Int = 0;
+    let produced: Int = 0;
+    // detection 1: id 17
+    const status1: Int = status(true, 59.9505, 30.311, true, 90.0, 17, 0.0, 100.01);
+    failures = failures + check(status1 == 5);  // INVALID_DISTANCE
+    failures = failures + check(produced == 0);
+    return report(failures == 0, "beyond-maximum-range-ok");
+}
+
+// invalid-detection-does-not-hide-valid-one: Every detection is judged on its own: id 18 is rejected, id 23 still produces an Observation.
+fun vector15(): Int {
+    let failures: Int = 0;
+    let produced: Int = 0;
+    // detection 1: id 18
+    const status1: Int = status(true, 59.9505, 30.311, true, 350.0, 18, 0.0, -2.0);
+    failures = failures + check(status1 == 5);  // INVALID_DISTANCE
+    // detection 2: id 23
+    const status2: Int = status(true, 59.9505, 30.311, true, 350.0, 23, -8.4, 5.7);
+    if (status2 == 0) {
+        produced = produced + 1;
+        failures = failures + check(near(targetLatitude(59.9505, 350.0, -8.4, 5.7), 59.950548640648));
+        failures = failures + check(near(targetLongitude(59.9505, 30.311, 350.0, -8.4, 5.7), 30.310967687161));
+        failures = failures + check(near(localConfidence(5.7), 0.732899022801));
+    } else {
+        failures = failures + 1;
+    }
+    failures = failures + check(produced == 1);
+    return report(failures == 0, "invalid-detection-does-not-hide-valid-one-ok");
+}
+
+// antimeridian: The calculated longitude would exceed 180 degrees: the antimeridian is not supported.
+fun vector16(): Int {
+    let failures: Int = 0;
+    let produced: Int = 0;
+    // detection 1: id 17
+    const status1: Int = status(true, 0.0, 179.99999, true, 90.0, 17, 0.0, 10.0);
+    failures = failures + check(status1 == 6);  // INVALID_RESULT
+    failures = failures + check(produced == 0);
+    return report(failures == 0, "antimeridian-ok");
+}
+
+fun main() {
+    let failures: Int = 0;
+    failures = failures + vector01();
+    failures = failures + vector02();
+    failures = failures + vector03();
+    failures = failures + vector04();
+    failures = failures + vector05();
+    failures = failures + vector06();
+    failures = failures + vector07();
+    failures = failures + vector08();
+    failures = failures + vector09();
+    failures = failures + vector10();
+    failures = failures + vector11();
+    failures = failures + vector12();
+    failures = failures + vector13();
+    failures = failures + vector14();
+    failures = failures + vector15();
+    failures = failures + vector16();
+    if (failures == 0) {
+        runtime.log("analyzer-observation-ok");
+    } else {
+        runtime.log("analyzer-observation-failed");
+    }
+}

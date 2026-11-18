@@ -110,6 +110,33 @@ This source does not draw windows, use Broker or replace the Go Map. See `app/ma
 for exact revisions, verification results and outstanding dependency checks. The independent #99
 Broker integration and Runtime-to-WM contracts are unchanged.
 
+### Analyzer coordinate calculation on .tc (#138)
+
+`app/analyzer/tc/observation.tc` implements the calculation of `spec/analyzer-observation.md` in the
+custom language: bearing, target latitude and longitude, the validation rules and the local
+confidence. `sin` and `cos` are written in `.tc` source. The program checks itself against the 16
+vectors of `spec/analyzer-observation-vectors.json`; the required CTest `analyzer_tc_observation_e2e`
+runs the real Compiler and VM.
+
+The program does not yet send an `Observation`: that needs String assembly and Float formatting
+(proposal #127), and the detection and device-pose inputs need `camera.detectMarkers()` in the
+Compiler, JSON access and the Runtime location, orientation and time APIs (#132-#134). See
+`app/analyzer/tc/README.md`.
+
+### First .tc Map screen (#139)
+
+`app/map/tc/map.tc` renders one fixed Target through the Window Runtime from #136.
+Projection, inclusive geographic bounds, nonnegative nearest-pixel rounding/clamping and marker
+opacity are calculated in `.tc`, using existing scalar operations. No Float cast or new Runtime
+math API is added. The required `map_tc_window_e2e` checks real WM/headless frame pixels,
+outside-target omission, native/explicit closure and repeated launches.
+
+This increment depends on the merged Window Runtime PR #156 and its owner review; it does not
+assert that the proposed #128 interface is approved. Target data is a five-field scalar fixture,
+not JSON parsed through the pending #127/#132/#133 APIs. Broker/IPC reception on `.tc` belongs to
+the next increment; the working Go Map (#99) and coordinate regression (#109) remain available.
+See `app/map/tc/WINDOW.md` for the dependency revision, Linux commands and verification evidence.
+
 ## IPC scenario
 
 The primary local IPC scenario is:

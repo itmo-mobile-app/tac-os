@@ -1,6 +1,9 @@
 # Runtime is linked into the VM executable (docs/ai-context/01-architecture.md).
 add_library(tacos_runtime STATIC
     src/runtime.cpp
+    src/broker_client.cpp
+    src/device_state.cpp
+    src/data_helpers.cpp
     src/camera_detector_client.cpp
     src/window_manager_client.cpp)
 
@@ -33,6 +36,18 @@ target_link_libraries(runtime_unit_tests
 add_test(
     NAME runtime_unit
     COMMAND runtime_unit_tests
+)
+
+find_package(Threads REQUIRED)
+add_executable(runtime_data_helper_tests
+    tests/data_helpers_tests.cpp
+)
+target_link_libraries(runtime_data_helper_tests
+    PRIVATE tacos_runtime Threads::Threads
+)
+add_test(
+    NAME runtime_data_helpers
+    COMMAND runtime_data_helper_tests
 )
 
 add_subdirectory(tests/camera)

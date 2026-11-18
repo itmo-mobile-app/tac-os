@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 	"sync"
 	"unicode/utf8"
@@ -96,6 +97,8 @@ func (e *executor) query(sql string) response {
 		var query *dbms.QueryError
 		if errors.As(err, &query) {
 			r.Error = &failure{Code: "SQL_ERROR", Message: query.Message, Position: &query.Position}
+		} else {
+			log.Printf("DBMS execution failed: %v", err)
 		}
 		return r
 	}

@@ -5,7 +5,7 @@
   Keep this diagram on its own level (see docs/architecture/README.md) and keep labels in Russian:
   the diagrams are embedded in the Russian README.md.
 -->
-<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="640" font-family="IBM Plex Sans, Helvetica, Arial, sans-serif" color="#1f1c26" viewBox="0 0 1000 640" role="img" aria-label="На устройстве игрока процессы Analyzer, Map, приватный Marker Detector и Window Manager, на центральном узле процессы Broker, Target Service и СУБД и файл базы данных; стрелки подписаны транспортом: Unix-сокеты, TCP и файл.">
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="744" font-family="IBM Plex Sans, Helvetica, Arial, sans-serif" color="#1f1c26" viewBox="0 0 1000 744" role="img" aria-label="На устройстве игрока процессы Analyzer, Map, приватный Marker Detector и Window Manager, на центральном узле процессы Broker, Target Service и СУБД и файл базы данных; стрелки подписаны транспортом: Unix-сокеты, TCP и файл.">
   <defs>
     <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
   </defs>
@@ -89,4 +89,11 @@
   <path class="file" d="M708 544 h200 l24 24 v36 h-224 z"/>
   <path class="file" d="M908 544 v24 h24" fill="none"/>
   <text class="t-code" x="726" y="582">файл БД</text>
-  </svg>
+  
+  <!-- Local semantic legend (#123): viewpoint-specific, not a new system component. -->
+  <rect x="0" y="640" width="1000" height="104" fill="#ffffff"/>
+  <line x1="16" y1="648" x2="984" y2="648" stroke="#d3cfdd" stroke-width="1"/>
+  <text x="20" y="668" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#2f2a3a">ЛЕГЕНДА МОДЕЛИ · 3/6</text>
+  <text x="20" y="691" font-family="Arial, sans-serif" font-size="12.5" fill="#1f1c26">Развёртывание: большая рамка — Linux-устройство; тёмная шапка — процесс ОС.</text>
+  <text x="20" y="714" font-family="Arial, sans-serif" font-size="12.5" fill="#625d70">Связь — Unix/TCP-канал либо файл, не поток доменных данных. Реальность: устройства, сеть и диск.</text>
+</svg>

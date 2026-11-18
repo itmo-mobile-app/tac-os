@@ -84,8 +84,9 @@ The executor follows these execution rules:
 - SELECT can project the same column more than once. Row order is unspecified
   without ORDER BY, which is unsupported in this subset.
 
-The persistent storage format, indexes, transactions and detailed deployment
-model remain open questions. The Target Service ↔ DBMS transport and framing
+The file storage format used by the DBMS server is documented in
+`server/dbms/README.md`. Indexes, transactions and detailed deployment
+remain open questions. The Target Service ↔ DBMS transport and framing
 are specified separately in `spec/dbms-protocol.md`.
 
 ## Example
@@ -107,7 +108,6 @@ Not decided here; see `docs/ai-context/02-open-questions.md` → "DBMS":
 
 - whether indexes are required;
 - whether transactions are required;
-- storage format;
 - Target Service client integration is tracked in #97; the DBMS socket server (#96)
   implements the wire contract fixed in `spec/dbms-protocol.md`.
 

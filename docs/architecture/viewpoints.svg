@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="510" viewBox="0 0 1000 510" role="img" aria-labelledby="title desc">
+<title id="title">Шесть независимых архитектурных представлений TAC OS</title>
+<desc id="desc">Одна система рассматривается с шести позиций: сценарий игры, логические потоки данных, развёртывание процессов, слои платформы, сборка программы и внутренние вызовы VM/Runtime. Карточки не образуют линейной лестницы зависимостей.</desc>
+<rect width="1000" height="510" fill="#fff"/>
+<style>
+  .h {font:600 23px Arial,sans-serif;fill:#1f1c26}
+  .sub {font:14px Arial,sans-serif;fill:#5a5664}
+  .card {fill:#f7f6fa;stroke:#2f2a3a;stroke-width:1.5}
+  .t {font:600 16px Arial,sans-serif;fill:#1f1c26}
+  .small {font:13px Arial,sans-serif;fill:#514b5e}
+  .line {stroke:#9d97af;stroke-width:1.5;stroke-dasharray:5 5}
+  .center {fill:#eae5f6;stroke:#6b4fbb;stroke-width:2}
+</style>
+<text class="h" x="30" y="40">TAC OS: одна система, шесть точек зрения</text>
+<text class="sub" x="30" y="64">Это не шесть слоёв OSI и не последовательные этапы исполнения.</text>
+<rect class="center" x="386" y="213" rx="12" width="228" height="84"/>
+<text class="t" x="500" y="247" text-anchor="middle">TAC OS</text>
+<text class="small" x="500" y="271" text-anchor="middle">предмет описания</text>
+<line class="line" x1="386" y1="234" x2="330" y2="166"/>
+<line class="line" x1="500" y1="213" x2="500" y2="166"/>
+<line class="line" x1="614" y1="234" x2="670" y2="166"/>
+<line class="line" x1="386" y1="275" x2="330" y2="344"/>
+<line class="line" x1="500" y1="297" x2="500" y2="344"/>
+<line class="line" x1="614" y1="275" x2="670" y2="344"/>
+<rect class="card" x="30" y="96" rx="7" width="285" height="87"/>
+<text class="t" x="47" y="123">1. Сценарий игры</text>
+<text class="small" x="47" y="148">Участники, действия и смысл</text>
+<text class="small" x="47" y="166">Не OS-процессы</text>
+<rect class="card" x="358" y="96" rx="7" width="285" height="87"/>
+<text class="t" x="375" y="123">2. Логические потоки</text>
+<text class="small" x="375" y="148">Observation, Target, роли</text>
+<text class="small" x="375" y="166">Без транспорта</text>
+<rect class="card" x="686" y="96" rx="7" width="285" height="87"/>
+<text class="t" x="703" y="123">3. Развёртывание</text>
+<text class="small" x="703" y="148">Устройства, процессы, сокеты</text>
+<text class="small" x="703" y="166">Без смысла сообщений</text>
+<rect class="card" x="30" y="326" rx="7" width="285" height="92"/>
+<text class="t" x="47" y="353">4. Платформа исполнения</text>
+<text class="small" x="47" y="377">.tc → VM → Runtime → Linux</text>
+<text class="small" x="47" y="397">Слои ответственности</text>
+<rect class="card" x="358" y="326" rx="7" width="285" height="92"/>
+<text class="t" x="375" y="353">5. Сборка</text>
+<text class="small" x="375" y="377">Исходник → компилятор → байткод</text>
+<text class="small" x="375" y="397">Преобразование артефактов</text>
+<rect class="card" x="686" y="326" rx="7" width="285" height="92"/>
+<text class="t" x="703" y="353">6. Внутри tacvm</text>
+<text class="small" x="703" y="377">Вызовы VM и Runtime</text>
+<text class="small" x="703" y="397">Механизм одного процесса</text>
+<text class="sub" x="30" y="458">Пунктир: «это описание той же системы», не поток сообщений и не зависимость.</text>
+<text class="sub" x="30" y="480">Модель вычислений и связь с физическими явлениями объяснены отдельно для каждого представления.</text>
+</svg>
