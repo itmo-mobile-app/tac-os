@@ -76,8 +76,8 @@ See [integration proposal](../../docs/vision/openrouter-integration.md)
 for the proposed result schema, test matrix, separation from ArUco, failure
 handling and the owner decision points.
 
-OpenRouter reference: https://openrouter.ai/docs/api/api-reference/chat/send-chat-completion-request
-and https://openrouter.ai/blog/tutorials/send-image-to-llm/
+OpenRouter references: [Chat Completions API](https://openrouter.ai/docs/api/api-reference/chat/send-chat-completion-request)
+and [multimodal image tutorial](https://openrouter.ai/blog/tutorials/send-image-to-llm/)
 
 ## Safety and current limits
 
