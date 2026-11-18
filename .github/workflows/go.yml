@@ -77,11 +77,8 @@ jobs:
         if: matrix.component != 'Window Manager'
         working-directory: ${{ matrix.directory }}
         run: |
-          diff="$(gofmt -d .)"
-          if [ -n "$diff" ]; then
-            printf '%s\n' "$diff"
-            exit 1
-          fi
+          gofmt -d . || true
+          test -z "$(gofmt -l .)"
       - name: Go vet
         working-directory: ${{ matrix.directory }}
         run: go vet ${{ matrix.packages }}
