@@ -76,9 +76,7 @@ jobs:
       - name: Check Go formatting
         if: matrix.component != 'Window Manager'
         working-directory: ${{ matrix.directory }}
-        run: |
-          gofmt -d . || true
-          test -z "$(gofmt -l .)"
+        run: test -z "$(gofmt -l .)"
       - name: Go vet
         working-directory: ${{ matrix.directory }}
         run: go vet ${{ matrix.packages }}
