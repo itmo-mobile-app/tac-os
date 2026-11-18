@@ -1,0 +1,268 @@
+# Mobile application
+
+Status: draft
+
+This document describes the current client-side application model of `tac-os`.
+
+The user interacts with one Tactical App.
+
+Internally, the application is split into separate processes so that IPC is used in a real application scenario.
+
+## Process model
+
+The current model uses at least two application processes:
+
+```text
+Tactical App
+├── Analyzer process
+└── Map process
+```
+
+Each process runs its own VM instance and Runtime state.
+
+Conceptually:
+
+```text
+Analyzer process
+└── VM
+    └── Runtime
+
+Map process
+└── VM
+    └── Runtime
+```
+
+The two processes communicate through the project's IPC mechanism.
+
+## Analyzer process
+
+The Analyzer is responsible for producing local target observations.
+
+Its responsibilities include:
+
+- calling `camera.detectMarkers()` through Runtime for ArUco marker ids, angles, and distances;
+- supporting the required AI-based visual recognition demonstration through a reviewed vision API
+  (OpenRouter was suggested, but no integration contract is approved yet);
+- reading device position and orientation through Runtime;
+- determining team affiliation from marker ids;
+- deriving observation confidence; the policy is proposed in `spec/analyzer-observation.md` and not yet agreed;
+- calculating global coordinates from device position, heading, detection angle, and distance;
+- creating an `Observation`;
+- sending observations to Map over the separate application IPC.
+
+Camera capture and ArUco recognition are delegated to a private Go helper process behind the
+C++ Runtime Camera API. It is not a third application process and does not replace Analyzer.
+Its outputs are camera-relative; Analyzer calculates global coordinates and builds observations.
+The initial VM call is `camera.detectMarkers() -> String`, returning a JSON
+array of detections; a full typed `Detection[]` interface is deferred until
+the VM supports Float and collections. The private helper wire protocol is
+specified in `spec/camera-detector-protocol.md` and is not accessible from
+`.tc` code. The Camera API implementation is still pending.
+
+### AI recognition requirement and existing marker detector
+
+As of the October 2026 instructor update, the final demonstration must include real
+AI-based recognition of players/targets from camera imagery. OpenRouter is a
+proposed external vision-model gateway, **not** an approved camera/Runtime contract.
+The existing Go/OpenCV ArUco helper remains responsible for marker IDs, relative
+angles and distance; its `DETECT` IPC must not be repurposed to upload images.
+AI inference must not be presented as providing stable player IDs, calibrated
+distances or geolocation unless those capabilities are separately validated.
+
+The desired AI response fields, owning process, image transport, validation,
+privacy constraints and offline/error behavior need to be specified with the
+Runtime owner before code changes. A remote API requires internet access and
+a secret API key. The local ArUco path must continue to work without internet,
+but it does not alone satisfy the new demonstration requirement. See
+`docs/ai-context/02-open-questions.md` → "AI target recognition".
+
+The Analyzer should not contain shared target aggregation logic.
+
+It should not calculate the final system-wide target probability.
+
+## Map process
+
+The Map process owns the main application UI.
+
+Its responsibilities include:
+
+- displaying a simple 2D tactical map;
+- displaying target markers;
+- displaying target probability;
+- receiving local observations from Analyzer through IPC;
+- publishing observations to the central system;
+- receiving aggregated target updates;
+- updating the visible map state.
+
+The exact UI structure is not fixed yet.
+
+### Coordinate-only .tc increment (#109)
+
+`app/map/tc/projection.tc` contains a first coordinate calculation on the custom language
+using the Float contract #106. It applies both map projection formulas, checks inclusive geographic
+bounds, clamps the east/south edges to the last pixel position as Float, and self-checks center,
+corners, fractional coordinates and outside points. Integer rounding/conversion is deferred.
+
+The required CTest `map_tc_projection_e2e` runs the real Compiler and VM and compares output
+with the expected fixture labels. It was verified on Linux on 2026-11-04 against Compiler PR #120 and VM PR #116.
+Both Float implementations have since been merged into `main`.
+This source does not draw windows, use Broker or replace the Go Map. See `app/map/tc/README.md`
+for exact revisions, verification results and outstanding dependency checks. The independent #99
+Broker integration and Runtime-to-WM contracts are unchanged.
+
+### First .tc Map screen (#139)
+
+`app/map/tc/map.tc` renders one fixed Target through the Window Runtime from #136.
+Projection, inclusive geographic bounds, nonnegative nearest-pixel rounding/clamping and marker
+opacity are calculated in `.tc`, using existing scalar operations. No Float cast or new Runtime
+math API is added. The required `map_tc_window_e2e` checks real WM/headless frame pixels,
+outside-target omission, native/explicit closure and repeated launches.
+
+This increment depends on the unmerged Window Runtime PR #156 and its owner review; it does not
+assert that the proposed #128 interface is approved. Target data is a five-field scalar fixture,
+not JSON parsed through the pending #127/#132/#133 APIs. Broker/IPC reception on `.tc` belongs to
+the next increment; the working Go Map (#99) and coordinate regression (#109) remain available.
+See `app/map/tc/WINDOW.md` for the dependency revision, Linux commands and verification evidence.
+
+## IPC scenario
+
+The primary local IPC scenario is:
+
+```text
+Analyzer
+   ↓
+OBSERVATION (finished geographic coordinates)
+   ↓
+IPC
+   ↓
+Map
+```
+
+`spec/ipc.md` defines the `"OBSERVATION"` message, a Unix-domain stream
+socket, newline-delimited JSON and at-most-once delivery. Map does not compute
+coordinates; it forwards the same six-field `Observation` to Broker without
+the IPC `type` field.
+
+The purpose of this split is to demonstrate communication between separate processes of one application.
+
+## Central communication
+
+The Map process currently acts as the client-side integration point with the central system.
+
+Conceptually:
+
+```text
+Analyzer
+   ↓ IPC
+Map
+   ↓ publish Observation
+Broker
+```
+
+Aggregated target updates return through:
+
+```text
+Broker
+   ↓ TargetUpdated
+Map
+   ↓
+2D map
+```
+
+The exact network transport and Broker protocol are not fixed yet.
+
+## Target coordinates
+
+The client calculates target coordinates using:
+
+- current device coordinates;
+- device orientation;
+- target direction relative to the device/camera;
+- estimated target distance.
+
+The intended project scenario uses relatively short distances, so the coordinate calculation may remain intentionally simple.
+
+The exact calculation method is not fixed yet.
+
+## Target identification
+
+Targets are expected to have recognizable markers or identifiers.
+
+The initial design avoids complex target matching.
+
+If multiple clients detect the same target identifier, the central system treats the reports as observations of the same physical target.
+
+## UI
+
+The UI is intended to remain minimal.
+
+The main required visual feature is a simple 2D tactical map containing target markers.
+
+A WebView may be used to simplify implementation.
+
+Possible model:
+
+```text
+.tc application logic
+   ↓
+Runtime WebView API
+   ↓
+WebView bridge
+   ↓
+HTML / CSS / JavaScript
+   ↓
+2D map UI
+```
+
+The exact WebView implementation is not fixed yet.
+
+## Activity model
+
+Concrete Activities belong to application code.
+
+Possible Activities include:
+
+- Map Activity;
+- Analyzer Activity or Analyzer-related UI.
+
+The actual camera analysis may continue in the separate Analyzer process regardless of which Activity is currently visible.
+
+The exact Activity lifecycle and navigation model are not fixed yet.
+
+## Local and shared target state
+
+The application may temporarily display a locally detected target before the central system responds.
+
+The shared authoritative state is produced by the Target Service and returned as aggregated `Target` updates.
+
+This distinction allows:
+
+- immediate local feedback;
+- later replacement or correction using shared state.
+
+The exact behavior is not fixed yet.
+
+## Failure handling
+
+Behavior for the following cases is still open:
+
+- Broker unavailable;
+- Target Service unavailable;
+- Analyzer process unavailable;
+- Map process restarted;
+- IPC connection lost;
+- stale target data;
+- missing camera or location data.
+
+These cases should remain simple unless the final project scenario requires more robust handling.
+
+## Design rules
+
+- Analyzer and Map are processes of one application, not separate products.
+- Analyzer produces observations; it does not own shared target state.
+- Map owns the user-facing tactical view.
+- Shared probability is calculated by the central Target Service.
+- IPC is used for local process-to-process communication.
+- Broker communication is used for client-to-central-system messaging.
+- UI implementation should remain minimal.
+- Do not add complex map, navigation, background-service, or offline-sync behavior unless required by the project scenario.

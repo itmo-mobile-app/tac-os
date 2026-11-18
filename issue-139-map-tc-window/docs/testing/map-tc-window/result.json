@@ -1,0 +1,34 @@
+{
+  "date": "2026-11-18",
+  "main": "3877600e4e4a6fa06bc8081d849aa5f4913fcf96",
+  "wmPR156": "9c57c95d75b105c88fee165a4c054c8358bc5194",
+  "entry": "tacvm map.bc",
+  "backend": "SDL2/X11, Xvfb/Openbox, Debian 12 arm64",
+  "launches": [
+    {
+      "windowId": "4194312",
+      "vmExit": 0,
+      "nativeClose": true,
+      "wmAlive": true
+    },
+    {
+      "windowId": "4194312",
+      "vmExit": 0,
+      "nativeClose": true,
+      "wmAlive": true
+    }
+  ],
+  "socketsRemoved": true,
+  "headlessCases": 12,
+  "headlessCTest": "PASS",
+  "goMapAndWMRaceTests": "PASS",
+  "compilerTests": 67,
+  "remainingCTest": {
+    "passed": 33,
+    "total": 34,
+    "failure": "vm_instructions: existing 60-second timeout"
+  },
+  "contractStatus": "Window Runtime PR #156 remains unmerged and pending Runtime owner review; no approval claimed",
+  "mapSourceSha256": "d76fc730fba02a0b1ce11213f1adbb549949c701c73f113523cb92a5f6e1a548",
+  "bytecodeSha256": "79d6b5f72062ac66a3ee02831bfb79fda5a9bf5b914eb0e50dcd381b25df9d0e"
+}
