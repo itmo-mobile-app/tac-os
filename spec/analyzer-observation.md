@@ -196,7 +196,7 @@ Questions handed to #104, with the full list in `docs/ai-context/02-open-questio
 
 These are **not** approved here; each needs its owner's decision.
 
-1. `Float` in the language, bytecode and VM, proposed in #106 and not implemented yet (#107, #108).
+1. `Float` in the language, bytecode and VM is implemented (#106–#108). No further Float language support is needed for this calculation; Float crossing VM/Runtime remains a separate API decision.
 2. `sin` and `cos`, or equivalent functions, for `.tc` code: not part of the language or of the
    Runtime API. `app/analyzer/tc/observation.tc` (#138) implements them in `.tc` source with a
    Maclaurin series, so no contract change is needed to run the calculation; a Runtime or language
