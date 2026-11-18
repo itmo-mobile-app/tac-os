@@ -151,7 +151,11 @@ func TestProviderErrorsAreSanitized(t *testing.T) {
 
 func TestTimeout(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		<-r.Context().Done()
+		// Bound handler lifetime even if a platform delays context cancellation.
+		select {
+		case <-r.Context().Done():
+		case <-time.After(250 * time.Millisecond):
+		}
 	}))
 	defer server.Close()
 	client := &http.Client{Timeout: 15 * time.Millisecond}
