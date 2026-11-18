@@ -67,6 +67,7 @@ Usage: `tacc <input.tc> <output.bc>`. Write the output under `build/` (ignored b
 - `CheckerTest` — positive and negative tests of types, scopes, `const`, calls, and returns;
 - `CodeGenTest` — exact instruction sequences, `hello.tc` byte for byte against
   `tests/hello/hello.bc`, and the behavior of compiled programs.
+- `DataHelpersTest` — signatures and type checks for Observation/Target helpers.
 
 Program behavior is checked with a small reference interpreter in `TestSupport.kt`. It is a test
 oracle for the compiler only, written against `spec/bytecode.md`; `tacvm` remains the VM.
@@ -99,3 +100,11 @@ left-to-right evaluation order using temporary local slots.
 Run `./gradlew test` (including `FloatTest`), then validate the coordinate
 example against a v2-capable `tacvm`. The VM from PR #116 must be merged or
 built separately before an actual end-to-end test can succeed.
+
+## Observation and Target data helpers (#132)
+
+The nine JSON/String Runtime calls and `camera.detectMarkers()` are registered
+with static signatures, using existing `CALL_RUNTIME` and the Float v2 format.
+`runtime_data_helpers` and `data_tc_e2e` verify the Runtime and real compiler/VM
+pipeline. Invalid JSON currently produces a fatal RuntimeError; safe recovery
+still requires approval of the API contract in #127/#128.

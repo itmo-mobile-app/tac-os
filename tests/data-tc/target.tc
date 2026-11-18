@@ -1,0 +1,30 @@
+// Compiler #132 / VM #133 E2E: extracts the five Target fields from one Broker payload and
+// projects them with the map-rendering.md bounds. Drawing through WM is #139.
+
+fun processTarget(payload: String) {
+    const targetId = json.getString(payload, "targetId");
+    const latitude = json.getFloat(payload, "latitude");
+    const longitude = json.getFloat(payload, "longitude");
+    const probability = json.getFloat(payload, "probability");
+    const lastSeenAt = json.getInt(payload, "lastSeenAt");
+    if (latitude < 59.949) {
+        runtime.log(text.concat(targetId, " outside"));
+        return;
+    }
+    const x = (longitude - 30.308) / (30.314 - 30.308) * 960.0;
+    const y = (59.951 - latitude) / (59.951 - 59.949) * 640.0;
+    let line = text.concat(targetId, " ");
+    line = text.concat(line, text.fromFloat(x));
+    line = text.concat(line, " ");
+    line = text.concat(line, text.fromFloat(y));
+    line = text.concat(line, " ");
+    line = text.concat(line, text.fromFloat(probability));
+    line = text.concat(line, " ");
+    runtime.log(text.concat(line, text.fromInt(lastSeenAt)));
+}
+
+fun main() {
+    processTarget("{\"targetId\":\"17\",\"latitude\":59.9505,\"longitude\":30.311,\"probability\":0.85,\"lastSeenAt\":1800000000100}");
+    processTarget("{\"lastSeenAt\":9007199254740993,\"probability\":1,\"longitude\":30.308,\"latitude\":59.951,\"targetId\":\"A-1\"}");
+    processTarget("{\"targetId\":\"far\",\"latitude\":10.0,\"longitude\":30.311,\"probability\":0.5,\"lastSeenAt\":1}");
+}

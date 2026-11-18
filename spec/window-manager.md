@@ -134,3 +134,29 @@ native control destroys the window before `window_close` is delivered; Map must 
 CLOSE for that event. The Map owner confirmed that the final frame and command fields had been
 discussed with and approved by the WM owner; the source of that confirmation is recorded in the
 integration report.
+
+## 9. Runtime integration from .tc
+
+Issue #136 connects `.tc` programs to the existing WM protocol through
+Compiler, VM and Runtime. The function signatures and client lifecycle
+are documented in `spec/runtime-api.md`, under "Window API: one Map window".
+The new Runtime-facing contract is pending Runtime owner review.
+
+Rendering remains in WM. Runtime sends the existing commands and consumes
+events; this integration adds no WebView or GUI implementation to Runtime.
+
+The headless integration test is registered as `map_runtime_wm_e2e`.
+It checks the rendered background and one Target, native-close event
+delivery, explicit closure, a second application launch, and socket-path
+cleanup after WM shutdown.
+
+Run it together with the existing integration checks from the repository root:
+
+```sh
+ctest --test-dir build --output-on-failure \
+  -R '^(runtime_unit|map_wm_e2e|map_broker_wm_e2e|map_runtime_wm_e2e)$'
+```
+
+The build must contain the compiled `.tc` scenario and
+`window_runtime_runner`. These checks validate the headless path;
+they do not establish a new SDL graphical-run result.

@@ -1,11 +1,11 @@
 # Issue #133 acceptance audit
 
-Reviewed against main `3877600` and the open contract branches #152/#153.
+Updated for the #132 integration branch (#165) with #127/#128 review still open.
 This checklist distinguishes implemented VM behavior from unapproved interfaces.
 
 | Issue criterion | Status | Evidence / next action |
 | --- | --- | --- |
-| Real new Compiler + VM E2E on Observation and Target | Prepared, blocked | `tests/vm-data/observation.tc`, `target.tc`, `strings.tc`, `test_data.py`; requires approved #127, real helpers and Compiler #132 |
+| Real new Compiler + VM E2E on Observation and Target | Executed in CI after integration | `tests/vm-data/observation.tc`, `target.tc`, `strings.tc`, `test_data.py`; requires approved #127, real helpers and Compiler #132 |
 | Type errors, malformed bytecode, input boundaries | VM part verified; helper part pending | `vm_instructions` checks malformed v1/v2, indices/branches/stack/type errors. `vm_value_boundary` checks Float, i64 and String ownership. Proposed JSON/bounds tests require actual helpers |
 | Two independent VM processes do not share unsafe state | Existing process scenario verified; new data scenario prepared | `ipc_vm_e2e` runs real separate processes; `vm_contexts` and `vm_value_boundary` additionally exercise independent threaded executions; `vm_data_e2e` starts two data-program processes once dependencies exist |
 | Float/IPC/hello and sanitizer/CI regressions stay green | Locally verified; Linux CI requested in Draft PR | 33/33 applicable CTest checks, 67 Compiler tests, ASan/UBSan and two TSAN checks. The real Float source E2E is now on by default after Compiler #107 merged |
@@ -27,7 +27,7 @@ This checklist distinguishes implemented VM behavior from unapproved interfaces.
    without the owners. Exact-field-set validation and resource limits remain
    explicit decisions in #127/#128, not hidden implementation choices.
 5. **Joint source acceptance:** fixtures use the proposed existing names and
-   real tools only. They fail on today's unknown helpers. Negative tests demand
+   real tools only. They execute against the real #132 helpers. Negative tests demand
    controlled exit status and diagnostics, never treating a crash as success.
 6. **Repository workflow:** one branch for #133, Conventional Commits, Russian
    Draft PR and review bodies, owner assignment/labels, tests and documentation.
@@ -42,8 +42,8 @@ were checked for the #133 dependencies. Generated build directories, local
 worktrees and unrelated user archives are excluded. A path/hash inventory is
 kept in the local handoff folder; binary fixtures are not interpreted as source.
 
-No implementation of the nine unapproved helpers was found in main. No
-published Compiler #132 implementation branch was found during the audit. Existing device/Broker/WM PRs are not
+Compiler/Runtime helper implementation is now available in PR #165, with
+separate checks for domain encoding and decoding. Existing device/Broker/WM PRs are not
 rewritten by this work. The Runtime Float common-value changes are the only
 shared implementation addition required here.
 

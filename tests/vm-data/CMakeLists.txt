@@ -4,8 +4,8 @@ target_link_libraries(vm_value_tests PRIVATE tacos_vm Threads::Threads)
 add_test(NAME vm_value_boundary COMMAND vm_value_tests)
 set_tests_properties(vm_value_boundary PROPERTIES TIMEOUT 60)
 
-# Enabled only after Compiler #132 and the real approved helpers are available.
-option(TACOS_VM_DATA_E2E "Run real Observation/Target helper E2E after #127/#132" OFF)
+# Compiler/Runtime helpers from #132 are now available on this integration branch.
+option(TACOS_VM_DATA_E2E "Run real Observation/Target helper E2E" ON)
 if(TACOS_VM_DATA_E2E)
     find_package(Python3 REQUIRED COMPONENTS Interpreter)
     add_test(NAME vm_data_e2e

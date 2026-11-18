@@ -16,7 +16,6 @@ public:
         : std::runtime_error(message) {}
 };
 
-// Values own their String storage; conversions never borrow Runtime buffers.
 enum class ValueKind { Int, String, Float };
 
 struct Value {

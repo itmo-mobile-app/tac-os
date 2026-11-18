@@ -1,0 +1,75 @@
+// First Map screen (#139). Window calls require the implementation in #136.
+// One fixed Target, represented by the five existing data-model fields.
+// The image path is relative to WM's working directory, not the VM's.
+
+fun contains(latitude: Float, longitude: Float): Bool {
+    if (latitude < 59.9490) { return false; }
+    if (latitude > 59.9510) { return false; }
+    if (longitude < 30.3080) { return false; }
+    if (longitude > 30.3140) { return false; }
+    return true;
+}
+
+// Nonnegative finite values only. Count half-pixel thresholds using Float,
+// keeping an Int counter: no cast, new opcode or Runtime math API is needed.
+// Rounding ties upward matches Go math.Round for these nonnegative positions.
+fun roundedPixel(value: Float, size: Int): Int {
+    let pixel: Int = 0;
+    let threshold: Float = 0.5;
+    while (value >= threshold) {
+        if (pixel == size - 1) { return pixel; }
+        pixel = pixel + 1;
+        threshold = threshold + 1.0;
+    }
+    return pixel;
+}
+
+fun main() {
+    const targetId: String = "17";
+    const latitude: Float = 59.9500;
+    const longitude: Float = 30.3110;
+    const probability: Float = 0.9;
+    // Metadata is retained with the fixture; it does not affect rendering.
+    const lastSeenAt: Int = 1800000000100;
+    // Zero waits for native close. Tests set a positive poll count to exercise
+    // explicit application closure without introducing a public Runtime API.
+    const closeAfterPolls: Int = 0;
+
+    window.create("Tactical Map (.tc)", 960, 640);
+    window.beginFrame(255, 255, 255, 255);
+    window.drawImage("../../../app/map/assets/test-map.png", 0, 0, 960, 640);
+
+    // Reject outside targets before rounding/clamping; never pull them inside.
+    if (contains(latitude, longitude)) {
+        const x: Float = (longitude - 30.3080) / (30.3140 - 30.3080) * 960.0;
+        const y: Float = (59.9510 - latitude) / (59.9510 - 59.9490) * 640.0;
+        const px: Int = roundedPixel(x, 960);
+        const py: Int = roundedPixel(y, 640);
+        const alpha: Int = roundedPixel(255.0 * (0.25 + 0.75 * probability), 256);
+        window.drawCircle(px, py, 13, 255, 255, 255, 255);
+        window.drawCircle(px, py, 10, 196, 72, 48, alpha);
+        runtime.log(targetId);
+        runtime.log("target-visible");
+    } else {
+        runtime.log("target-outside");
+    }
+
+    window.present();
+    window.show();
+    runtime.log("map-ready");
+
+    let running: Bool = true;
+    let polls: Int = 0;
+    while (running) {
+        if (window.pollEvent(100) == "window_close") {
+            runtime.log("map-close-event");
+            running = false;
+        }
+        if (closeAfterPolls > 0) {
+            polls = polls + 1;
+            if (polls >= closeAfterPolls) { running = false; }
+        }
+    }
+    window.close();
+    runtime.log("map-closed");
+}

@@ -1,0 +1,6 @@
+Resources: /tmp/tac-smoke-4291845383
+PASS build components (offline, headless)
+PASS Broker -> Target Service (matching Observation receipt)
+PASS Map -> headless Window Manager (frame, markers, CLOSE, reuse)
+PASS unavailable Broker
+PASS cleanup

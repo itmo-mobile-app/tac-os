@@ -3,9 +3,8 @@
 ## Implementation scope
 
 The VM now transfers finite Float arguments/results across the existing Runtime
-call boundary, in addition to Int and String. The Runtime `Float` enumerator,
-`double float_value` field and `float_value_of(double)` factory match the
-implementation already proposed in Runtime device PR #162 exactly. No device,
+call boundary, in addition to Int and String. The Runtime `Float` enumerator, field and factory are already integrated
+in #162; this PR adds independent value/ownership and real data acceptance checks. No device,
 Broker, window, camera or Compiler implementation is copied into this branch.
 Bytecode versions, tags, instructions, arities and wire schemas are unchanged.
 
@@ -70,7 +69,7 @@ remain enabled. They are not evidence that unimplemented JSON helpers work.
 
 ## Real Observation/Target acceptance gate
 
-The pending #127 examples use only proposed calls, not runtime implementations.
+The #127 examples now have real helper implementations in the #132 branch.
 The corresponding acceptance fixtures in `tests/vm-data` compile with the
 **real** selected tacc and run with the **real** tacvm. They verify independent
 VM OS processes, exact Observation fields, escaping, Float projection, i64
@@ -78,7 +77,7 @@ timestamps and repeated generated String replacement. Negative type tests
 must fail compilation. No signature injection, stub helper or replacement
 compiler is used.
 
-After #127 is approved and the real Compiler #132/Runtime helpers exist:
+With the real Compiler and Runtime helpers from PR #165 (#132) integrated:
 
 ```sh
 cmake -S . -B build -DTACOS_SANITIZE=ON -DTACOS_VM_DATA_E2E=ON \
@@ -87,8 +86,8 @@ cmake --build build --parallel
 ctest --test-dir build -R 'vm_data_e2e|vm_value_boundary' --output-on-failure
 ```
 
-The option is off by default while dependencies do not exist. Enabling it on
-today's main must fail, rather than silently skip or fake a passing E2E.
+The option is on by default in this integration branch: it uses the actual
+tacc/tacvm and fails explicitly when the implementation is incomplete.
 The complete #133 acceptance checklist remains open until this real E2E and
 approved malformed-message/limits tests pass. Do not label this patch as a
 complete implementation of all nine unapproved Runtime functions.
@@ -130,3 +129,9 @@ not the still-pending Observation/Target source E2E.
 - #127 owner approvals, recoverable schema validation and agreed resource
   limits remain open. #132 and real data-helper implementations are required
   before the complete #133 acceptance can be closed.
+
+## Current integration check
+
+The VM boundary checks and real data E2E run in CI on top of PR #165,
+not on an old Runtime branch. Full schema prevalidation and recoverable
+errors remain separate design decisions under #127/#128.
