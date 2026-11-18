@@ -5,7 +5,7 @@
   Keep this diagram on its own level (see docs/architecture/README.md) and keep labels in Russian:
   the diagrams are embedded in the Russian README.md.
 -->
-<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="300" font-family="IBM Plex Sans, Helvetica, Arial, sans-serif" color="#1f1c26" viewBox="0 0 1000 300" role="img" aria-label="Детектор передаёт Detection в Analyzer, Analyzer передаёт Observation в Map, Map передаёт Observation в Target Service, Target Service возвращает Target во все Map и хранит данные в хранилище; Map выводит карту через Window Manager.">
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="404" font-family="IBM Plex Sans, Helvetica, Arial, sans-serif" color="#1f1c26" viewBox="0 0 1000 404" role="img" aria-label="Детектор передаёт Detection в Analyzer, Analyzer передаёт Observation в Map, Map передаёт Observation в Target Service, Target Service возвращает Target во все Map и хранит данные в хранилище; Map выводит карту через Window Manager.">
   <defs>
     <marker id="c1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
   </defs>
@@ -69,4 +69,11 @@
   <text class="t-sub" x="318" y="268">окна и ввод</text>
   <line class="edge" x1="390" y1="170" x2="390" y2="216" marker-start="url(#c1)" marker-end="url(#c1)"/>
   <text class="t-arrow" x="398" y="198">окно ↔ ввод</text>
-  </svg>
+  
+  <!-- Local semantic legend (#123): viewpoint-specific, not a new system component. -->
+  <rect x="0" y="300" width="1000" height="104" fill="#ffffff"/>
+  <line x1="16" y1="308" x2="984" y2="308" stroke="#d3cfdd" stroke-width="1"/>
+  <text x="20" y="328" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#2f2a3a">ЛЕГЕНДА МОДЕЛИ · 2/6</text>
+  <text x="20" y="351" font-family="Arial, sans-serif" font-size="12.5" fill="#1f1c26">Логика: белые блоки — роли/хранилище; подписанные стрелки — типы данных.</text>
+  <text x="20" y="374" font-family="Arial, sans-serif" font-size="12.5" fill="#625d70">Двусторонняя связь — логический обмен, не TCP и не гарантия доставки. Реальность: наблюдение и карта.</text>
+</svg>

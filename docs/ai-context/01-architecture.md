@@ -9,6 +9,12 @@ This document describes the current high-level architecture of `tac-os`.
 It defines component boundaries and the main interaction model.
 Implementation details belong in `spec/` or component-specific documentation.
 
+The six SVG diagrams are **different architectural viewpoints**, not one
+OSI-like stack. Their computational semantics, physical referents and
+ontological distinctions are documented in `docs/architecture/README.md` and
+`docs/architecture/ontology.md`. Only the client platform view is a layered
+execution stack; do not treat a domain actor or process as a class/function.
+
 ## Platform layers
 
 The application execution stack is:
@@ -86,7 +92,7 @@ The Runtime may be linked into the VM executable and does not need to run as a s
   only the standard library. `go build ./cmd/tacdb` builds its CLI; `go test ./...` runs
   its unit tests. CMake also builds this executable and registers DBMS tests with CTest.
   The in-memory executor and `tacdb-server` Unix-socket entry point (#96) implement
-  `spec/dbms-protocol.md`; persistence remains deferred.
+  `spec/dbms-protocol.md`. File storage is enabled with `tacdb-server -data PATH` (#131).
 - The Window Manager, Broker, Target Service, and DBMS are written in Go or Rust, as required by the course
   technology stack (`docs/requirements.md`, C-11). Each component owner picks one of the two; the choice is
   recorded here.
@@ -434,9 +440,10 @@ UTF-8 SQL statements, and receives length-prefixed JSON query results/errors.
 The framing is a four-byte little-endian payload length followed by the payload;
 see `spec/dbms-protocol.md`. No ORM or remote DBMS TCP port is required.
 
-The intended deployment stores the database in a file on the central node's disk
-so that data survives either process restarting. This persistence is planned,
-but **not yet implemented** in the existing in-memory SQL executor.
+With `-data PATH`, `tacdb-server` loads a versioned snapshot before listening and
+replaces it after each successful SQL write. The storage format and failure
+semantics are documented in `server/dbms/README.md`. The Unix-socket wire contract
+and SQL types are unchanged.
 
 ## Database
 
