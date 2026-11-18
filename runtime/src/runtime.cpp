@@ -440,7 +440,7 @@ Value window_present(Runtime &runtime, std::ostream &,
 
   return Value::int_value_of(0);
 }
-Value window_poll_event(Runtime &runtime, std::ostream &,
+Value window_poll_event_handler(Runtime &runtime, std::ostream &,
                         const std::vector<Value> &args) {
   if (args[0].kind != ValueKind::Int || args[0].int_value < 0 ||
       args[0].int_value > 1000) {
@@ -525,7 +525,7 @@ const Runtime::FunctionEntry* Runtime::find_function(const std::string& name) {
         {"window.drawImage", {5, &window_draw_image}},
         {"window.drawCircle", {7, &window_draw_circle}},
         {"window.present", {0, &window_present}},
-        {"window.pollEvent", {1, &window_poll_event}},
+        {"window.pollEvent", {1, &window_poll_event_handler}},
         {"window.show", {0, &window_show}},
         {"window.close", {0, &window_close}},
         {"window.quit", {0, &window_quit}},
