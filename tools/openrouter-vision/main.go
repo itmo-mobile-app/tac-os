@@ -154,8 +154,8 @@ func recognize(ctx context.Context, client *http.Client, endpoint, apiKey, model
 		return result{}, errors.New("unsupported image type")
 	}
 	payload := map[string]any{
-		"model": model,
-		"max_tokens": 220,
+		"model":       model,
+		"max_tokens":  220,
 		"temperature": 0,
 		"messages": []any{
 			map[string]any{
