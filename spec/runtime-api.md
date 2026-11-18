@@ -401,9 +401,12 @@ camera schema changes and a general exception system are outside this proposal.
 
 ### Minimal String data helpers (#127, proposal)
 
+**Implementation status:** nine helpers are implemented in Compiler/Runtime #132
+for real E2E verification (`runtime_data_helpers`, `data_tc_e2e`). This does not
+constitute owner approval of #127 or a recoverable error policy for Map.
+
 **Pending VM, Runtime, Analyzer, Map and architecture owner review.** The
-approved API above is unchanged. These names must not be implemented or
-treated as approved solely because they appear in this subsection.
+approved API above is unchanged. Implementation alone does not approve these names, limits or error semantics.
 Selection rationale and source examples are in
 [`language.md`](language.md#observation-and-target-data-access-127-proposal).
 
