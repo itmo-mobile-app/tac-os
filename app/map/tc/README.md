@@ -1,6 +1,9 @@
 # Map coordinate calculation on .tc (#109)
 
 For the first windowed Map on `.tc` (#139), see [WINDOW.md](WINDOW.md) and `map.tc`.
+This application and its required `map_tc_window_e2e` CTest are stacked on Window Runtime
+PR #156 until the `window.*` calls land on `main`. A green CI run without that
+Runtime dependency is not evidence that the actual Map screen executed.
 The projection-only scenario below remains unchanged and independently tested.
 
 Status: the real Compiler → VM Linux E2E passed on 2026-11-04 using the
