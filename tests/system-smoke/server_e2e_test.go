@@ -100,9 +100,6 @@ func TestServerE2E(t *testing.T) {
 
 	for _, name := range []string{"OneObserver", "TwoObserversAndDuplicate", "InvalidObservation", "TimeDecay", "MapRedraw", "SQLIntegration"} {
 		t.Run(name, func(t *testing.T) {
-			if name == "SQLIntegration" && (os.Getenv("TACOS_E2E_TARGET_DBMS_ARGS") == "" || os.Getenv("TACOS_E2E_TARGET_SELECT") == "") {
-				t.Skip("BLOCKED-CONTRACT: configure documented Target Service DBMS arguments and Target SELECT; spec/dbms-protocol.md defines framing, not service CLI or domain schema")
-			}
 			f := newAcceptanceFixture(t)
 			f.startDBMS(dbBinary)
 			_, f.address, err = startBroker(f.ctx, &f.s, b.broker)
@@ -114,16 +111,9 @@ func TestServerE2E(t *testing.T) {
 			if name == "MapRedraw" {
 				m = f.startMap(root, b)
 			}
-			args := []string{"-broker", f.address}
-			if raw := os.Getenv("TACOS_E2E_TARGET_DBMS_ARGS"); raw != "" {
-				var extra []string
-				if err := json.Unmarshal([]byte(raw), &extra); err != nil || len(extra) == 0 || !strings.Contains(raw, "{dbms}") {
-					t.Fatal("TACOS_E2E_TARGET_DBMS_ARGS must be a nonempty JSON array containing {dbms}; no shell is used")
-				}
-				for _, arg := range extra {
-					args = append(args, strings.ReplaceAll(arg, "{dbms}", f.db))
-				}
-			}
+			// The integration contract from #137 explicitly accepts -dbms socket;
+			// test the real isolated DBMS, not an unconfigured optional probe.
+			args := []string{"-broker", f.address, "-dbms", f.db}
 			if _, err := f.s.start("Target Service", b.target, args...); err != nil {
 				t.Fatal(err)
 			}
@@ -175,7 +165,7 @@ func TestServerE2E(t *testing.T) {
 					t.Fatalf("Map window release: %v", err)
 				}
 			case "SQLIntegration":
-				query := os.Getenv("TACOS_E2E_TARGET_SELECT")
+				query := "SELECT target_id, latitude, longitude, probability, last_seen_at FROM targets;"
 				if !strings.HasPrefix(strings.ToUpper(strings.TrimSpace(query)), "SELECT ") {
 					t.Fatal("TACOS_E2E_TARGET_SELECT must be a read-only SELECT projecting target ID, latitude, longitude, probability, last-seen timestamp, in that order")
 				}
@@ -205,9 +195,6 @@ func TestServerE2E(t *testing.T) {
 				}
 			}
 		})
-	}
-	if os.Getenv("TACOS_E2E_TARGET_DBMS_ARGS") == "" || os.Getenv("TACOS_E2E_TARGET_SELECT") == "" {
-		t.Error("INCOMPLETE ACCEPTANCE: SQL integration contract is not configured; its SKIP must not produce an overall green acceptance run")
 	}
 }
 
