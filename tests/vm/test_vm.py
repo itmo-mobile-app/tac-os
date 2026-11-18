@@ -234,7 +234,8 @@ class FloatTests(VmTests):
             self.run_bc([1.0, 2.0], ins(1, 0) + ins(1, 1) + ins(op), error='expected Int')
         self.run_bc([1.0], ins(1, 0) + ins(1, 0) + ins(8), error='requires FCMP_EQ')
         self.run_bc([1.0, 'text'], ins(1, 0) + ins(1, 1) + ins(17), error='expected Float')
-        self.run_bc([1.0, 'runtime.log'], ins(1, 0) + ins(13, 1, 1), error='String')
+        self.run_bc([1.0, 'runtime.log'], ins(1, 0) + ins(13, 1, 1),
+                    error='runtime.log expects a String argument')
         for value in [float('nan'), float('inf'), -float('inf')]:
             self.run_bc([value], ins(1, 0) + ins(14), error='non-finite Float constant')
 

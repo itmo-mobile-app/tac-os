@@ -1,10 +1,8 @@
 # Runtime API specification
 
-Status: approved
+Status: the existing call ABI, Camera, IPC and implemented WM operations are approved or documented; Broker transport (#135) and device data (#134) are implemented and await full #128 owner review.
 
-This document defines how the VM calls into the Runtime, and the first Runtime function used by the
-Compiler → VM integration test. It does not cover IPC (see `spec/ipc.md`) or the Broker (see
-`spec/broker-protocol.md`).
+This document defines the VM-facing Runtime boundary. IPC and Broker wire protocols are documented separately in `spec/ipc.md` and `spec/broker-protocol.md`.
 
 ## Call mechanism
 
@@ -183,6 +181,88 @@ or offline queue.
 
 The wire schema is defined in spec/ipc.md.
 
+## Device position, orientation and time (#134)
+
+| Signature | Result |
+| --- | --- |
+| `location.read(timeoutMs: Int) -> Int` | Acquire one position snapshot and return a status |
+| `location.latitude() -> Float` | Latitude in WGS84 degrees, from −90 through +90. Positive is north |
+| `location.longitude() -> Float` | Longitude in WGS84 degrees, from −180 through +180. Positive is east |
+| `orientation.read(timeoutMs: Int) -> Int` | Acquire one heading snapshot and return a status |
+| `orientation.heading() -> Float` | Azimuth in degrees clockwise from true north along the camera's forward axis. Valid range is [0, 360) |
+| `time.nowMs() -> Int` | UTC wall-clock time measured in Unix milliseconds as a signed 64-bit integer |
+
+Azimuths 0, 90, 180 and 270 indicate north, east, south and west. The source is responsible for
+magnetic declination and camera-axis alignment. A value of 360 degrees is outside the accepted range.
+Coordinate and heading getters return finite binary64 values through the existing call ABI.
+The Compiler selects bytecode version 2 for programs using these Float results.
+
+Both reads take a timeout in `1..1000` ms measured against a monotonic clock. They return
+`0` for success, `-1` for an unavailable source, `-2` for an expired deadline and `-3`
+for a non-finite or out-of-range reading. A negative status writes the reason to stderr.
+Incorrect argument types, arity and timeouts raise `RuntimeError`.
+
+Runtime owns one position and one heading snapshot each. A read clears the corresponding
+snapshot before starting. After a successful read, the getters access that snapshot locally
+without sampling again. After a failed read or before the first successful read, the
+corresponding getters raise `RuntimeError`. Reads of one source leave the other snapshot
+available. Snapshots and configured sources are released when their Runtime is destroyed.
+
+The host selects fixed sources explicitly by passing `DeviceOptions` to the C++ `Runtime` constructor.
+With default Linux configuration, location and orientation report unavailable.
+`time.nowMs()` reads `CLOCK_REALTIME` unless the host supplies a fixed test timestamp.
+The wall clock may move backwards. A clock read failure or an unrepresentable timestamp
+raises `RuntimeError`. Runtime provides device measurements. Analyzer owns calculation of
+target coordinates.
+
+### Linux verification
+
+```sh
+(cd compiler && ./gradlew --no-daemon installDist)
+cmake -S . -B build
+cmake --build build --parallel
+ctest --test-dir build -R '^device_vm_e2e$' --output-on-failure
+```
+
+The test compiles [`tests/device/device.tc`](../tests/device/device.tc) and uses the real VM
+with host-injected position, azimuth and time. It also covers missing sources, geographic
+limits, non-finite readings, deadlines, invalidated snapshots and the default Linux wall clock.
+
+## Broker transport (#135)
+
+Each Runtime owns at most one TCP connection. Use the framing and delivery semantics of
+[`broker-protocol.md`](broker-protocol.md). Payloads are opaque JSON object text at this boundary.
+Map owns interpretation of Observation and Target fields.
+
+| Signature | Result |
+| --- | --- |
+| `broker.connect(address: String, port: Int, timeoutMs: Int) -> Int` | Connect to a numeric IPv4 or IPv6 address and port `1..65535`. Returns 0 on success |
+| `broker.subscribe(topic: String) -> Int` | Send `SUB <topic>\n`. Returns 0 on local transmission |
+| `broker.publish(topic: String, payload: String) -> Int` | Send `PUB <topic> <payload>\n`. Returns 0 on local transmission |
+| `broker.receive(timeoutMs: Int) -> Int` | Read one `MSG <topic> <payload>\n`. Returns 1 on receipt or 0 on idle timeout |
+| `broker.topic() -> String` | Topic of the last successfully received message |
+| `broker.payload() -> String` | The received JSON object text, without the `MSG` prefix, topic or newline |
+| `broker.close() -> Int` | Close the owned connection and discard buffered data. Always returns 0 |
+
+Connect takes a timeout in `1..1000` ms. Receive takes `0..1000` ms, with `0` for a nonblocking poll.
+Subscribe and publish have a 1000 ms deadline per call. All deadlines use a monotonic clock.
+Topics must be nonempty UTF-8 without ASCII whitespace or NUL. A payload must be a single-line
+UTF-8 JSON object. The Runtime frame limit is 16 KiB including the verb, separators and final LF.
+
+Idle receive can retain an incomplete frame for the next call. A partial frame has a separate
+1000 ms deadline from the first bytes read into Runtime, even across polling calls and regardless
+of subsequent bytes. Complete frames are returned in order, one per receive. The next receive
+invalidates the previous topic and payload. Each getter returns an independent `String`.
+
+Status-returning operations report `-1` for an unavailable or disconnected transport, `-2` for a
+connect, write or partial-frame deadline, and `-3` for a malformed or oversized incoming frame.
+Each negative status reports the failing operation on stderr and releases the socket and its
+buffered state. Bad arguments, connecting with a connection already open, and reading a getter
+without a current message raise `RuntimeError`. Destruction releases the connection as well.
+
+After a disconnect, callers may explicitly connect and subscribe again. Subscribe and publish
+report local I/O only, with no acknowledgment, automatic retry or resubscription.
+
 ## Window API: one Map window
 
 Status: implemented for issue #136; pending Runtime owner review and
@@ -266,21 +346,69 @@ The test checks background and Target pixels, a simulated native close
 event, explicit closure, a second application launch against the same WM,
 and removal of both socket paths after WM shutdown.
 
+## Remaining interface proposal (#128; owner review required)
+
+The device #134, Broker #135 and window #136 operations above are implemented
+and covered by component integration tests. This does not imply approval of the
+remaining design decisions: recoverable validation of arbitrary malformed domain
+JSON, scheduling IPC/Broker/window events in the single-threaded Map, and
+resource bounds on a long-running application still require joint review.
+
+### Bounded local IPC for the Map loop (proposal requiring IPC review)
+
+The existing `runtime.ipc_receive()` deliberately waits indefinitely while idle;
+calling it in Map's only event loop would prevent Broker polling and native close
+handling. Changing that existing signature/behavior is not proposed. The concrete
+single-threaded Map scenario needs these additive candidates:
+
+| Proposed signature | Result |
+| --- | --- |
+| `runtime.ipc_poll(timeoutMs: Int) -> Int` | After `ipc_listen`: 1 validated Observation, 0 idle, negative status for external failure |
+| `runtime.ipc_message() -> String` | Last successfully polled IPC JSON object, including `type`, without newline |
+
+Use the existing socket, exact schema, 64 KiB bound and one-way at-most-once
+semantics. Each poll invalidates its message snapshot. Empty connection probes
+are discarded; malformed frames or partial EOF discard only the offending
+connection and return -3. Retain partial bytes between polls, enforcing the
+existing five-second partial-message inactivity timeout across calls. A polling
+timeout is idle result 0 and never extends that inactivity deadline by itself.
+Do not mix `ipc_poll` and `ipc_receive` on one Runtime; this is a programming error.
+No acknowledgement, new wire message, extra listener or automatic resend is added.
+This is a proposed addition for owner review, not a claim of current IPC support.
+
+### Required architectural decisions
+
+See [`02-open-questions.md`](../docs/ai-context/02-open-questions.md#runtime).
+Before calling #128 approved, record decisions on:
+
+| Gate | Required review / decision |
+| --- | --- |
+| Sensor surface and conventions | Runtime, Analyzer and architecture: snapshot getters vs #127 representation; provider configuration, calibration, age/skew |
+| Scalar Float at VM ↔ Runtime | Compiler and VM with Runtime: value conversions, result kinds, existing v1/v2 regression |
+| Status and polling model | VM, Runtime and Map: negative statuses, deadlines, additive IPC polling and getter validity |
+| Broker behavior | Broker/Target Service, Runtime and Map: line limit, transport validation, no ACK/retry, explicit reconnect policy |
+| WM lifecycle and drawing | WM, Map and Runtime: event subscription, Int geometry, bounded failure/cleanup, native close and Activity compatibility |
+| #127 data bridge | Compiler, VM, Analyzer, Map and Runtime: recoverable domain validation, exact field sets, generated String reclamation |
+| Required scalar math | Compiler, Runtime, Analyzer and Map: minimal sin/cos and pixel rounding/conversion approach |
+
+The #128 reviewer set includes `@khamitova-prog`, `@mattthewww`, `@slutswarming`,
+`@m4shustik-s`, `@pypynyaa` and architecture; Broker behavior also needs its owner.
+No final approval of these combined API decisions has been recorded here.
+Threads, generic files/networking, Activity callbacks, WebView, multiple windows,
+camera schema changes and a general exception system are outside this proposal.
+
 ## Open questions
 
 ### Minimal String data helpers (#127, proposal)
 
+**Implementation status:** nine helpers are implemented in Compiler/Runtime #132
+for real E2E verification (`runtime_data_helpers`, `data_tc_e2e`). This does not
+constitute owner approval of #127 or a recoverable error policy for Map.
+
 **Pending VM, Runtime, Analyzer, Map and architecture owner review.** The
-approved API above is unchanged. These names must not be implemented or
-treated as approved solely because they appear in this subsection.
+approved API above is unchanged. Implementation alone does not approve these names, limits or error semantics.
 Selection rationale and source examples are in
 [`language.md`](language.md#observation-and-target-data-access-127-proposal).
-
-Implementation status: the nine helpers below are implemented in
-`runtime/src/data_helpers.cpp` and registered in Compiler #132, so that the
-proposal can be checked end to end (`runtime_data_helpers`, `data_tc_e2e`).
-Runtime `Value` carries a finite `Float` kind in both directions, as in #133.
-This does not record owner approval: the approval gates below stay open.
 
 | Proposed signature | Result and concrete use |
 | --- | --- |

@@ -67,8 +67,7 @@ Usage: `tacc <input.tc> <output.bc>`. Write the output under `build/` (ignored b
 - `CheckerTest` — positive and negative tests of types, scopes, `const`, calls, and returns;
 - `CodeGenTest` — exact instruction sequences, `hello.tc` byte for byte against
   `tests/hello/hello.bc`, and the behavior of compiled programs.
-- `DataHelpersTest` — signatures of the Observation/Target data helpers, their type errors and
-  lowering, and compilation of every `.tc` source under `app/`, `docs/examples/` and `tests/`.
+- `DataHelpersTest` — signatures and type checks for Observation/Target helpers.
 
 Program behavior is checked with a small reference interpreter in `TestSupport.kt`. It is a test
 oracle for the compiler only, written against `spec/bytecode.md`; `tacvm` remains the VM.
@@ -81,7 +80,6 @@ CTest runs the full chain `.tc` → `tacc` → `.bc` → `tacvm` and compares st
 | `hello_e2e` | `tests/hello` | `PUSH_CONST`, `CALL_RUNTIME`, `POP`, `RET` |
 | `control_flow_e2e` | `tests/control-flow` | locals, arithmetic, comparisons, jumps (#62) |
 | `language_example_e2e` | `tests/language-example` (example from `spec/language.md`) | the above and `CALL` |
-| `data_tc_e2e` | `tests/data-tc` (Observation/Target, malformed inputs, type errors) | Float and the data helpers in Runtime |
 
 The VM tests in `tests/vm` (`vm_*_e2e`) also compile their programs with `tacc`.
 
@@ -103,17 +101,13 @@ Run `./gradlew test` (including `FloatTest`), then validate the coordinate
 example against a v2-capable `tacvm`. The VM from PR #116 must be merged or
 built separately before an actual end-to-end test can succeed.
 
-## Observation and Target data (issue #132)
+## Observation and Target data helpers (#132)
 
-The Runtime signatures of `spec/runtime-api.md` → "Minimal String data helpers" are registered in
-`RuntimeFunctions` with their static types: `json.arrayLength`, `json.arrayObject`, `json.getInt`,
-`json.getFloat`, `json.getString`, `json.quote`, `text.concat`, `text.fromInt`, `text.fromFloat`,
-and the existing `camera.detectMarkers() -> String`. No syntax, opcode or bytecode version was
-added: each call lowers to `CALL_RUNTIME` like any other Runtime function. A call whose result is
-`Float` (`json.getFloat`) makes the module v2, as for every other Float construct.
-
-Wrong arity, wrong argument types, a `Float` result used with `Int`, `String + String` and
-unknown helper names are compile-time errors.
+The nine JSON/String Runtime calls and `camera.detectMarkers()` are registered
+with static signatures, using existing `CALL_RUNTIME` and the Float v2 format.
+`runtime_data_helpers` and `data_tc_e2e` verify the Runtime and real compiler/VM
+pipeline. Invalid JSON currently produces a fatal RuntimeError; safe recovery
+still requires approval of the API contract in #127/#128.
 
 ## Language limitations (issue #144)
 
@@ -141,4 +135,5 @@ language and its Runtime, not of the Go reference implementation in `app/map/*.g
   `break` or `continue`. Conditions are combined with nested `if` or Bool locals.
 - **Limits:** 255 parameters and local slots per function, 65,536 distinct constants and
   functions per module.
-- **No device APIs yet:** location, heading and time come from fixtures until #134.
+- **Device sources:** location, orientation and time APIs exist (#134), but a Linux
+  host must explicitly supply GPS/heading data; default sensor sources are unavailable.

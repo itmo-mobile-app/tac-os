@@ -1,0 +1,17 @@
+Recorded run: 2026-11-12 (not rerun during evidence compaction)
+Production baseline: 3877600e4e4a6fa06bc8081d849aa5f4913fcf96
+Host: Ubuntu 26.04.1 arm64, Go 1.26.8
+SKIP github.com/itmo-mobile-app/tac-os/tests/system-smoke/cmd/wm-headless (0s)
+PASS TestSystemSmoke/parallel/1 (0.21s)
+PASS TestSystemSmoke/parallel/0 (0.21s)
+PASS TestSystemSmoke/parallel (0s)
+PASS TestSystemSmoke/repeat (0.21s)
+PASS TestSystemSmoke/cancel-after-start (0.1s)
+PASS TestSystemSmoke/failure-with-map-running (0.15s)
+PASS TestSystemSmoke/cli-signals/interrupt (0.03s)
+PASS TestSystemSmoke/cli-signals/terminated (0.03s)
+PASS TestSystemSmoke/cli-signals (0.28s)
+PASS TestSystemSmoke (2.33s)
+PASS TestRunCancelledCleansDirectory (0s)
+PASS github.com/itmo-mobile-app/tac-os/tests/system-smoke (3.372s)
+Race detector warnings: 0

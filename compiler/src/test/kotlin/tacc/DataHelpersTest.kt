@@ -157,17 +157,19 @@ class DataHelpersTest {
         assertIs<CompileError>(compileError(inMain("let s = json.getInt(\"{}\")[0];")))
     }
 
-    // ---- Real sources (#144) ----
-
+    // #144: compile production and supported example sources, and explicitly
+    // verify the sole documented unimplemented IPC-poll proposal is rejected.
     @Test
     fun repositoryTcSourcesCompile() {
         val root = File("..").canonicalFile
+        val proposedMap = File(root, "docs/examples/runtime-api/map.tc").canonicalFile
+        assertTrue(proposedMap.isFile, "The #128 API proposal example is missing")
         val sources = listOf("app", "docs/examples", "tests")
             .map { File(root, it) }
             .flatMap { dir -> dir.walkTopDown().filter { it.isFile && it.extension == "tc" }.toList() }
-            .filterNot { it.path.contains("${File.separator}negative${File.separator}") }
+            .filterNot { it.path.contains("${File.separator}negative${File.separator}") || it.canonicalFile == proposedMap }
         assertTrue(sources.any { it.path.endsWith("app/analyzer/tc/observation.tc") }, "Analyzer source not found")
-        assertTrue(sources.any { it.path.endsWith("app/map/tc/projection.tc") }, "Map source not found")
+        assertTrue(sources.any { it.path.endsWith("app/map/tc/map.tc") }, "Windowed Map source not found")
         for (source in sources) {
             try {
                 compile(source.readText())
@@ -175,5 +177,9 @@ class DataHelpersTest {
                 throw AssertionError("${source.relativeTo(root)}:${e.line}: ${e.message}", e)
             }
         }
+        val proposalError = compileError(proposedMap.readText())
+        assertIs<SemanticError>(proposalError)
+        assertTrue(proposalError.message.orEmpty().contains("runtime.ipc_poll"),
+            "Proposal must remain rejected until the IPC polling API is implemented")
     }
 }
