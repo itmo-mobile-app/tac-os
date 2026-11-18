@@ -30,5 +30,14 @@
   },
   "contractStatus": "Window Runtime PR #156 remains unmerged and pending Runtime owner review; no approval claimed",
   "mapSourceSha256": "d76fc730fba02a0b1ce11213f1adbb549949c701c73f113523cb92a5f6e1a548",
-  "bytecodeSha256": "79d6b5f72062ac66a3ee02831bfb79fda5a9bf5b914eb0e50dcd381b25df9d0e"
+  "bytecodeSha256": "79d6b5f72062ac66a3ee02831bfb79fda5a9bf5b914eb0e50dcd381b25df9d0e",
+  "pathCorrectionRecheck": {
+    "pr": 160,
+    "date": "2026-11-18",
+    "dependencyPR156": "3ec46c5980c20dafbc1b7c1821dd0439f71f1909",
+    "compiler": "67 tests, test installDist passed",
+    "selectedLinuxCTest": "8/8 passed",
+    "mapWindowCases": 12,
+    "githubCI": "Not run for corrected paths yet"
+  }
 }

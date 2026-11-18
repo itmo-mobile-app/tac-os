@@ -132,3 +132,14 @@ This is the first fixed-data `.tc` screen, not the complete Tactical Map applica
 Receiving Analyzer IPC and Broker Target updates on `.tc` is outside #139 (the next sprint).
 The Go Broker integration was delivered separately in PR #114 / #99 and remains unchanged.
 No WebView, new data syntax, Float conversion instruction, network API or server logic is added.
+
+### Recheck after correcting PR #160 paths
+
+The misplaced wrapper directory was removed locally and all eight files were restored to the
+working repository paths. Rechecked on 2026-11-18 with updated Window Runtime PR #156 revision
+`3ec46c5980c20dafbc1b7c1821dd0439f71f1909`: Compiler `test installDist` passed, and all eight
+selected Linux CTest checks passed (`map_unit`, `map_preview`, `map_wm_e2e`,
+`map_broker_wm_e2e`, `map_runtime_wm_e2e`, `map_tc_projection_e2e`, `map_tc_window_e2e`,
+`float_coordinates_e2e`). The required window test again passed its twelve scenarios.
+This is a local Linux integration result; GitHub CI for the corrected PR has not been run yet.
+The dependency is still unmerged, and no Runtime owner approval is claimed.
