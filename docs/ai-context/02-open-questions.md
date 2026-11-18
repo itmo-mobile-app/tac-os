@@ -74,11 +74,9 @@ protocol, timeout and helper lifecycle are fixed in
 - Production camera configuration and device-calibration strategy; initial
   defaults are only for the prototype.
 - Approval from the course instructor for OpenCV/gocv usage in the detector.
-- Location API.
-- Orientation API.
+- Review of implemented location, orientation and time calls from #134 / PR #162; Linux test providers are explicit, while production sensor calibration and permitted sample age still need a decision.
 - Networking API.
 - File API.
-- Time API.
 
 ## Window Manager
 

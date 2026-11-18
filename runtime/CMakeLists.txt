@@ -2,6 +2,7 @@
 add_library(tacos_runtime STATIC
     src/runtime.cpp
     src/broker_client.cpp
+    src/device_state.cpp
     src/camera_detector_client.cpp
     src/window_manager_client.cpp)
 

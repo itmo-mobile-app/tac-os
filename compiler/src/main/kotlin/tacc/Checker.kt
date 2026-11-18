@@ -28,6 +28,12 @@ object RuntimeFunctions {
         "runtime.ipc_send" to Signature(
             listOf(Type.STRING), Type.INT
         ),
+        "location.read" to Signature(listOf(Type.INT), Type.INT),
+        "location.latitude" to Signature(emptyList(), Type.FLOAT),
+        "location.longitude" to Signature(emptyList(), Type.FLOAT),
+        "orientation.read" to Signature(listOf(Type.INT), Type.INT),
+        "orientation.heading" to Signature(emptyList(), Type.FLOAT),
+        "time.nowMs" to Signature(emptyList(), Type.INT),
         "broker.connect" to Signature(listOf(Type.STRING, Type.INT, Type.INT), Type.INT),
         "broker.subscribe" to Signature(listOf(Type.STRING), Type.INT),
         "broker.publish" to Signature(listOf(Type.STRING, Type.STRING), Type.INT),

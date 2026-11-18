@@ -1,5 +1,6 @@
 #include "tacos/runtime/runtime.hpp"
 #include "broker_client.hpp"
+#include "device_state.hpp"
 #include "window_manager_client.hpp"
 #include "camera_detector_client.hpp"
 
@@ -37,6 +38,16 @@ Value Value::string_value_of(std::string value) {
     Value result;
     result.kind = ValueKind::String;
     result.string_value = std::move(value);
+    return result;
+}
+
+Value Value::float_value_of(double value) {
+    if (!std::isfinite(value)) {
+        throw RuntimeError("Runtime Float must be finite");
+    }
+    Value result;
+    result.kind = ValueKind::Float;
+    result.float_value = value;
     return result;
 }
 
@@ -508,6 +519,13 @@ void check_broker_arguments(const char* function, const std::vector<Value>& args
     }
 }
 
+std::int64_t device_timeout(const char* function, const Value& value) {
+    if (value.kind != ValueKind::Int) {
+        throw RuntimeError(std::string(function) + " expects an Int timeout");
+    }
+    return value.int_value;
+}
+
 } // namespace
 
 struct Runtime::FunctionEntry {
@@ -559,6 +577,26 @@ const Runtime::FunctionEntry* Runtime::find_function(const std::string& name) {
             runtime.broker_->close();
             return Value::int_value_of(0);
         }}},
+        {"location.read", {1, [](Runtime& runtime, std::ostream&, const std::vector<Value>& args) {
+            const auto timeout = device_timeout("location.read", args[0]);
+            return Value::int_value_of(runtime.device_->read_position(timeout));
+        }}},
+        {"location.latitude", {0, [](Runtime& runtime, std::ostream&, const std::vector<Value>&) {
+            return Value::float_value_of(runtime.device_->position().latitude);
+        }}},
+        {"location.longitude", {0, [](Runtime& runtime, std::ostream&, const std::vector<Value>&) {
+            return Value::float_value_of(runtime.device_->position().longitude);
+        }}},
+        {"orientation.read", {1, [](Runtime& runtime, std::ostream&, const std::vector<Value>& args) {
+            const auto timeout = device_timeout("orientation.read", args[0]);
+            return Value::int_value_of(runtime.device_->read_heading(timeout));
+        }}},
+        {"orientation.heading", {0, [](Runtime& runtime, std::ostream&, const std::vector<Value>&) {
+            return Value::float_value_of(runtime.device_->heading());
+        }}},
+        {"time.nowMs", {0, [](Runtime& runtime, std::ostream&, const std::vector<Value>&) {
+            return Value::int_value_of(runtime.device_->now_ms());
+        }}},
     };
     const auto it = table.find(name);
     return it == table.end() ? nullptr : &it->second;
@@ -577,11 +615,22 @@ Runtime::Runtime(
     std::string ipc_socket_path,
     CameraOptions camera_options
 )
+    : Runtime(output, std::move(wm_socket_path), std::move(ipc_socket_path),
+              std::move(camera_options), DeviceOptions{}) {}
+
+Runtime::Runtime(
+    std::ostream& output,
+    std::string wm_socket_path,
+    std::string ipc_socket_path,
+    CameraOptions camera_options,
+    DeviceOptions device_options
+)
     : output_(output),
       wm_socket_path_(std::move(wm_socket_path)),
       ipc_socket_path_(std::move(ipc_socket_path)),
       camera_(std::make_unique<detail::CameraDetectorClient>(std::move(camera_options))),
-      broker_(std::make_unique<detail::BrokerClient>()) {}
+      broker_(std::make_unique<detail::BrokerClient>()),
+      device_(std::make_unique<detail::DeviceState>(std::move(device_options))) {}
 
 
 Runtime::~Runtime() {
