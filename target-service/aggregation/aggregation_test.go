@@ -250,8 +250,12 @@ func TestTieBreakByMaxTimestamp(t *testing.T) {
 	a := NewAggregator()
 	_, _ = a.ProcessObservation(obs("A", 0.8, 0, 0, t0), t0)
 	_, _ = a.ProcessObservation(obs("B", 0.6, 0, 0, t0), t0)
-	got, _ := a.ProcessObservation(obs("C", 0.92, 10, 10, t0+1000), t0+1000)
-	assertTarget(t, got, "17", 0.92, 10, 10, t0+1000)
+	// Make the C group exactly equal to the decayed A+B group at t0+1000.
+	// A fixed 0.92 would be strictly larger and would NOT test the tie-break.
+	decay := math.Pow(2, -1000/HalfLifeMs)
+	tiedScore := 1 - (1-0.8*decay)*(1-0.6*decay)
+	got, _ := a.ProcessObservation(obs("C", tiedScore, 10, 10, t0+1000), t0+1000)
+	assertTarget(t, got, "17", tiedScore, 10, 10, t0+1000)
 }
 
 func TestTieBreakByAnchorID(t *testing.T) {
