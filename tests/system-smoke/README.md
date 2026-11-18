@@ -204,46 +204,44 @@ run does not establish that #140 passes. Run the tagged command explicitly.
 
 ### SQL integration contract configuration
 
-The current specifications define SQL framing, but not the integrated Target
-Service's DBMS CLI option or a normative domain table schema. The illustrative
-`targets` table in `spec/sql.md` is not treated as an approved integration schema.
-Until those interfaces are agreed, `SQLIntegration` reports `BLOCKED-CONTRACT`
-with a Go test SKIP. The parent test also fails explicitly for incomplete SQL
-configuration, so this SKIP cannot turn the acceptance command green.
+The integrated Target Service in #137 (merged as PR #163) accepts
+`-dbms <socket>` and creates the `observations` and `targets` tables
+using the documented six-field Observation and five-field Target shapes.
+Acceptance starts a real isolated DBMS server, passes its socket to Target
+Service, and probes the real server-owned row through:
 
-Once documented, configure `TACOS_E2E_TARGET_DBMS_ARGS` as a JSON array of extra
-Target Service arguments containing `{dbms}` in place of the private DBMS socket.
-Arguments are passed directly, without a shell. Configure
-`TACOS_E2E_TARGET_SELECT` as one read-only SELECT projecting target ID, latitude,
-longitude, probability and last-seen timestamp, in that order. The test looks
-for target `17`. It never creates or populates service-owned domain tables.
-Those arguments apply to all server scenarios; the SELECT applies only to SQL
-integration. Do not invent or silently default an unsupported service flag.
+```sql
+SELECT target_id, latitude, longitude, probability, last_seen_at FROM targets;
+```
 
-`DBMSProtocol` creates its own probe table in its own process. Its success proves
-real SQL transport/execution only, independently of Target Service integration.
-File persistence and aggregation recovery after restart are not covered here.
+There are no optional environment overrides or skipped SQL checks.
+`DBMSProtocol` independently tests the DBMS protocol with a separate probe
+table; its success is not confused with application persistence.
+`SQLIntegration` checks that an actual Target Service produces SQL records
+in the real DBMS, without test-generated Target rows.
+
+File persistence across DBMS restarts and Target Service state recovery are
+separate acceptance cases tracked under #147/#148. This run uses the DBMS
+in-memory mode and verifies only the live server chain.
 
 Recorded baseline results: [macOS](../../docs/testing/reports/140-main-3877600.md)
 and [Ubuntu Linux](../../docs/testing/reports/140-main-3877600-linux.md).
 
 ### Merge readiness and evidence policy
 
-The preliminary review requires all of the following before switching #154 from
-Draft to Ready or merging it:
+The target aggregation and Broker/DBMS integration from #130/#137 are now
+implemented in `main`. The tagged Linux acceptance suite passed in
+[GitHub Actions run 44390378085](https://github.com/itmo-mobile-app/tac-os/actions/runs/44390378085)
+on 2026-11-18, including two observers, invalid/duplicate records, periodic
+decay, real SQL writes and Go Map redraw. The independent standard smoke
+checks also passed on the integrated server branch.
 
-- Integrate the real server path in #137, including #130 aggregation, DBMS writes
-  and `targets.updated` publication. An aggregation library alone is insufficient.
-- Document and configure the service's DBMS arguments and domain SELECT.
-- Pass every tagged acceptance scenario on Linux, including independent observers,
-  duplicate/invalid input, periodic decay, SQL writes and live Map redraw.
-- Verify isolation and interruption with the new DBMS path.
-- Then include the full tagged acceptance command in CI without suppressing its
-  failures. A green untagged CI run does not satisfy #140.
-
-The test expectations continue to follow `spec/`; missing implementation does not
-justify replacing server outputs or relaxing the assertions. The PR remains Draft
-while these prerequisites are unmet.
+The dedicated `Server acceptance E2E` workflow runs the full tagged test on
+pull requests and main; an untagged green result does not substitute for it.
+Before merging, verify the latest CI is green and the test still passes after
+combining all merged server components. This is a **server** acceptance check:
+it does not establish complete `.tc` Analyzer/Map or AI integration.
+The tests preserve approved `spec/` expectations; no fake Target is injected.
 
 Keep dated compact reports, case summaries, baseline/toolchain identifiers and
 reproduction commands in Git. Store verbose JSON event logs outside the checkout
