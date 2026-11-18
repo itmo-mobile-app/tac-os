@@ -1,0 +1,13 @@
+// Long-lived local replacement must release old generated String results.
+fun formatted(index: Int): String {
+    return text.concat("iteration:", text.fromInt(index));
+}
+fun main() {
+    let current = "";
+    let index = 0;
+    while (index < 20000) {
+        current = formatted(index);
+        index = index + 1;
+    }
+    runtime.log(current);
+}

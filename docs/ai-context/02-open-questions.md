@@ -44,6 +44,10 @@ Runtime calls are defined in `spec/bytecode.md` (approved by the VM Core owner).
 
 ## VM
 
+- VM #133 adds dedicated Float/String ownership and real data E2E tests from
+  PR #164 over the implementation from #165. The remaining decisions are
+  recoverable validation and bounded live-memory policy (#127/#128).
+
 - The C++ independent-execution model is defined in `spec/vm-execution.md` (#93).
   The Runtime owner reviewed the resource-isolation restrictions in PR #117;
   shared camera, socket or WM usage remains outside the guaranteed scope.

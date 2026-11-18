@@ -1,0 +1,24 @@
+// Candidate #127 signatures. Input is a valid five-field Target, not a Broker line.
+fun main() {
+    const payload = "{\"targetId\":\"17\",\"latitude\":59.9505,\"longitude\":30.311,\"probability\":0.85,\"lastSeenAt\":9007199254740993}";
+    const targetId = json.getString(payload, "targetId");
+    const latitude = json.getFloat(payload, "latitude");
+    const longitude = json.getFloat(payload, "longitude");
+    const probability = json.getFloat(payload, "probability");
+    const lastSeenAt = json.getInt(payload, "lastSeenAt");
+    const x = (longitude - 30.308) / (30.314 - 30.308) * 960.0;
+    const y = (59.951 - latitude) / (59.951 - 59.949) * 640.0;
+    if (targetId == "17") {
+        if (lastSeenAt == 9007199254740993) {
+            if (probability == 0.85) {
+                if (x > 479.0) {
+                    if (x < 481.0) {
+                        if (y > 159.0) {
+                            if (y < 161.0) { runtime.log("target-ok"); }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
