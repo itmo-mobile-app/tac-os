@@ -64,7 +64,11 @@ The Runtime call ABI and the first function (`runtime.log`) are defined in `spec
 mechanism and message format for the Analyzer↔Map scenario are defined in `spec/ipc.md` (both approved by
 the Runtime owner). Remaining open:
 
-- Exact Runtime API (beyond `runtime.log`).
+- Device #134, Broker #135 and WM #136 APIs are implemented, but the remaining
+  design decisions for #128 require owner review (see `spec/runtime-api.md`).
+  In particular, a nonblocking `runtime.ipc_poll`/`runtime.ipc_message` pair
+  is still only a proposal; the current blocking `ipc_receive` is unsuitable
+  for the final Map event loop without separate scheduling.
 - Linux threading primitive.
 - Thread synchronization primitives.
 The camera architecture and the **initial** `camera.detectMarkers() -> String`
@@ -72,9 +76,9 @@ API are fixed in `spec/runtime-api.md`; the private Unix-domain socket
 protocol, timeout and helper lifecycle are fixed in
 `spec/camera-detector-protocol.md`. Still unresolved:
 
-- The proposed Float contract is described in `spec/language.md` and
-  `spec/bytecode.md` (#106); VM execution is implemented in #108; Compiler support and the real Float
-  Compiler-to-VM E2E remain pending in #107.
+- Float is implemented in Compiler #107 and VM #108 and is passed through the
+  Runtime Value boundary by #134. There is no new bytecode ABI; VM/Runtime
+  validation and generated String ownership still need data-integration review.
   Native collections/`Detection[]` remain unresolved, and the current
   Camera API continues returning JSON as `String`.
 - A recoverable error mechanism visible to `.tc` beyond an initial Runtime failure.
@@ -82,7 +86,7 @@ protocol, timeout and helper lifecycle are fixed in
   defaults are only for the prototype.
 - Approval from the course instructor for OpenCV/gocv usage in the detector.
 - Review of implemented location, orientation and time calls from #134 / PR #162; Linux test providers are explicit, while production sensor calibration and permitted sample age still need a decision.
-- Networking API.
+- Additional networking API beyond the implemented Broker transport.
 - File API.
 
 ## Window Manager

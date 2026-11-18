@@ -221,133 +221,7 @@ target coordinates.
 (cd compiler && ./gradlew --no-daemon installDist)
 cmake -S . -B build
 cmake --build build --parallel
-ctest --test-dir build -R '^device_vm_e2e
-
-Each Runtime owns at most one TCP connection. Use the framing and delivery semantics of
-[`broker-protocol.md`](broker-protocol.md). Payloads are opaque JSON object text at this boundary.
-Map owns interpretation of Observation and Target fields.
-
-| Signature | Result |
-| --- | --- |
-| `broker.connect(address: String, port: Int, timeoutMs: Int) -> Int` | Connect to a numeric IPv4 or IPv6 address and port `1..65535`. Returns 0 on success |
-| `broker.subscribe(topic: String) -> Int` | Send `SUB <topic>\n`. Returns 0 on local transmission |
-| `broker.publish(topic: String, payload: String) -> Int` | Send `PUB <topic> <payload>\n`. Returns 0 on local transmission |
-| `broker.receive(timeoutMs: Int) -> Int` | Read one `MSG <topic> <payload>\n`. Returns 1 on receipt or 0 on idle timeout |
-| `broker.topic() -> String` | Topic of the last successfully received message |
-| `broker.payload() -> String` | The received JSON object text, without the `MSG` prefix, topic or newline |
-| `broker.close() -> Int` | Close the owned connection and discard buffered data. Always returns 0 |
-
-Connect takes a timeout in `1..1000` ms. Receive takes `0..1000` ms, with `0` for a nonblocking poll.
-Subscribe and publish have a 1000 ms deadline per call. All deadlines use a monotonic clock.
-Topics must be nonempty UTF-8 without ASCII whitespace or NUL. A payload must be a single-line
-UTF-8 JSON object. The Runtime frame limit is 16 KiB including the verb, separators and final LF.
-
-Idle receive can retain an incomplete frame for the next call. A partial frame has a separate
-1000 ms deadline from the first bytes read into Runtime, even across polling calls and regardless
-of subsequent bytes. Complete frames are returned in order, one per receive. The next receive
-invalidates the previous topic and payload. Each getter returns an independent `String`.
-
-Status-returning operations report `-1` for an unavailable or disconnected transport, `-2` for a
-connect, write or partial-frame deadline, and `-3` for a malformed or oversized incoming frame.
-Each negative status reports the failing operation on stderr and releases the socket and its
-buffered state. Bad arguments, connecting with a connection already open, and reading a getter
-without a current message raise `RuntimeError`. Destruction releases the connection as well.
-
-After a disconnect, callers may explicitly connect and subscribe again. Subscribe and publish
-report local I/O only, with no acknowledgment, automatic retry or resubscription.
-
-## Window API: one Map window
-
-Status: implemented for issue #136; pending Runtime owner review and
-alignment with #128.
-
-The `.tc` application accesses the existing Window Manager through Runtime.
-Runtime translates calls into the JSONL protocol in `spec/window-manager.md`.
-Rendering remains in WM. This API adds no WebView or Activity lifecycle.
-
-The current implementation supports one window with the fixed ID `map`.
-
-### Functions
-
-| Function | Arguments | Return | WM command |
-| --- | --- | --- | --- |
-| `window.create` | `title: String, width: Int, height: Int` | `Int` | `CREATE` |
-| `window.beginFrame` | `r: Int, g: Int, b: Int, a: Int` | `Int` | `BEGIN_FRAME` |
-| `window.drawImage` | `path: String, x: Int, y: Int, width: Int, height: Int` | `Int` | `DRAW_IMAGE` |
-| `window.drawCircle` | `x: Int, y: Int, radius: Int, r: Int, g: Int, b: Int, a: Int` | `Int` | `DRAW_CIRCLE` |
-| `window.present` | None | `Int` | `PRESENT` |
-| `window.show` | None | `Int` | `SHOW` |
-| `window.pollEvent` | `timeoutMs: Int` | `String` | Reads the event socket |
-| `window.close` | None | `Int` | `CLOSE`, unless closure is already known |
-
-Command calls return `Int 0` on success. Runtime rejects invalid argument
-types, nonpositive dimensions or radius, empty image paths, and RGBA
-components outside `0..255`.
-
-Image paths are passed to WM unchanged and must be accessible to its process.
-
-### Events and errors
-
-`window.pollEvent(timeoutMs)` accepts a timeout in `0..1000` milliseconds.
-It returns `"window_close"` when the close event for `map` is received.
-It returns `""` on timeout or when an unrelated event is consumed.
-A zero timeout checks available input without waiting. Incomplete event
-data is retained for the next call.
-
-Command transport uses a 1000 ms deadline covering connection, sending,
-and receiving a response. Event connection establishment is nonblocking
-and fails if it cannot complete immediately. Subscription confirmation
-is awaited for up to 1000 ms.
-
-Transport failures, rejected commands and malformed JSON are errors,
-not successful return values. There is no automatic command retry.
-An event-stream disconnection is an error, not a window-close event.
-
-### Lifecycle and ownership
-
-WM must already be running. Runtime does not start the WM process.
-
-1. `window.create` connects to the event socket and confirms subscription
-   before sending `CREATE`.
-2. The application prepares a frame with `beginFrame`, drawing calls and
-   `present`, then calls `show`.
-3. On native user close, WM destroys the window and sends `window_close`.
-   Once Runtime consumes that event, `window.close` disconnects events
-   without sending a duplicate `CLOSE`.
-4. Otherwise, `window.close` sends `CLOSE` and disconnects events.
-   It leaves the WM process running.
-5. The host/supervisor, not a `.tc` application, manages shutdown of the WM process.
-6. During Runtime destruction, an open window is closed on a best-effort
-   basis. Cleanup errors do not escape the destructor.
-
-Runtime owns its client descriptors. WM owns the command and event socket
-paths and removes them on shutdown. Closing a window alone does not remove
-the server socket paths.
-
-The command socket path is configured through the Runtime constructor.
-The event socket defaults to `/tmp/tacos-wm-events.sock`; a host-side caller
-can override it with `set_wm_event_socket_path` before connecting.
-Changing the command path does not automatically change the event path.
-
-### Verification
-
-`tests/map-wm/window-manager.tc` is the `.tc` integration scenario.
-The `map_runtime_wm_e2e` CTest test runs it through VM and Runtime against
-the production headless renderer.
-
-The test checks background and Target pixels, a simulated native close
-event, explicit closure, a second application launch against the same WM,
-and removal of both socket paths after WM shutdown.
-
-## Open questions
-
-Not decided here; see `docs/ai-context/02-open-questions.md` → "Runtime":
-
-- the remaining Runtime API surface (threads, IPC, location, orientation, networking, files, time,
-  Activity lifecycle, WebView bridge, Window Manager access) — added incrementally, one concrete
-  scenario at a time;
-- how recoverable Runtime call errors are represented inside `.tc` programs beyond the initial failure-reporting behavior.
- --output-on-failure
+ctest --test-dir build -R '^device_vm_e2e$' --output-on-failure
 ```
 
 The test compiles [`tests/device/device.tc`](../tests/device/device.tc) and uses the real VM
@@ -471,6 +345,57 @@ the production headless renderer.
 The test checks background and Target pixels, a simulated native close
 event, explicit closure, a second application launch against the same WM,
 and removal of both socket paths after WM shutdown.
+
+## Remaining interface proposal (#128; owner review required)
+
+The device #134, Broker #135 and window #136 operations above are implemented
+and covered by component integration tests. This does not imply approval of the
+remaining design decisions: recoverable validation of arbitrary malformed domain
+JSON, scheduling IPC/Broker/window events in the single-threaded Map, and
+resource bounds on a long-running application still require joint review.
+
+### Bounded local IPC for the Map loop (proposal requiring IPC review)
+
+The existing `runtime.ipc_receive()` deliberately waits indefinitely while idle;
+calling it in Map's only event loop would prevent Broker polling and native close
+handling. Changing that existing signature/behavior is not proposed. The concrete
+single-threaded Map scenario needs these additive candidates:
+
+| Proposed signature | Result |
+| --- | --- |
+| `runtime.ipc_poll(timeoutMs: Int) -> Int` | After `ipc_listen`: 1 validated Observation, 0 idle, negative status for external failure |
+| `runtime.ipc_message() -> String` | Last successfully polled IPC JSON object, including `type`, without newline |
+
+Use the existing socket, exact schema, 64 KiB bound and one-way at-most-once
+semantics. Each poll invalidates its message snapshot. Empty connection probes
+are discarded; malformed frames or partial EOF discard only the offending
+connection and return -3. Retain partial bytes between polls, enforcing the
+existing five-second partial-message inactivity timeout across calls. A polling
+timeout is idle result 0 and never extends that inactivity deadline by itself.
+Do not mix `ipc_poll` and `ipc_receive` on one Runtime; this is a programming error.
+No acknowledgement, new wire message, extra listener or automatic resend is added.
+This is a proposed addition for owner review, not a claim of current IPC support.
+
+### Required architectural decisions
+
+See [`02-open-questions.md`](../docs/ai-context/02-open-questions.md#runtime).
+Before calling #128 approved, record decisions on:
+
+| Gate | Required review / decision |
+| --- | --- |
+| Sensor surface and conventions | Runtime, Analyzer and architecture: snapshot getters vs #127 representation; provider configuration, calibration, age/skew |
+| Scalar Float at VM ↔ Runtime | Compiler and VM with Runtime: value conversions, result kinds, existing v1/v2 regression |
+| Status and polling model | VM, Runtime and Map: negative statuses, deadlines, additive IPC polling and getter validity |
+| Broker behavior | Broker/Target Service, Runtime and Map: line limit, transport validation, no ACK/retry, explicit reconnect policy |
+| WM lifecycle and drawing | WM, Map and Runtime: event subscription, Int geometry, bounded failure/cleanup, native close and Activity compatibility |
+| #127 data bridge | Compiler, VM, Analyzer, Map and Runtime: recoverable domain validation, exact field sets, generated String reclamation |
+| Required scalar math | Compiler, Runtime, Analyzer and Map: minimal sin/cos and pixel rounding/conversion approach |
+
+The #128 reviewer set includes `@khamitova-prog`, `@mattthewww`, `@slutswarming`,
+`@m4shustik-s`, `@pypynyaa` and architecture; Broker behavior also needs its owner.
+No final approval of these combined API decisions has been recorded here.
+Threads, generic files/networking, Activity callbacks, WebView, multiple windows,
+camera schema changes and a general exception system are outside this proposal.
 
 ## Open questions
 
