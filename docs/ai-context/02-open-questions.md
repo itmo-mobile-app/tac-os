@@ -148,7 +148,6 @@ Remaining open:
 
 The minimal SQL subset is defined in `spec/sql.md` (approved by the SQL DBMS owner). Remaining open:
 
-- Storage format.
 - Table representation.
 - Whether indexes are required.
 - Whether transactions are required.
