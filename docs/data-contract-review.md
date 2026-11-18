@@ -1,7 +1,8 @@
 # Observation and Target data contract review (#127)
 
-Status: proposal, no owner approvals recorded. This is a review checklist,
-not a claim that issue #127 is complete. The proposed calls are not implemented.
+Status: Compiler/Runtime implementation and E2E tests are available (#132),
+but required owner approvals are not recorded. This is a review checklist;
+issue #127 is not complete.
 
 ## Review scope
 
@@ -9,7 +10,7 @@ The existing data model, IPC and detector contracts are unchanged. The proposal
 in `spec/language.md`, `spec/bytecode.md` and `spec/runtime-api.md` describes
 scalar locals and nine String-based helpers, without a new grammar, object
 model, bytecode version or ABI. Only JSON decoding/encoding and formatting
-would run in Runtime. Geometry and local confidence remain in Analyzer `.tc`;
+run in Runtime. Geometry and local confidence remain in Analyzer `.tc`;
 projection remains in Map `.tc`; aggregation remains in Target Service.
 
 | Required reviewer | Area | Evidence/status |
@@ -52,8 +53,9 @@ example intentionally remains unbuildable until its API is implemented.
 
 ## Implementation acceptance vectors for #132/#133
 
-These are requirements for subsequent implementation tests, not results of
-running helpers that do not exist yet.
+These cases are exercised by `runtime_data_helpers`, `data_tc_e2e` and the
+Compiler type checks where applicable. Recoverable malformed-input handling
+and exact domain field-set approval remain separate gates.
 
 | Case | Expected |
 | --- | --- |
@@ -84,10 +86,10 @@ alone cannot provide this guarantee.
 
 ## Handoff
 
-- #132: register approved calls/return types and camera signature in Compiler;
-  add positive/negative type checks without introducing new syntax.
-- #133 with Runtime owner: implement approved primitives and memory ownership,
-  validate bytecode/runtime kinds and run real Compiler-to-VM acceptance cases.
+- #132: calls/return types and Camera signature are now registered in Compiler,
+  with positive/negative type checks and no new language syntax.
+- #133 with Runtime owner: verify VM ownership/bounds, bytecode/runtime kinds
+  and the additional real Compiler-to-VM acceptance cases from PR #164.
 - #128/#134–#136: separately agree device/time, transport, errors and WM calls.
 - #138/#139: turn the sketches into real application increments only after the
   required operations and validation path are approved and implemented.
