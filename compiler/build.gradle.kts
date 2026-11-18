@@ -46,4 +46,8 @@ tasks.compileTestKotlin {
 
 tasks.test {
     useJUnitPlatform()
+    testLogging {
+        // Source-wide compiler checks must identify which .tc file failed.
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
 }

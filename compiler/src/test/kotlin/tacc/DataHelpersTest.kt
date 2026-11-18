@@ -1,8 +1,10 @@
 package tacc
 
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 /**
  * Observation/Target data helpers (#127, #132): signatures, type errors and lowering onto the
@@ -153,5 +155,42 @@ class DataHelpersTest {
     fun syntaxIsUnchanged() {
         assertIs<ParseError>(compileError(inMain("let s = json.a.b(\"{}\");")))
         assertIs<CompileError>(compileError(inMain("let s = json.getInt(\"{}\")[0];")))
+    }
+
+    // #144: compile production and supported example sources, and explicitly
+    // verify the sole documented unimplemented IPC-poll proposal is rejected.
+    @Test
+    fun repositoryTcSourcesCompile() {
+        val root = File("..").canonicalFile
+        val proposedMap = File(root, "docs/examples/runtime-api/map.tc").canonicalFile
+        assertTrue(proposedMap.isFile, "The #128 API proposal example is missing")
+        val sources = listOf("app", "docs/examples", "tests")
+            .map { File(root, it) }
+            .flatMap { dir -> dir.walkTopDown().filter { it.isFile && it.extension == "tc" }.toList() }
+            .filterNot { it.path.contains("${File.separator}negative${File.separator}") || it.canonicalFile == proposedMap }
+        assertTrue(sources.any { it.path.endsWith("app/analyzer/tc/observation.tc") }, "Analyzer source not found")
+        assertTrue(sources.any { it.path.endsWith("app/map/tc/map.tc") }, "Windowed Map source not found")
+        val brokerTemplate = File(root, "tests/broker/map.tc").canonicalFile
+        assertTrue(brokerTemplate.isFile, "Broker source template is missing")
+        for (source in sources) {
+            // The real Broker E2E injects an ephemeral port before compilation.
+            // Use a valid fixture port here, rather than hiding this source.
+            val program = if (source.canonicalFile == brokerTemplate) {
+                val template = source.readText()
+                assertTrue(template.contains("BROKER_PORT"), "Broker port placeholder is missing")
+                template.replace("BROKER_PORT", "5000")
+            } else {
+                source.readText()
+            }
+            try {
+                compile(program)
+            } catch (e: CompileError) {
+                throw AssertionError("${source.relativeTo(root)}:${e.line}: ${e.message}", e)
+            }
+        }
+        val proposalError = compileError(proposedMap.readText())
+        assertIs<SemanticError>(proposalError)
+        assertTrue(proposalError.message.orEmpty().contains("runtime.ipc_poll"),
+            "Proposal must remain rejected until the IPC polling API is implemented")
     }
 }
