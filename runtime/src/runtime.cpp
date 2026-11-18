@@ -1,6 +1,7 @@
 #include "tacos/runtime/runtime.hpp"
 #include "window_manager_client.hpp"
 #include "camera_detector_client.hpp"
+#include "device_state.hpp"
 
 #include <ostream>
 #include <iostream>
@@ -35,6 +36,16 @@ Value Value::string_value_of(std::string value) {
     Value result;
     result.kind = ValueKind::String;
     result.string_value = std::move(value);
+    return result;
+}
+
+Value Value::float_value_of(double value) {
+    if (!std::isfinite(value)) {
+        throw RuntimeError("Runtime Float must be finite");
+    }
+    Value result;
+    result.kind = ValueKind::Float;
+    result.float_value = value;
     return result;
 }
 
@@ -213,11 +224,6 @@ using Handler = Value (*)(
     const std::vector<Value>&
 );
 
-struct FunctionEntry {
-    std::uint8_t arg_count;
-    Handler handler;
-};
-
 Value runtime_log(
     Runtime&,
     std::ostream& output,
@@ -361,31 +367,55 @@ Value ipc_send_handler(
 }
 
 
-const std::unordered_map<std::string, FunctionEntry>&
-function_table() {
-    
-static const std::unordered_map<
-    std::string, FunctionEntry
-> table = {
-    {"runtime.log",        {1, &runtime_log}},
-    {"camera.detectMarkers", {0, &camera_detect_markers_handler}},
-    {"window.create",      {3, &window_create}},
-    {"window.show",        {0, &window_show}},
-    {"window.close",       {0, &window_close}},
-    {"window.quit",        {0, &window_quit}},
-
-    {"runtime.ipc_listen",  {0, &ipc_listen_handler}},
-    {"runtime.ipc_receive", {0, &ipc_receive_handler}},
-    {"runtime.ipc_send",    {1, &ipc_send_handler}},
-};
-
-
-    return table;
+std::int64_t device_timeout(const char* function, const Value& value) {
+    if (value.kind != ValueKind::Int) {
+        throw RuntimeError(std::string(function) + " expects an Int timeout");
+    }
+    return value.int_value;
 }
 
 } // namespace
 
+struct Runtime::FunctionEntry {
+    std::uint8_t arg_count;
+    Handler handler;
+};
 
+const Runtime::FunctionEntry* Runtime::find_function(const std::string& name) {
+    static const std::unordered_map<std::string, FunctionEntry> table = {
+        {"runtime.log", {1, &runtime_log}},
+        {"camera.detectMarkers", {0, &camera_detect_markers_handler}},
+        {"window.create", {3, &window_create}},
+        {"window.show", {0, &window_show}},
+        {"window.close", {0, &window_close}},
+        {"window.quit", {0, &window_quit}},
+        {"runtime.ipc_listen", {0, &ipc_listen_handler}},
+        {"runtime.ipc_receive", {0, &ipc_receive_handler}},
+        {"runtime.ipc_send", {1, &ipc_send_handler}},
+        {"location.read", {1, [](Runtime& runtime, std::ostream&, const std::vector<Value>& args) {
+            const auto timeout = device_timeout("location.read", args[0]);
+            return Value::int_value_of(runtime.device_->read_position(timeout));
+        }}},
+        {"location.latitude", {0, [](Runtime& runtime, std::ostream&, const std::vector<Value>&) {
+            return Value::float_value_of(runtime.device_->position().latitude);
+        }}},
+        {"location.longitude", {0, [](Runtime& runtime, std::ostream&, const std::vector<Value>&) {
+            return Value::float_value_of(runtime.device_->position().longitude);
+        }}},
+        {"orientation.read", {1, [](Runtime& runtime, std::ostream&, const std::vector<Value>& args) {
+            const auto timeout = device_timeout("orientation.read", args[0]);
+            return Value::int_value_of(runtime.device_->read_heading(timeout));
+        }}},
+        {"orientation.heading", {0, [](Runtime& runtime, std::ostream&, const std::vector<Value>&) {
+            return Value::float_value_of(runtime.device_->heading());
+        }}},
+        {"time.nowMs", {0, [](Runtime& runtime, std::ostream&, const std::vector<Value>&) {
+            return Value::int_value_of(runtime.device_->now_ms());
+        }}},
+    };
+    const auto it = table.find(name);
+    return it == table.end() ? nullptr : &it->second;
+}
 
 Runtime::Runtime(
     std::ostream& output,
@@ -400,10 +430,21 @@ Runtime::Runtime(
     std::string ipc_socket_path,
     CameraOptions camera_options
 )
+    : Runtime(output, std::move(wm_socket_path), std::move(ipc_socket_path),
+              std::move(camera_options), DeviceOptions{}) {}
+
+Runtime::Runtime(
+    std::ostream& output,
+    std::string wm_socket_path,
+    std::string ipc_socket_path,
+    CameraOptions camera_options,
+    DeviceOptions device_options
+)
     : output_(output),
       wm_socket_path_(std::move(wm_socket_path)),
       ipc_socket_path_(std::move(ipc_socket_path)),
-      camera_(std::make_unique<detail::CameraDetectorClient>(std::move(camera_options))) {}
+      camera_(std::make_unique<detail::CameraDetectorClient>(std::move(camera_options))),
+      device_(std::make_unique<detail::DeviceState>(std::move(device_options))) {}
 
 
 Runtime::~Runtime() {
@@ -424,33 +465,28 @@ bool Runtime::has_function(
     const std::string& name,
     std::uint8_t arg_count
 ) const {
-    const auto& table = function_table();
-    const auto it = table.find(name);
-
-    return it != table.end() &&
-           it->second.arg_count == arg_count;
+    const auto* entry = find_function(name);
+    return entry != nullptr && entry->arg_count == arg_count;
 }
 
 Value Runtime::call(
     const std::string& name,
     const std::vector<Value>& args
 ) {
-    const auto& table = function_table();
-    const auto it = table.find(name);
-
-    if (it == table.end()) {
+    const auto* entry = find_function(name);
+    if (entry == nullptr) {
         throw RuntimeError(
             "unknown runtime function: " + name
         );
     }
 
-    if (args.size() != it->second.arg_count) {
+    if (args.size() != entry->arg_count) {
         throw RuntimeError(
             "wrong argument count for runtime function: " + name
         );
     }
 
-    return it->second.handler(*this, output_, args);
+    return entry->handler(*this, output_, args);
 }
 
 const std::string& Runtime::wm_socket_path() const {

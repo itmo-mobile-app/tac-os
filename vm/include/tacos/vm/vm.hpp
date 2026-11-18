@@ -15,7 +15,6 @@ public:
         : std::runtime_error(message) {}
 };
 
-// Float is VM-owned. The Runtime boundary retains its existing Int/String ABI.
 enum class ValueKind { Int, String, Float };
 
 struct Value {
@@ -47,6 +46,7 @@ struct Value {
         switch (value.kind) {
         case tacos::runtime::ValueKind::Int: return int_value_of(value.int_value);
         case tacos::runtime::ValueKind::String: return string_value_of(value.string_value);
+        case tacos::runtime::ValueKind::Float: return float_value_of(value.float_value);
         }
         throw VmError("unsupported Runtime result kind");
     }
@@ -54,7 +54,7 @@ struct Value {
         switch (kind) {
         case ValueKind::Int: return tacos::runtime::Value::int_value_of(int_value);
         case ValueKind::String: return tacos::runtime::Value::string_value_of(string_value);
-        case ValueKind::Float: throw VmError("Runtime Float arguments are not supported");
+        case ValueKind::Float: return tacos::runtime::Value::float_value_of(float_value);
         }
         throw VmError("unsupported VM value kind");
     }

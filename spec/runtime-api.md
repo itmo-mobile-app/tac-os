@@ -1,10 +1,11 @@
 # Runtime API specification
 
-Status: approved
+Status: approved for the existing call ABI, Camera and IPC. The device API below implements the
+[#128 proposal](https://github.com/itmo-mobile-app/tac-os/issues/128) for owner review in #134.
 
-This document defines how the VM calls into the Runtime, and the first Runtime function used by the
-Compiler → VM integration test. It does not cover IPC (see `spec/ipc.md`) or the Broker (see
-`spec/broker-protocol.md`).
+This document defines how the VM calls into the Runtime and documents the VM-facing operations.
+The IPC and Broker wire formats are specified in [ipc.md](ipc.md) and
+[broker-protocol.md](broker-protocol.md).
 
 ## Call mechanism
 
@@ -54,13 +55,9 @@ No recognized marker is the successful return value `"[]"`. Camera failure,
 timeout, malformed helper response or terminated helper is a Runtime error,
 not `"[]"` and not a JSON error object returned to application code.
 
-This is a **temporary String ABI**, not the eventual typed detection API.
-Current `.tc` and VM have no `Float` or collection representation and the
-Compiler cannot yet call every zero-argument Runtime function in an expression.
-The final `Detection[]` interface, geographic calculations in `.tc`, and
-VM-level recoverable error handling require later language/VM work. Sprint 2
-may verify the C++ Runtime directly with synthetic detector responses;
-no `.tc` JSON parser is introduced by this decision.
+The Camera result uses the **temporary String ABI**. The language has scalar
+`Float` but still needs a collection representation for a typed `Detection[]`
+result. Camera tests use the C++ Runtime with synthetic detector responses.
 
 The Runtime implementation is a client of the private Go/OpenCV detector over
 a Unix-domain stream socket; Runtime starts and reuses the helper process.
@@ -182,6 +179,53 @@ There is no acknowledgement, automatic retry,
 or offline queue.
 
 The wire schema is defined in spec/ipc.md.
+
+## Device position, orientation and time (#134)
+
+| Signature | Result |
+| --- | --- |
+| `location.read(timeoutMs: Int) -> Int` | Acquire one position snapshot and return a status |
+| `location.latitude() -> Float` | Latitude in WGS84 degrees, from −90 through +90. Positive is north |
+| `location.longitude() -> Float` | Longitude in WGS84 degrees, from −180 through +180. Positive is east |
+| `orientation.read(timeoutMs: Int) -> Int` | Acquire one heading snapshot and return a status |
+| `orientation.heading() -> Float` | Azimuth in degrees clockwise from true north along the camera's forward axis. Valid range is [0, 360) |
+| `time.nowMs() -> Int` | UTC wall-clock time measured in Unix milliseconds as a signed 64-bit integer |
+
+Azimuths 0, 90, 180 and 270 indicate north, east, south and west. The source is responsible for
+magnetic declination and camera-axis alignment. A value of 360 degrees is outside the accepted range.
+Coordinate and heading getters return finite binary64 values through the existing call ABI.
+The Compiler selects bytecode version 2 for programs using these Float results.
+
+Both reads take a timeout in `1..1000` ms measured against a monotonic clock. They return
+`0` for success, `-1` for an unavailable source, `-2` for an expired deadline and `-3`
+for a non-finite or out-of-range reading. A negative status writes the reason to stderr.
+Incorrect argument types, arity and timeouts raise `RuntimeError`.
+
+Runtime owns one position and one heading snapshot each. A read clears the corresponding
+snapshot before starting. After a successful read, the getters access that snapshot locally
+without sampling again. After a failed read or before the first successful read, the
+corresponding getters raise `RuntimeError`. Reads of one source leave the other snapshot
+available. Snapshots and configured sources are released when their Runtime is destroyed.
+
+The host selects fixed sources explicitly by passing `DeviceOptions` to the C++ `Runtime` constructor.
+With default Linux configuration, location and orientation report unavailable.
+`time.nowMs()` reads `CLOCK_REALTIME` unless the host supplies a fixed test timestamp.
+The wall clock may move backwards. A clock read failure or an unrepresentable timestamp
+raises `RuntimeError`. Runtime provides device measurements. Analyzer owns calculation of
+target coordinates.
+
+### Linux verification
+
+```sh
+(cd compiler && ./gradlew --no-daemon installDist)
+cmake -S . -B build
+cmake --build build --parallel
+ctest --test-dir build -R '^device_vm_e2e$' --output-on-failure
+```
+
+The test compiles [`tests/device/device.tc`](../tests/device/device.tc) and uses the real VM
+with host-injected position, azimuth and time. It also covers missing sources, geographic
+limits, non-finite readings, deadlines, invalidated snapshots and the default Linux wall clock.
 
 ## Open questions
 

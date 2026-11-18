@@ -77,6 +77,7 @@ struct Function {
 };
 
 struct Program {
+    std::uint16_t version;
     std::vector<Constant> constants;
     std::vector<Function> functions;
     std::uint16_t entry_function = 0;
@@ -217,6 +218,7 @@ Program load_program(const std::string& path, Runtime& runtime) {
     }
 
     Program program;
+    program.version = version;
 
     const auto constant_count = reader.u16("constant_count");
     program.constants.reserve(constant_count);
@@ -485,8 +487,12 @@ public:
                 std::vector<tacos::runtime::Value> runtime_args;
                 runtime_args.reserve(args.size());
                 for (const auto& arg : args) runtime_args.push_back(arg.to_runtime());
-                push(Value::from_runtime(runtime_.call(
-                    program_.constants[index].value.string_value, runtime_args)));
+                const auto result = runtime_.call(
+                    program_.constants[index].value.string_value, runtime_args);
+                if (program_.version == 1 && result.kind == runtime::ValueKind::Float) {
+                    throw VmError("Float Runtime result requires bytecode version 2");
+                }
+                push(Value::from_runtime(result));
                 break;
             }
             case Opcode::Pop:
