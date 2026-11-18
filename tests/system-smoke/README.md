@@ -226,3 +226,31 @@ File persistence and aggregation recovery after restart are not covered here.
 
 Recorded baseline results: [macOS](../../docs/testing/reports/140-main-3877600.md)
 and [Ubuntu Linux](../../docs/testing/reports/140-main-3877600-linux.md).
+
+### Merge readiness and evidence policy
+
+The preliminary review requires all of the following before switching #154 from
+Draft to Ready or merging it:
+
+- Integrate the real server path in #137, including #130 aggregation, DBMS writes
+  and `targets.updated` publication. An aggregation library alone is insufficient.
+- Document and configure the service's DBMS arguments and domain SELECT.
+- Pass every tagged acceptance scenario on Linux, including independent observers,
+  duplicate/invalid input, periodic decay, SQL writes and live Map redraw.
+- Verify isolation and interruption with the new DBMS path.
+- Then include the full tagged acceptance command in CI without suppressing its
+  failures. A green untagged CI run does not satisfy #140.
+
+The test expectations continue to follow `spec/`; missing implementation does not
+justify replacing server outputs or relaxing the assertions. The PR remains Draft
+while these prerequisites are unmet.
+
+Keep dated compact reports, case summaries, baseline/toolchain identifiers and
+reproduction commands in Git. Store verbose JSON event logs outside the checkout
+or upload them as CI artifacts when CI integration is enabled. To capture a run:
+
+```sh
+GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local go test -tags server_e2e -race -run '^TestServerE2E$' -count=1 -timeout 5m -json . > /tmp/tac-server-e2e.jsonl
+```
+
+The command's exit status is significant; a log file does not imply a passing run.
