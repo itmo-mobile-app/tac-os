@@ -9,6 +9,12 @@ This document describes the current high-level architecture of `tac-os`.
 It defines component boundaries and the main interaction model.
 Implementation details belong in `spec/` or component-specific documentation.
 
+The six SVG diagrams are **different architectural viewpoints**, not one
+OSI-like stack. Their computational semantics, physical referents and
+ontological distinctions are documented in `docs/architecture/README.md` and
+`docs/architecture/ontology.md`. Only the client platform view is a layered
+execution stack; do not treat a domain actor or process as a class/function.
+
 ## Platform layers
 
 The application execution stack is:
