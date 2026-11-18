@@ -1,10 +1,11 @@
 # Runtime API specification
 
-Status: approved
+Status: approved for the existing call ABI, Camera and IPC. The Broker API below implements the
+[#128 proposal](https://github.com/itmo-mobile-app/tac-os/issues/128) for owner review in #135.
 
-This document defines how the VM calls into the Runtime, and the first Runtime function used by the
-Compiler → VM integration test. It does not cover IPC (see `spec/ipc.md`) or the Broker (see
-`spec/broker-protocol.md`).
+This document defines how the VM calls into the Runtime and documents the VM-facing operations.
+The IPC and Broker wire formats are specified in [`ipc.md`](ipc.md) and
+[`broker-protocol.md`](broker-protocol.md).
 
 ## Call mechanism
 
@@ -183,6 +184,41 @@ or offline queue.
 
 The wire schema is defined in spec/ipc.md.
 
+## Broker transport (#135)
+
+Each Runtime owns at most one TCP connection. Use the framing and delivery semantics of
+[`broker-protocol.md`](broker-protocol.md). Payloads are opaque JSON object text at this boundary.
+Map owns interpretation of Observation and Target fields.
+
+| Signature | Result |
+| --- | --- |
+| `broker.connect(address: String, port: Int, timeoutMs: Int) -> Int` | Connect to a numeric IPv4 or IPv6 address and port `1..65535`. Returns 0 on success |
+| `broker.subscribe(topic: String) -> Int` | Send `SUB <topic>\n`. Returns 0 on local transmission |
+| `broker.publish(topic: String, payload: String) -> Int` | Send `PUB <topic> <payload>\n`. Returns 0 on local transmission |
+| `broker.receive(timeoutMs: Int) -> Int` | Read one `MSG <topic> <payload>\n`. Returns 1 on receipt or 0 on idle timeout |
+| `broker.topic() -> String` | Topic of the last successfully received message |
+| `broker.payload() -> String` | The received JSON object text, without the `MSG` prefix, topic or newline |
+| `broker.close() -> Int` | Close the owned connection and discard buffered data. Always returns 0 |
+
+Connect takes a timeout in `1..1000` ms. Receive takes `0..1000` ms, with `0` for a nonblocking poll.
+Subscribe and publish have a 1000 ms deadline per call. All deadlines use a monotonic clock.
+Topics must be nonempty UTF-8 without ASCII whitespace or NUL. A payload must be a single-line
+UTF-8 JSON object. The Runtime frame limit is 16 KiB including the verb, separators and final LF.
+
+Idle receive can retain an incomplete frame for the next call. A partial frame has a separate
+1000 ms deadline from the first bytes read into Runtime, even across polling calls and regardless
+of subsequent bytes. Complete frames are returned in order, one per receive. The next receive
+invalidates the previous topic and payload. Each getter returns an independent `String`.
+
+Status-returning operations report `-1` for an unavailable or disconnected transport, `-2` for a
+connect, write or partial-frame deadline, and `-3` for a malformed or oversized incoming frame.
+Each negative status reports the failing operation on stderr and releases the socket and its
+buffered state. Bad arguments, connecting with a connection already open, and reading a getter
+without a current message raise `RuntimeError`. Destruction releases the connection as well.
+
+After a disconnect, callers may explicitly connect and subscribe again. Subscribe and publish
+report local I/O only, with no acknowledgment, automatic retry or resubscription.
+
 ## Open questions
 
 Not decided here; see `docs/ai-context/02-open-questions.md` → "Runtime":
@@ -190,4 +226,4 @@ Not decided here; see `docs/ai-context/02-open-questions.md` → "Runtime":
 - the remaining Runtime API surface (threads, IPC, location, orientation, networking, files, time,
   Activity lifecycle, WebView bridge, Window Manager access) — added incrementally, one concrete
   scenario at a time;
-- how recoverable Runtime call errors are represented inside `.tc` programs beyond the initial failure-reporting behavior.
+- how recoverable errors beyond the documented API-specific statuses are represented in `.tc`.
