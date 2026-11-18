@@ -49,7 +49,6 @@ object RuntimeFunctions {
         "window.show" to Signature(emptyList(), Type.INT),
         "window.pollEvent" to Signature(listOf(Type.INT), Type.STRING),
         "window.close" to Signature(emptyList(), Type.INT),
-        "window.quit" to Signature(emptyList(), Type.INT),
     )
 }
 
