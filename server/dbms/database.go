@@ -1,5 +1,10 @@
 package dbms
 
+import (
+	"maps"
+	"slices"
+)
+
 type column struct {
 	name   string
 	typeID Type
@@ -11,7 +16,10 @@ type table struct {
 
 // Database is an independent in-memory executor. It is not safe for concurrent use.
 // Its zero value is ready to use. Copying a used Database is unsupported.
-type Database struct{ tables map[string]*table }
+type Database struct {
+	tables       map[string]*table
+	snapshotPath string
+}
 
 // Execute parses exactly one complete statement before changing any stored data.
 func (db *Database) Execute(source string) (Result, error) {
@@ -19,6 +27,33 @@ func (db *Database) Execute(source string) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
+	if db.snapshotPath == "" || s.operation == selectRows {
+		return db.execute(s)
+	}
+	// Stage changes without sharing writable rows with the live database.
+	candidate := Database{tables: maps.Clone(db.tables)}
+	if t := db.tables[s.table.name]; t != nil && s.operation != create {
+		changed := *t
+		changed.rows = slices.Clone(t.rows)
+		if s.operation == updateRows {
+			for i, row := range t.rows {
+				changed.rows[i] = slices.Clone(row)
+			}
+		}
+		candidate.tables[s.table.name] = &changed
+	}
+	result, err := candidate.execute(s)
+	if err != nil {
+		return Result{}, err
+	}
+	installed, err := candidate.saveSnapshot(db.snapshotPath)
+	if installed {
+		db.tables = candidate.tables
+	}
+	return result, err
+}
+
+func (db *Database) execute(s statement) (Result, error) {
 	if s.operation == create {
 		if _, ok := db.tables[s.table.name]; ok {
 			return Result{}, queryError(s.table.position, "Table already exists: %s", s.table.name)

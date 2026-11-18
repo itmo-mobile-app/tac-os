@@ -75,7 +75,7 @@ func TestSystemSmoke(t *testing.T) {
 	})
 	t.Run("failure-with-map-running", func(t *testing.T) {
 		dir := newDir(t)
-		s := &suite{sockets: []string{filepath.Join(dir, "wm.sock"), filepath.Join(dir, "events.sock")}}
+		s := &suite{sockets: []string{filepath.Join(dir, "wm.sock"), filepath.Join(dir, "events.sock"), filepath.Join(dir, "dbms.sock")}}
 		t.Cleanup(func() {
 			if err := s.cleanup(); err != nil {
 				t.Error(err)
@@ -87,7 +87,17 @@ func TestSystemSmoke(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := s.start("Target", b.target, "-broker", addr); err != nil {
+		dataSocket := s.sockets[2]
+		db, err := s.start("DBMS", b.dbms, "-socket", dataSocket)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := waitFor(ctx, "DBMS startup", s.processes, func() (bool, error) {
+			return strings.Contains(db.logs.String(), "Listening on "+dataSocket), nil
+		}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := s.start("Target", b.target, "-broker", addr, "-dbms", dataSocket); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := s.start("WM", b.wm, "-socket", s.sockets[0], "-events", s.sockets[1]); err != nil {

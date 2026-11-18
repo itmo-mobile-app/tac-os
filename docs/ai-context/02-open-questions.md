@@ -74,9 +74,7 @@ protocol, timeout and helper lifecycle are fixed in
 - Production camera configuration and device-calibration strategy; initial
   defaults are only for the prototype.
 - Approval from the course instructor for OpenCV/gocv usage in the detector.
-- Owner review of the location, orientation and time operations implemented in #134 from the
-  #128 proposal. Production position and heading sources, calibration and sample-age requirements
-  still need decisions. See [Runtime API](../../spec/runtime-api.md#device-position-orientation-and-time-134).
+- Review of implemented location, orientation and time calls from #134 / PR #162; Linux test providers are explicit, while production sensor calibration and permitted sample age still need a decision.
 - Networking API.
 - File API.
 
@@ -148,7 +146,6 @@ Remaining open:
 
 The minimal SQL subset is defined in `spec/sql.md` (approved by the SQL DBMS owner). Remaining open:
 
-- Storage format.
 - Table representation.
 - Whether indexes are required.
 - Whether transactions are required.

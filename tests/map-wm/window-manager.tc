@@ -1,0 +1,19 @@
+// Minimal end-to-end scenario for Issue #136.
+// Draw a map background and one Target, then handle a WM close event.
+fun main() {
+    window.create("Tactical Map", 960, 640);
+    window.beginFrame(0, 0, 0, 255);
+    window.drawImage("../../../app/map/assets/test-map.png", 0, 0, 960, 640);
+    window.drawCircle(480, 320, 12, 255, 0, 0, 255);
+    window.present();
+    window.show();
+
+    runtime.log("window-ready");
+    let event = window.pollEvent(1000);
+    if (event == "window_close") {
+        runtime.log("window-close-event-ok");
+    }
+
+    window.close();
+    runtime.log("window-close-called");
+}
