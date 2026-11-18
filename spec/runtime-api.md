@@ -20,6 +20,19 @@ This document defines the VM-facing Runtime boundary. IPC and Broker wire protoc
 - Calling an unknown `<namespace>.<function>` name is a load-time error (checked when the VM resolves
   Runtime calls after loading the bytecode, not at CALL_RUNTIME execution time).
 
+## Typed VM/Runtime values (#133)
+
+The shared C++ `Value` carries Int, String and finite binary64 Float
+with explicit kind tags. VM value conversion preserves kind and payload,
+and rejects invalid kinds and non-finite Float. Int timestamps do not
+pass through double. Strings own their bytes via `std::string` rather than
+borrowing parser storage; copying/moving/overwriting values reclaims
+ownership through normal C++ lifetimes. The actual `vm_value_boundary`
+and `vm_data_e2e` tests are enabled in the full CTest suite.
+
+This value transport does not approve recoverable JSON errors or an
+unbounded-memory guarantee for the final Map application.
+
 ## First Runtime function
 
 ```text
