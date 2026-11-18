@@ -110,6 +110,19 @@ This source does not draw windows, use Broker or replace the Go Map. See `app/ma
 for exact revisions, verification results and outstanding dependency checks. The independent #99
 Broker integration and Runtime-to-WM contracts are unchanged.
 
+### Analyzer coordinate calculation on .tc (#138)
+
+`app/analyzer/tc/observation.tc` implements the calculation of `spec/analyzer-observation.md` in the
+custom language: bearing, target latitude and longitude, the validation rules and the local
+confidence. `sin` and `cos` are written in `.tc` source. The program checks itself against the 16
+vectors of `spec/analyzer-observation-vectors.json`; the required CTest `analyzer_tc_observation_e2e`
+runs the real Compiler and VM.
+
+The program does not yet send an `Observation`: that needs String assembly and Float formatting
+(proposal #127), and the detection and device-pose inputs need `camera.detectMarkers()` in the
+Compiler, JSON access and the Runtime location, orientation and time APIs (#132-#134). See
+`app/analyzer/tc/README.md`.
+
 ## IPC scenario
 
 The primary local IPC scenario is:

@@ -198,14 +198,17 @@ These are **not** approved here; each needs its owner's decision.
 
 1. `Float` in the language, bytecode and VM, proposed in #106 and not implemented yet (#107, #108).
 2. `sin` and `cos`, or equivalent functions, for `.tc` code: not part of the language or of the
-   Runtime API (Runtime and Language owners).
+   Runtime API. `app/analyzer/tc/observation.tc` (#138) implements them in `.tc` source with a
+   Maclaurin series, so no contract change is needed to run the calculation; a Runtime or language
+   function remains an optional later replacement (Runtime and Language owners).
 3. Runtime location, orientation and time APIs with the units of "Inputs" (Runtime owner).
 4. Access to the fields of the detections. `camera.detectMarkers()` returns a JSON `String`, and
    `.tc` has neither a JSON parser nor collections (`spec/runtime-api.md`).
 5. Formatting `Float` values into the JSON `String` that `runtime.ipc_send` sends.
 
-Until they exist, this document and its vectors are a reviewed design contract, **not** evidence
-that the Analyzer calculation is implemented in `.tc`.
+The calculation, the validation and the confidence policy run in `.tc` and pass all vectors
+(`app/analyzer/tc/observation.tc`, #138). Items 3 to 5 do not exist yet, so that program takes the
+detections and the device pose from fixtures and does not send an `Observation`.
 
 ## Test vectors
 
