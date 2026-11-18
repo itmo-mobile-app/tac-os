@@ -169,3 +169,86 @@ In another terminal, send `kill -INT <runner-pid>` or `kill -TERM <runner-pid>`
 while services are running. Check that the printed resource directory and its
 sockets disappear and that the child processes terminate. The binary must be
 started from inside the checkout so it can locate the component sources.
+
+## Server acceptance tests (#140)
+
+The separate `server_e2e` build tag enables black-box acceptance tests against the
+component sources in the current checkout. Production components are not patched
+or replaced. The test publisher sends only Observation messages; it never
+publishes fabricated Target messages. Run from this directory:
+
+```sh
+GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local go test -tags server_e2e -run '^TestServerE2E$' -count=1 -timeout 5m -v .
+```
+
+The tests build and start real Broker, Target Service, DBMS and (for the Map case)
+Go Map plus the production headless WM. They cover the DBMS wire protocol,
+one observer, two observers, duplicate handling, invalid observations, periodic
+time decay, Map redraw and cleanup on both success and failure. A first valid
+Target is a prerequisite for negative checks, so a service that produces no
+Targets cannot pass through silence. Bootstrap retries repeat the exact same
+observer and timestamp to handle Broker subscription races without adding
+independent evidence. After the first Target, scenarios send inputs once.
+
+The probability oracle uses the published formula, input timestamps and receive
+time, allowing one second for delivery/scheduling. Periodic updates must arrive
+within eight seconds (the contract interval is five). This is a bounded local
+acceptance budget, not a new transport guarantee. Map verification checks its
+redraw confirmation after real WM command responses and expected marker pixel
+coordinates; it does not inspect framebuffer pixels or prove native GUI output.
+
+Missing `targets.updated` is a test failure. Checks that cannot proceed beyond
+that first missing Target do not prove defects in their later assertions.
+The existing regression tests and default CI are unchanged; an untagged green
+run does not establish that #140 passes. Run the tagged command explicitly.
+
+### SQL integration contract configuration
+
+The integrated Target Service in #137 (merged as PR #163) accepts
+`-dbms <socket>` and creates the `observations` and `targets` tables
+using the documented six-field Observation and five-field Target shapes.
+Acceptance starts a real isolated DBMS server, passes its socket to Target
+Service, and probes the real server-owned row through:
+
+```sql
+SELECT target_id, latitude, longitude, probability, last_seen_at FROM targets;
+```
+
+There are no optional environment overrides or skipped SQL checks.
+`DBMSProtocol` independently tests the DBMS protocol with a separate probe
+table; its success is not confused with application persistence.
+`SQLIntegration` checks that an actual Target Service produces SQL records
+in the real DBMS, without test-generated Target rows.
+
+File persistence across DBMS restarts and Target Service state recovery are
+separate acceptance cases tracked under #147/#148. This run uses the DBMS
+in-memory mode and verifies only the live server chain.
+
+Recorded baseline results: [macOS](../../docs/testing/reports/140-main-3877600.md)
+and [Ubuntu Linux](../../docs/testing/reports/140-main-3877600-linux.md).
+
+### Merge readiness and evidence policy
+
+The target aggregation and Broker/DBMS integration from #130/#137 are now
+implemented in `main`. The tagged Linux acceptance suite passed in
+[GitHub Actions run 44390378085](https://github.com/itmo-mobile-app/tac-os/actions/runs/44390378085)
+on 2026-11-18, including two observers, invalid/duplicate records, periodic
+decay, real SQL writes and Go Map redraw. The independent standard smoke
+checks also passed on the integrated server branch.
+
+The dedicated `Server acceptance E2E` workflow runs the full tagged test on
+pull requests and main; an untagged green result does not substitute for it.
+Before merging, verify the latest CI is green and the test still passes after
+combining all merged server components. This is a **server** acceptance check:
+it does not establish complete `.tc` Analyzer/Map or AI integration.
+The tests preserve approved `spec/` expectations; no fake Target is injected.
+
+Keep dated compact reports, case summaries, baseline/toolchain identifiers and
+reproduction commands in Git. Store verbose JSON event logs outside the checkout
+or upload them as CI artifacts when CI integration is enabled. To capture a run:
+
+```sh
+GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local go test -tags server_e2e -race -run '^TestServerE2E$' -count=1 -timeout 5m -json . > /tmp/tac-server-e2e.jsonl
+```
+
+The command's exit status is significant; a log file does not imply a passing run.

@@ -1,0 +1,8 @@
+Recorded run: 2026-11-12 (not rerun during evidence compaction)
+Production baseline: 3877600e4e4a6fa06bc8081d849aa5f4913fcf96
+Host: macOS arm64, Go 1.25.3
+SKIP TestServerE2E/SQLIntegration (0s)
+FAIL TestServerE2E (0.9s)
+FAIL github.com/itmo-mobile-app/tac-os/tests/system-smoke (2.437s)
+Race detector warnings: 0
+SQL configuration absent: child SKIP and explicit INCOMPLETE ACCEPTANCE parent FAIL.
