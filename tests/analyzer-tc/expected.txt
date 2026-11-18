@@ -1,0 +1,17 @@
+no-detections-ok
+single-east-ok
+two-detections-heading-wraps-ok
+southwest-in-southern-western-hemisphere-ok
+maximum-range-north-ok
+position-unavailable-ok
+latitude-out-of-range-ok
+latitude-beyond-supported-ok
+heading-unavailable-ok
+heading-360-ok
+id-out-of-range-ok
+angle-out-of-range-ok
+zero-distance-ok
+beyond-maximum-range-ok
+invalid-detection-does-not-hide-valid-one-ok
+antimeridian-ok
+analyzer-observation-ok

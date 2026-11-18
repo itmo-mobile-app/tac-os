@@ -12,7 +12,7 @@ import (
 )
 
 type binaries struct {
-	broker, target, wm, tacticalMap string
+	broker, target, dbms, wm, tacticalMap string
 }
 
 func repositoryRoot() (string, error) {
@@ -44,6 +44,7 @@ func buildComponents(ctx context.Context, root, dir string) (binaries, error) {
 	}{
 		{"broker", "broker", ".", &b.broker},
 		{"target-service", "target-service", ".", &b.target},
+		{"tacdb-server", "server/dbms", "./cmd/tacdb-server", &b.dbms},
 		{"wm-headless", "tests/system-smoke", "./cmd/wm-headless", &b.wm},
 		{"map-demo", "app/map", "./cmd/map-demo", &b.tacticalMap},
 	}

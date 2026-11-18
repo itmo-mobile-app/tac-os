@@ -48,6 +48,11 @@ int main() {
             "unknown name accepted"
         );
 
+        check(runtime.has_function("window.create", 3), "window.create missing");
+        check(runtime.has_function("window.show", 0), "window.show missing");
+        check(runtime.has_function("window.close", 0), "window.close missing");
+        check(runtime.has_function("window.quit", 0), "window.quit missing");
+
         // 2. runtime.log output.
         const Value result = runtime.call(
             "runtime.log",
@@ -82,6 +87,9 @@ int main() {
                 "runtime.log",
                 {Value::int_value_of(42)}
             );
+        });
+        expect_runtime_error([&] {
+            runtime.call("broker.receive", {Value::string_value_of("100")});
         });
 
         check(

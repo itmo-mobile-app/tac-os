@@ -1,0 +1,31 @@
+name: Server acceptance E2E
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  server-e2e:
+    name: Server E2E (tagged)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: tests/system-smoke
+    env:
+      GOPROXY: "off"
+      GOSUMDB: "off"
+      GOTOOLCHAIN: local
+      GOWORK: "off"
+      GOFLAGS: -mod=readonly
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+          cache: false
+      - name: Check acceptance test formatting
+        run: test -z "$(gofmt -l server_e2e_test.go)"
+      - name: Verify acceptance tests with real Broker, DBMS, Target Service and Map
+        run: go test -mod=readonly -tags server_e2e -race -count=1 -timeout 5m -v -run '^TestServerE2E$' .

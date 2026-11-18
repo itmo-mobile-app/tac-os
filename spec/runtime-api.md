@@ -1,34 +1,8 @@
 # Runtime API specification
 
-Status: existing call ABI, Camera and IPC contracts approved; Sprint 4 additions
-below are a proposal for owner review in [#128](https://github.com/itmo-mobile-app/tac-os/issues/128).
+Status: the existing call ABI, Camera, IPC and implemented WM operations are approved or documented; Broker transport (#135) and device data (#134) are implemented and await full #128 owner review.
 
-This document defines the VM-facing Runtime boundary. Wire formats remain in
-[`ipc.md`](ipc.md), [`camera-detector-protocol.md`](camera-detector-protocol.md),
-[`broker-protocol.md`](broker-protocol.md) and [`window-manager.md`](window-manager.md).
-The Sprint 4 proposal adds only operations needed by Analyzer and Map; it does
-not approve an implementation or change those wire formats.
-
-## Implementation baseline
-
-Checked against `main` at `3877600` on 2026-11-11, including the actual Compiler
-signature table, Runtime dispatch table and VM value conversions:
-
-| Function / capability | C++ Runtime / VM | Current `.tc` Compiler |
-| --- | --- | --- |
-| `runtime.log`, `runtime.ipc_listen`, `runtime.ipc_receive`, `runtime.ipc_send` | Implemented | Registered |
-| `camera.detectMarkers` | Implemented, zero arguments, String result | Not registered yet |
-| `window.create`, `window.show`, `window.close`, `window.quit` | Implemented | Not registered yet |
-| Float arithmetic and map projection | VM v2 implemented | Implemented; see `app/map/tc/projection.tc` |
-| Float arguments/results across VM ↔ Runtime | Not implemented: Runtime `Value` is Int/String; VM rejects Float arguments | New signatures alone are insufficient |
-| Device/time, Broker, WM drawing/events and bounded IPC polling below | Proposed, not implemented | Not registered |
-
-Source: `runtime/src/runtime.cpp`, `runtime/include/tacos/runtime/runtime.hpp`,
-`vm/include/tacos/vm/vm.hpp`, `compiler/src/main/kotlin/tacc/Checker.kt`.
-The separate String/JSON data-access proposal is
-[#127 / PR #152](https://github.com/itmo-mobile-app/tac-os/pull/152), inspected at
-`271b381`. Its helpers and recoverable validation remain unapproved; this
-document does not copy or replace that proposal.
+This document defines the VM-facing Runtime boundary. IPC and Broker wire protocols are documented separately in `spec/ipc.md` and `spec/broker-protocol.md`.
 
 ## Call mechanism
 
@@ -79,12 +53,12 @@ timeout, malformed helper response or terminated helper is a Runtime error,
 not `"[]"` and not a JSON error object returned to application code.
 
 This is a **temporary String ABI**, not the eventual typed detection API.
-Compiler and VM now support scalar `Float`, but the Runtime value boundary
-remains Int/String and there is no collection representation. The Compiler
-still needs to register this zero-argument function with a usable String result.
-Typed `Detection[]`, detection-field extraction and recoverable validation
-require separately reviewed work (#127, #132, #133). The String result and
-camera error behavior remain unchanged; no `.tc` JSON parser is introduced here.
+Current `.tc` and VM have no `Float` or collection representation and the
+Compiler cannot yet call every zero-argument Runtime function in an expression.
+The final `Detection[]` interface, geographic calculations in `.tc`, and
+VM-level recoverable error handling require later language/VM work. Sprint 2
+may verify the C++ Runtime directly with synthetic detector responses;
+no `.tc` JSON parser is introduced by this decision.
 
 The Runtime implementation is a client of the private Go/OpenCV detector over
 a Unix-domain stream socket; Runtime starts and reuses the helper process.
@@ -207,167 +181,178 @@ or offline queue.
 
 The wire schema is defined in spec/ipc.md.
 
-## Existing Window API
+## Device position, orientation and time (#134)
 
-These functions are already in the Runtime dispatch table. This table documents
-their existing signatures; it does not claim Compiler registration or bounded I/O.
-
-| Signature | Success | Existing failure behavior |
-| --- | --- | --- |
-| `window.create(title: String, width: Int, height: Int) -> Int` | Sends `CREATE` for window `map`; returns 0 | Nonpositive dimensions, wrong types, transport or unsuccessful WM response: RuntimeError |
-| `window.show() -> Int` | Sends `SHOW` for `map`; returns 0 | RuntimeError |
-| `window.close() -> Int` | Sends `CLOSE` for `map`; returns 0 | RuntimeError |
-| `window.quit() -> Int` | Sends `QUIT`; returns 0 | RuntimeError |
-
-`window.quit` is a legacy administrative operation. Analyzer/Map shutdown must
-not call it: [`activity-lifecycle.md`](activity-lifecycle.md) requires leaving
-the independent WM process running. The existing WM client lacks deadlines and
-event subscription; the Sprint 4 requirements below must be implemented before
-claiming that a stalled WM cannot hang the VM.
-
-## Sprint 4 minimum API (#128, proposal)
-
-**Pending review; no owner approval is inferred.** All signatures, status codes
-and new deadlines in this section are candidates for agreement. Existing
-Camera/IPC signatures, results, errors and wire schemas above are preserved.
-
-### Values and recoverable failures
-
-- Keep `CALL_RUNTIME`, argument order, arity checks and the single-result rule.
-  Add finite binary64 Float to Runtime values and both VM conversion directions
-  for the proposed sensor getters; preserve existing Int/String behavior. No
-  new opcode, bytecode version, struct, collection or handle is proposed.
-- Every proposed status-returning call uses Int: `0` success, `-1` unavailable
-  source/service or disconnected transport, `-2` operation deadline exceeded,
-  `-3` invalid external data/protocol response. Polling calls additionally use
-  `1` for a complete available item and `0` for no item before the idle deadline.
-  Diagnostics identify the function and reason on stderr. No payload is returned
-  as a fake success after a negative status.
-- Wrong argument types/arity, invalid timeout/range arguments and reading a
-  snapshot without a successful acquisition are programming errors:
-  RuntimeError, caught by the host or reported by `tacvm` with a nonzero exit.
-  Sensor loss and Broker disconnect use the recoverable statuses instead.
-- This limited status model does not change `camera.detectMarkers`, the three
-  existing IPC calls or existing Window failures. It also does not resolve the
-  #127 gate for rejecting malformed domain JSON without terminating Map.
-
-### Device position, orientation and time (#134)
-
-| Proposed signature | Result and meaning |
+| Signature | Result |
 | --- | --- |
-| `location.read(timeoutMs: Int) -> Int` | Acquire and validate one position snapshot; 0 or a negative status |
-| `location.latitude() -> Float` | Snapshot WGS84 latitude, finite degrees in `[-90, 90]` |
-| `location.longitude() -> Float` | Same snapshot's WGS84 longitude, finite degrees in `[-180, 180]` |
-| `orientation.read(timeoutMs: Int) -> Int` | Acquire and validate one heading snapshot; 0 or a negative status |
-| `orientation.heading() -> Float` | Finite camera-forward azimuth in `[0, 360)`, clockwise from true north |
-| `time.nowMs() -> Int` | Signed i64 Unix UTC milliseconds from the wall clock |
+| `location.read(timeoutMs: Int) -> Int` | Acquire one position snapshot and return a status |
+| `location.latitude() -> Float` | Latitude in WGS84 degrees, from −90 through +90. Positive is north |
+| `location.longitude() -> Float` | Longitude in WGS84 degrees, from −180 through +180. Positive is east |
+| `orientation.read(timeoutMs: Int) -> Int` | Acquire one heading snapshot and return a status |
+| `orientation.heading() -> Float` | Azimuth in degrees clockwise from true north along the camera's forward axis. Valid range is [0, 360) |
+| `time.nowMs() -> Int` | UTC wall-clock time measured in Unix milliseconds as a signed 64-bit integer |
 
-`read` invalidates that source's previous snapshot before attempting acquisition.
-After failure its getters raise RuntimeError; they never supply stale data,
-zero coordinates, NaN or a fabricated heading. After success getters are local,
-nonblocking reads of the same snapshot until the next `read` or Runtime destruction.
-Reading latitude and longitude must not trigger two independent GPS acquisitions.
-Location and heading snapshots are independent; simultaneous capture is not claimed.
+Azimuths 0, 90, 180 and 270 indicate north, east, south and west. The source is responsible for
+magnetic declination and camera-axis alignment. A value of 360 degrees is outside the accepted range.
+Coordinate and heading getters return finite binary64 values through the existing call ABI.
+The Compiler selects bytecode version 2 for programs using these Float results.
 
-Heading conventions match the inputs of [`analyzer-observation.md`](analyzer-observation.md):
-0 north, 90 east, 180 south, 270 west. Provider-side normalization may convert
-360 to 0, but invalid/non-finite readings must fail. Magnetic declination and
-camera/device-axis alignment belong to the provider, not Analyzer. A configured
-position/heading on a sensorless Linux laptop is an explicit source, not an
-automatic fallback when a real sensor fails. Accuracy, maximum sample age and
-allowed camera/pose skew require owner agreement; no accuracy is promised here.
+Both reads take a timeout in `1..1000` ms measured against a monotonic clock. They return
+`0` for success, `-1` for an unavailable source, `-2` for an expired deadline and `-3`
+for a non-finite or out-of-range reading. A negative status writes the reason to stderr.
+Incorrect argument types, arity and timeouts raise `RuntimeError`.
 
-Analyzer keeps geographic calculations, confidence and Observation assembly in
-`.tc`. Runtime must not turn detections into target coordinates. Analyzer records
-`time.nowMs()` immediately after receiving detections, as required by #98.
-Wall-clock time may move backwards; all I/O deadlines use a monotonic clock.
-Clock acquisition is local; OS clock failure is RuntimeError, never timestamp 0.
+Runtime owns one position and one heading snapshot each. A read clears the corresponding
+snapshot before starting. After a successful read, the getters access that snapshot locally
+without sampling again. After a failed read or before the first successful read, the
+corresponding getters raise `RuntimeError`. Reads of one source leave the other snapshot
+available. Snapshots and configured sources are released when their Runtime is destroyed.
 
-### Broker transport (#135)
+The host selects fixed sources explicitly by passing `DeviceOptions` to the C++ `Runtime` constructor.
+With default Linux configuration, location and orientation report unavailable.
+`time.nowMs()` reads `CLOCK_REALTIME` unless the host supplies a fixed test timestamp.
+The wall clock may move backwards. A clock read failure or an unrepresentable timestamp
+raises `RuntimeError`. Runtime provides device measurements. Analyzer owns calculation of
+target coordinates.
 
-One Runtime owns at most one TCP Broker connection. The API is topic/payload
-transport; it does not interpret Observation/Target fields or calculate probability.
+### Linux verification
 
-| Proposed signature | Result / wire mapping |
+```sh
+(cd compiler && ./gradlew --no-daemon installDist)
+cmake -S . -B build
+cmake --build build --parallel
+ctest --test-dir build -R '^device_vm_e2e$' --output-on-failure
+```
+
+The test compiles [`tests/device/device.tc`](../tests/device/device.tc) and uses the real VM
+with host-injected position, azimuth and time. It also covers missing sources, geographic
+limits, non-finite readings, deadlines, invalidated snapshots and the default Linux wall clock.
+
+## Broker transport (#135)
+
+Each Runtime owns at most one TCP connection. Use the framing and delivery semantics of
+[`broker-protocol.md`](broker-protocol.md). Payloads are opaque JSON object text at this boundary.
+Map owns interpretation of Observation and Target fields.
+
+| Signature | Result |
 | --- | --- |
-| `broker.connect(address: String, port: Int, timeoutMs: Int) -> Int` | Connect to an explicit numeric IP and port `1..65535`; 0 or negative status |
-| `broker.subscribe(topic: String) -> Int` | Write `SUB <topic>\n`; 0 or negative status |
-| `broker.publish(topic: String, payload: String) -> Int` | Write `PUB <topic> <payload>\n`; 0 or negative status |
-| `broker.receive(timeoutMs: Int) -> Int` | Read one `MSG`: 1 item, 0 idle, or negative status |
-| `broker.topic() -> String` | Topic of the last successfully received item |
-| `broker.payload() -> String` | Its JSON object text, without `MSG`, topic or newline |
-| `broker.close() -> Int` | Close only the owned connection, discard buffered bytes/snapshot; idempotent, returns 0 |
+| `broker.connect(address: String, port: Int, timeoutMs: Int) -> Int` | Connect to a numeric IPv4 or IPv6 address and port `1..65535`. Returns 0 on success |
+| `broker.subscribe(topic: String) -> Int` | Send `SUB <topic>\n`. Returns 0 on local transmission |
+| `broker.publish(topic: String, payload: String) -> Int` | Send `PUB <topic> <payload>\n`. Returns 0 on local transmission |
+| `broker.receive(timeoutMs: Int) -> Int` | Read one `MSG <topic> <payload>\n`. Returns 1 on receipt or 0 on idle timeout |
+| `broker.topic() -> String` | Topic of the last successfully received message |
+| `broker.payload() -> String` | The received JSON object text, without the `MSG` prefix, topic or newline |
+| `broker.close() -> Int` | Close the owned connection and discard buffered data. Always returns 0 |
 
-Topic must be nonempty and contain no whitespace; application text cannot inject
-CR/LF into a frame. Payload must be one valid UTF-8 single-line JSON object.
-Runtime validates the transport envelope and JSON syntax, leaving domain field
-sets, ranges and policy to `.tc` under #127. Proposed local line limit: 16 KiB
-including verb/topic/newline, sufficient for one current domain record and below
-the current Broker's default scanner limit. This does not enlarge the wire protocol.
+Connect takes a timeout in `1..1000` ms. Receive takes `0..1000` ms, with `0` for a nonblocking poll.
+Subscribe and publish have a 1000 ms deadline per call. All deadlines use a monotonic clock.
+Topics must be nonempty UTF-8 without ASCII whitespace or NUL. A payload must be a single-line
+UTF-8 JSON object. The Runtime frame limit is 16 KiB including the verb, separators and final LF.
 
-`receive` invalidates its previous message snapshot at entry; topic/payload getters
-are valid only after result 1 and return independent VM-owned String values.
-Idle result 0 can retain an incomplete input frame internally. A partial frame
-has a separate absolute 1000 ms assembly deadline across polling calls; trickled
-bytes do not extend it. Buffered complete frames are delivered one per call.
-EOF, write failure, malformed/oversized incoming frames or a partial-frame timeout
-close the connection and discard its buffers before returning a negative status.
-Local invalid arguments, including malformed outgoing JSON, raise RuntimeError
-before I/O. Calls on a disconnected Broker return -1. A send/connect timeout
-also closes the affected connection; a failed publication is never retried.
+Idle receive can retain an incomplete frame for the next call. A partial frame has a separate
+1000 ms deadline from the first bytes read into Runtime, even across polling calls and regardless
+of subsequent bytes. Complete frames are returned in order, one per receive. The next receive
+invalidates the previous topic and payload. Each getter returns an independent `String`.
 
-Connect on an already connected Runtime is a programming error. Explicit
-`close` followed by `connect` is allowed, but there is no automatic reconnect,
-resubscription, acknowledgement, replay or offline queue. Subscribe/publish
-success means local transmission only, never Broker acceptance or delivery.
-In particular, `SUB` has no acknowledgement to wait for. The existing custom
-Broker remains the network peer; no ready-made server replaces it.
+Status-returning operations report `-1` for an unavailable or disconnected transport, `-2` for a
+connect, write or partial-frame deadline, and `-3` for a malformed or oversized incoming frame.
+Each negative status reports the failing operation on stderr and releases the socket and its
+buffered state. Bad arguments, connecting with a connection already open, and reading a getter
+without a current message raise `RuntimeError`. Destruction releases the connection as well.
 
-Map publishes only the six Observation domain fields on `observations`, removing
-the IPC `type` in application code, and subscribes to `targets.updated`. The
-five-field Target payload is unchanged. A Broker failure leaves Map running
-with its last visible state and a local diagnostic, matching the limited #99
-prototype behavior; a complete stale-data UI policy remains an application question.
+After a disconnect, callers may explicitly connect and subscribe again. Subscribe and publish
+report local I/O only, with no acknowledgment, automatic retry or resubscription.
 
-### Window drawing and native close (#136)
+## Window API: one Map window
 
-Reuse window ID `map`, one window and the exact commands/fields of
-[`map-rendering.md`](map-rendering.md) and [`window-manager.md`](window-manager.md).
-Keep existing `create/show/close` signatures and their 0/RuntimeError convention.
+Status: implemented for issue #136; pending Runtime owner review and
+alignment with #128.
 
-| Proposed signature | Result / wire mapping |
-| --- | --- |
-| `window.beginFrame(r: Int, g: Int, b: Int, a: Int) -> Int` | `BEGIN_FRAME` with RGBA `color`; returns 0 |
-| `window.drawImage(path: String, x: Int, y: Int, width: Int, height: Int) -> Int` | `DRAW_IMAGE` with `image_path` and integer geometry; returns 0 |
-| `window.drawCircle(x: Int, y: Int, radius: Int, r: Int, g: Int, b: Int, a: Int) -> Int` | `DRAW_CIRCLE` with integer geometry and RGBA `color`; returns 0 |
-| `window.present() -> Int` | `PRESENT`; returns 0 |
-| `window.pollEvent(timeoutMs: Int) -> String` | `"window_close"` for `map`, or empty String on idle timeout |
+The `.tc` application accesses the existing Window Manager through Runtime.
+Runtime translates calls into the JSONL protocol in `spec/window-manager.md`.
+Rendering remains in WM. This API adds no WebView or Activity lifecycle.
 
-RGBA components are `0..255`; dimensions and circle radius are positive Ints.
-WM clips drawings. Path resolution is local to WM, as in the existing protocol;
-Runtime does not download imagery. Validate Int geometry before narrowing to the
-WM implementation's native integer representation. Runtime does not project
-coordinates or derive marker opacity; Map owns those calculations and rounding.
+The current implementation supports one window with the fixed ID `map`.
 
-`create` first connects to the event socket and validates its subscription
-response, then sends `CREATE`. Every command gets its own command connection;
-Runtime checks a complete JSON response and boolean `ok`. A malformed response,
-`ok:false`, WM loss or deadline expiry raises RuntimeError with bounded cleanup.
-Failed CREATE/SHOW cannot make an Activity ACTIVE. Frame order is CREATE,
-BEGIN_FRAME, DRAW_IMAGE, DRAW_CIRCLE(s), PRESENT, SHOW, as in the Go reference.
+### Functions
 
-Runtime retains the event connection. On `window_close`, mark the owned window
-closed before returning the event; WM has already destroyed it. The application
-stops its loop and Runtime performs remaining cleanup without a second CLOSE.
-On explicit shutdown, close the still-owned window with CLOSE, never QUIT.
-A command timeout has an uncertain server-side outcome: do not retry CREATE or
-drawing commands as though failure proved that WM did nothing.
-Event reads validate the response envelope and window ID; malformed events or
-unexpected EOF are RuntimeError. Retain partial event bytes across polls with
-a 64 KiB frame bound and an absolute 1000 ms partial-frame deadline, so idle
-polling cannot conceal a broken WM stream. The initial event subscription and
-CREATE each have their own deadline; together `create` takes at most 2000 ms
-before any bounded failure cleanup.
+| Function | Arguments | Return | WM command |
+| --- | --- | --- | --- |
+| `window.create` | `title: String, width: Int, height: Int` | `Int` | `CREATE` |
+| `window.beginFrame` | `r: Int, g: Int, b: Int, a: Int` | `Int` | `BEGIN_FRAME` |
+| `window.drawImage` | `path: String, x: Int, y: Int, width: Int, height: Int` | `Int` | `DRAW_IMAGE` |
+| `window.drawCircle` | `x: Int, y: Int, radius: Int, r: Int, g: Int, b: Int, a: Int` | `Int` | `DRAW_CIRCLE` |
+| `window.present` | None | `Int` | `PRESENT` |
+| `window.show` | None | `Int` | `SHOW` |
+| `window.pollEvent` | `timeoutMs: Int` | `String` | Reads the event socket |
+| `window.close` | None | `Int` | `CLOSE`, unless closure is already known |
+
+Command calls return `Int 0` on success. Runtime rejects invalid argument
+types, nonpositive dimensions or radius, empty image paths, and RGBA
+components outside `0..255`.
+
+Image paths are passed to WM unchanged and must be accessible to its process.
+
+### Events and errors
+
+`window.pollEvent(timeoutMs)` accepts a timeout in `0..1000` milliseconds.
+It returns `"window_close"` when the close event for `map` is received.
+It returns `""` on timeout or when an unrelated event is consumed.
+A zero timeout checks available input without waiting. Incomplete event
+data is retained for the next call.
+
+Command transport uses a 1000 ms deadline covering connection, sending,
+and receiving a response. Event connection establishment is nonblocking
+and fails if it cannot complete immediately. Subscription confirmation
+is awaited for up to 1000 ms.
+
+Transport failures, rejected commands and malformed JSON are errors,
+not successful return values. There is no automatic command retry.
+An event-stream disconnection is an error, not a window-close event.
+
+### Lifecycle and ownership
+
+WM must already be running. Runtime does not start the WM process.
+
+1. `window.create` connects to the event socket and confirms subscription
+   before sending `CREATE`.
+2. The application prepares a frame with `beginFrame`, drawing calls and
+   `present`, then calls `show`.
+3. On native user close, WM destroys the window and sends `window_close`.
+   Once Runtime consumes that event, `window.close` disconnects events
+   without sending a duplicate `CLOSE`.
+4. Otherwise, `window.close` sends `CLOSE` and disconnects events.
+   It leaves the WM process running.
+5. The host/supervisor, not a `.tc` application, manages shutdown of the WM process.
+6. During Runtime destruction, an open window is closed on a best-effort
+   basis. Cleanup errors do not escape the destructor.
+
+Runtime owns its client descriptors. WM owns the command and event socket
+paths and removes them on shutdown. Closing a window alone does not remove
+the server socket paths.
+
+The command socket path is configured through the Runtime constructor.
+The event socket defaults to `/tmp/tacos-wm-events.sock`; a host-side caller
+can override it with `set_wm_event_socket_path` before connecting.
+Changing the command path does not automatically change the event path.
+
+### Verification
+
+`tests/map-wm/window-manager.tc` is the `.tc` integration scenario.
+The `map_runtime_wm_e2e` CTest test runs it through VM and Runtime against
+the production headless renderer.
+
+The test checks background and Target pixels, a simulated native close
+event, explicit closure, a second application launch against the same WM,
+and removal of both socket paths after WM shutdown.
+
+## Remaining interface proposal (#128; owner review required)
+
+The device #134, Broker #135 and window #136 operations above are implemented
+and covered by component integration tests. This does not imply approval of the
+remaining design decisions: recoverable validation of arbitrary malformed domain
+JSON, scheduling IPC/Broker/window events in the single-threaded Map, and
+resource bounds on a long-running application still require joint review.
 
 ### Bounded local IPC for the Map loop (proposal requiring IPC review)
 
@@ -391,85 +376,7 @@ Do not mix `ipc_poll` and `ipc_receive` on one Runtime; this is a programming er
 No acknowledgement, new wire message, extra listener or automatic resend is added.
 This is a proposed addition for owner review, not a claim of current IPC support.
 
-### Deadlines, ownership and shutdown
-
-| Operation | Proposed bound / preserved behavior |
-| --- | --- |
-| Sensor `read`, Broker `connect` | Explicit `timeoutMs` in `1..1000`; entire operation |
-| New IPC/Broker/WM polling | `timeoutMs` in `0..1000`; 0 is nonblocking; no item is normal idle |
-| Broker subscribe/publish; every WM command and event-subscription handshake | Absolute 1000 ms per operation, including connect/write/read |
-| Broker partial input frame | Absolute 1000 ms from its first byte, across polls |
-| Existing IPC send | Preserve 1000 ms and Int -1 on send/framing failure |
-| Existing IPC receive | Preserve indefinite idle wait and five-second partial-message inactivity timeout |
-| Camera startup / DETECT | Preserve separate five-second readiness and request deadlines; a cold call may incur both |
-| Proposed WM cleanup | At most 1000 ms total for best-effort CLOSE; release local descriptors even on failure |
-
-Deadlines are monotonic absolute deadlines, including EINTR handling, partial
-reads/writes and an unresponsive peer. The new command deadlines are requirements
-for follow-up code; current `window_manager_client.cpp` does not meet them.
-Polling uses bounded buffers; no unbounded message queue is introduced.
-
-Each Analyzer/Map process owns a distinct Runtime. One Runtime is used by one
-thread, consistent with [`vm-execution.md`](vm-execution.md). Runtime owns its
-sensor snapshots/providers, IPC descriptors/listener pathname, Broker connection,
-WM client descriptors and its private detector child. It removes only its owned
-listener path and terminates/reaps only its own helper. It never unlinks WM
-sockets, kills WM/Broker or shares connections across VM executions.
-
-On normal return or exception, proposed cleanup closes Broker without a final
-publication, closes a still-owned window within the cleanup deadline, releases
-IPC and sensor resources and performs the existing camera-helper shutdown.
-Destructors must not throw or wait indefinitely. Native close suppresses duplicate
-CLOSE; programmatic close releases the event connection. Crash/SIGKILL cleanup
-and a general process supervisor are outside this increment.
-
-### Deterministic sources and checks
-
-Test selection belongs to the host/harness before VM execution; no new `.tc`
-fake-mode or sensor-setting functions are proposed. The exact provider injection
-configuration is a #134 decision. Invalid configuration must fail explicitly;
-never silently replace a failed real source with test data.
-
-| Fixture / fault | Required outcome |
-| --- | --- |
-| Fixed position `(59.9505, 30.311)`, heading `90.0`, time `1800000000100` | Same Float values and exact i64 timestamp in `.tc`; one position snapshot |
-| GPS/heading unavailable, invalid/non-finite, out of geographic range, delayed provider | -1/-3/-2 as applicable; no Observation from unavailable data; no hang |
-| Latitude ±90, longitude ±180, headings 0/90/180/270 | Accepted sensor values with documented axes; Analyzer applies its stricter ±80 latitude limit separately |
-| Failed read after a successful read; successive successful reads | Old snapshot unusable after failure; both coordinates update together on success |
-| Camera fake modes `two`, `empty`, `camera-unavailable`, `detection-failed` | Existing `CameraOptions` and helper wire fixtures unchanged; empty success differs from RuntimeError |
-| Real custom Broker, absent peer, TCP reset, silent/slow/oversized peer | Correct SUB/PUB/MSG framing, bounded status failures, no retry, Map remains closeable |
-| No IPC observations while Broker updates arrive or user closes | Bounded IPC polls do not starve other event sources |
-| WM success, rejection, silence, malformed response, native close during setup | Bounded success/failure; cleanup, no duplicate CLOSE after event, no QUIT |
-| Repeated VM creation/destruction and long-running message polling | No descriptor/helper/window leaks; bounded buffers and reclamation of generated Strings |
-
-Use the real custom Broker and WM/headless for integration; controlled test peers
-only inject transport faults. Existing Camera/IPC/WM tests must continue passing.
-Follow-up acceptance requires real Compiler → VM → Runtime calls, not only C++
-or a Go application substituting for Analyzer/Map. Existing verification references:
-`docs/testing/camera-runtime.md`, `docs/testing/map-wm.md`, `tests/ipc/`,
-`tests/map-tc/`, `tests/system-smoke/README.md`.
-
-### `.tc` call examples and implementation gates
-
-- [`Analyzer example`](../docs/examples/runtime-api/analyzer.tc) acquires guarded
-  sensor snapshots, calls Camera and reads time. It sends a separately labelled
-  prebuilt Observation fixture through the existing IPC; its JSON is deliberately
-  not claimed to be computed from the sampled pose.
-- [`Map example`](../docs/examples/runtime-api/map.tc) creates/draws/shows one
-  window, publishes a six-field fixture and polls IPC, Broker and native close.
-  It logs incoming payloads; it does not pretend to implement domain parsing or
-  dynamic target drawing before #127 is agreed.
-
-Both files are proposed API usage sketches, **not executable examples on current
-main**: new names are unregistered and Runtime Float results are unsupported.
-They intentionally use precomputed pixels for the first-marker scenario.
-`app/map/tc/projection.tc` is the existing executable coordinate-only reference.
-Production JSON extraction/assembly, exact-field-set validation and String
-reclamation belong to the linked #127 proposal. Trigonometry for general Analyzer
-bearings and Float-to-Int rounding for WM coordinates remain explicit approval
-gates, not invented helper names in the examples.
-
-## Open questions and required review
+### Required architectural decisions
 
 See [`02-open-questions.md`](../docs/ai-context/02-open-questions.md#runtime).
 Before calling #128 approved, record decisions on:
@@ -486,6 +393,120 @@ Before calling #128 approved, record decisions on:
 
 The #128 reviewer set includes `@khamitova-prog`, `@mattthewww`, `@slutswarming`,
 `@m4shustik-s`, `@pypynyaa` and architecture; Broker behavior also needs its owner.
-No review or approval has been requested or recorded by this local draft.
+No final approval of these combined API decisions has been recorded here.
 Threads, generic files/networking, Activity callbacks, WebView, multiple windows,
 camera schema changes and a general exception system are outside this proposal.
+
+## Open questions
+
+### Minimal String data helpers (#127, proposal)
+
+**Pending VM, Runtime, Analyzer, Map and architecture owner review.** The
+approved API above is unchanged. These names must not be implemented or
+treated as approved solely because they appear in this subsection.
+Selection rationale and source examples are in
+[`language.md`](language.md#observation-and-target-data-access-127-proposal).
+
+| Proposed signature | Result and concrete use |
+| --- | --- |
+| `json.arrayLength(source: String) -> Int` | Number of detector objects; `[]` gives 0 |
+| `json.arrayObject(source: String, index: Int) -> String` | One flat detection object, zero-based index |
+| `json.getInt(source: String, key: String) -> Int` | Exact i64 `id`, `timestamp` or `lastSeenAt` |
+| `json.getFloat(source: String, key: String) -> Float` | Finite binary64 angle/distance, coordinates or confidence/probability |
+| `json.getString(source: String, key: String) -> String` | Decoded `targetId` or `observerId` |
+| `json.quote(value: String) -> String` | One JSON string token, including quotes and required escaping |
+| `text.concat(left: String, right: String) -> String` | Concatenated text for an application-built JSON object |
+| `text.fromInt(value: Int) -> String` | Base-10 i64 token without quotes, grouping or leading `+` |
+| `text.fromFloat(value: Float) -> String` | Locale-independent finite JSON number token |
+
+#### Supported JSON subset
+
+- Input must be valid UTF-8 JSON with exactly one root value; JSON whitespace
+  around it is allowed. Trailing garbage, duplicate decoded keys, malformed
+  escapes, unpaired surrogate escapes and invalid UTF-8 are rejected.
+- Object readers accept a flat object of String and JSON number values only.
+  Arrays are accepted only by `arrayLength`/`arrayObject`, and contain only
+  those flat objects. Empty arrays are valid. Nested objects/arrays, booleans
+  and null are outside this increment. The entire source is validated on each
+  read, including unrequested fields or elements. Object key order is irrelevant.
+- Keys are matched by decoded, case-sensitive content. Missing keys and wrong
+  field types are errors, never empty String, zero or absent-value sentinels.
+  These readers do not enforce domain field sets or ranges: `.tc` still owns
+  schema/range validation according to `data-model.md` and `ipc.md`.
+  Support for exact-key-set validation without a DOM is an open review question
+  below; unknown domain fields must not silently become accepted wire data.
+- `getInt` accepts integer lexical tokens only, in signed i64 range. `17.0`,
+  `17e0`, `"17"` and overflowing integers are errors. It does not pass through
+  binary64, so `9007199254740993` remains exact. `-0` yields Int 0.
+- `getFloat` accepts JSON number syntax (including integer/exponent tokens),
+  converted directly to binary64 with round to nearest, ties to even.
+  Overflow to a non-finite value is an error. Finite subnormals, signed zero
+  and underflow to zero are allowed. This explicit JSON conversion does not
+  introduce an implicit `.tc` Int-to-Float conversion.
+- `arrayObject` returns an independent immutable String containing the selected
+  object (original substring or equivalent compact JSON). Its lifetime does not
+  depend on retaining the source. It is not a borrowed pointer or object handle.
+
+#### Output and resource rules
+
+- `quote` escapes quotes, backslashes and U+0000–U+001F, including CR/LF.
+  It preserves decoded text and emits valid UTF-8 JSON without raw newlines.
+  It is for **values**, never quoting an already serialized object. Strings
+  constructed internally may contain controls; JSON encoding must escape them.
+- `fromFloat` emits a shortest decimal that round-trips to the same binary64
+  value, with `.` as the decimal separator; exponent notation is allowed.
+  It never rounds coordinates to a fixed low number of decimal places.
+  Both signed zeros are legal JSON numbers. Non-finite input is an error.
+- All helpers are pure with respect to external services. They do no camera,
+  IPC, network or WM I/O, and never add a newline. `runtime.ipc_send` remains
+  responsible for the one transport newline. Application JSON assembly selects
+  exactly six domain fields or those same six plus IPC `type: "OBSERVATION"`.
+- Proposed bounds: 65,536 UTF-8 bytes per input/output String, excluding any
+  transport newline, and at most 72 array elements (the detector marker range).
+  Bounds are checked before allocation/concatenation; an escape-expanded
+  `quote` result may exceed the bound even when its input fits.
+  This does not enlarge any downstream transport's existing limit.
+- No parser state, cached document handle or String storage is shared between
+  independent VM executions. Results use the existing String runtime kind;
+  numeric results use existing Int or Float kinds.
+
+#### Errors and approval gates
+
+Wrong argument runtime kinds, malformed/unsupported JSON, missing/wrong-type
+fields, numeric overflow, negative/out-of-range array indices, byte/element
+limit violations and allocation failure produce a RuntimeError. Diagnostics
+identify the helper and failing key/index or limit without logging the entire
+payload. A declared call with a wrong argument type is rejected earlier by
+Compiler; invalid bytecode is still checked by VM/Runtime.
+
+The existing uncaught Runtime error path terminates execution with a nonzero
+status. This is an explicit limitation of this proposal, **not** the production
+Map policy. In contrast, the existing `runtime.ipc_send` still returns -1 on
+transport/framing failure; helpers do not change that approved behavior.
+
+Before #132/#133 proceed, owners must decide:
+
+1. Whether these nine helpers are sufficient, or narrow schema-aware codecs
+   would reduce total complexity. Such codecs may validate/encode fields only;
+   they must never compute coordinates, confidence, probability or map pixels.
+2. How `.tc` can reject malformed, wrong-type, missing/extra-field domain
+   messages and continue without a fatal RuntimeError. A bounded validation
+   API versus recoverable errors needs explicit agreement with #128; neither
+   a general exception model nor a JSON DOM is approved here.
+3. The VM ownership/reclamation rule for generated immutable Strings. Per-call
+   size bounds do not bound a long-running process. No GC, global String arena,
+   leaked lifetime or new pointer ABI is implicitly approved.
+4. Agreement on the proposed byte/element limits with existing camera/IPC and
+   future Broker limits. Parser implementation/library selection is not fixed.
+
+See [`data-contract-review.md`](../docs/data-contract-review.md) for required
+reviews and acceptance vectors. #128 owns device/time, networking and WM calls;
+this section adds no signatures for those services and changes neither the
+Camera String result nor the private detector protocol.
+
+Not decided here; see `docs/ai-context/02-open-questions.md` → "Runtime":
+
+- the remaining Runtime API surface (threads, IPC, location, orientation, networking, files, time,
+  Activity lifecycle, WebView bridge, Window Manager access) — added incrementally, one concrete
+  scenario at a time;
+- how recoverable Runtime call errors are represented inside `.tc` programs beyond the initial failure-reporting behavior.

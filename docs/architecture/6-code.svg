@@ -5,7 +5,7 @@
   Keep this diagram on its own level (see docs/architecture/README.md) and keep labels in Russian:
   the diagrams are embedded in the Russian README.md.
 -->
-<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="400" font-family="IBM Plex Sans, Helvetica, Arial, sans-serif" color="#1f1c26" viewBox="0 0 1000 400" role="img" aria-label="Внутри одного процесса tacvm два компонента: VM и Runtime. При загрузке VM вызывает has_function у таблицы функций Runtime и получает true или false. При исполнении VM вызывает call, Runtime находит обработчик в таблице, runtime_log печатает строку и возвращает Int 0.">
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="504" font-family="IBM Plex Sans, Helvetica, Arial, sans-serif" color="#1f1c26" viewBox="0 0 1000 504" role="img" aria-label="Внутри одного процесса tacvm два компонента: VM и Runtime. При загрузке VM вызывает has_function у таблицы функций Runtime и получает true или false. При исполнении VM вызывает call, Runtime находит обработчик в таблице, runtime_log печатает строку и возвращает Int 0.">
   <defs>
     <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
   </defs>
@@ -82,4 +82,11 @@
   <text class="t-sub" x="666" y="298">проверяет, что аргумент — строка</text>
   <text class="t-sub" x="666" y="318">печатает строку + \n в stdout</text>
   <text class="t-sub" x="666" y="338">возвращает Int 0</text>
-  </svg>
+  
+  <!-- Local semantic legend (#123): viewpoint-specific, not a new system component. -->
+  <rect x="0" y="400" width="1000" height="104" fill="#ffffff"/>
+  <line x1="16" y1="408" x2="984" y2="408" stroke="#d3cfdd" stroke-width="1"/>
+  <text x="20" y="428" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#2f2a3a">ЛЕГЕНДА МОДЕЛИ · 6/6</text>
+  <text x="20" y="451" font-family="Arial, sans-serif" font-size="12.5" fill="#1f1c26">Исполнение: внешняя рамка — один процесс; внутренние блоки — компоненты и функции.</text>
+  <text x="20" y="474" font-family="Arial, sans-serif" font-size="12.5" fill="#625d70">Сплошные стрелки — синхронные вызовы, пунктир — возврат результата. Это не сетевое IPC.</text>
+</svg>

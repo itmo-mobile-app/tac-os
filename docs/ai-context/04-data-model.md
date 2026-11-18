@@ -71,7 +71,7 @@ The identifier of a target is the id of its ArUco marker (see `01-architecture.m
 
 ### Detection confidence
 
-Represents the reliability of one local Observation, assigned by Analyzer; it is not an aggregated score across devices. Its estimation policy is not yet defined.
+Represents the reliability of one local Observation, assigned by Analyzer; it is not an aggregated score across devices. Its initial heuristic is proposed in `spec/analyzer-observation.md` and requires owner review; it is not measured sensor accuracy.
 
 ### Target probability
 

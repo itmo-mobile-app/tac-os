@@ -1,5 +1,8 @@
 # Map coordinate calculation on .tc (#109)
 
+For the first windowed Map on `.tc` (#139), see [WINDOW.md](WINDOW.md) and `map.tc`.
+The projection-only scenario below remains unchanged and independently tested.
+
 Status: the real Compiler → VM Linux E2E passed on 2026-11-04 using the
 then-unmerged Float implementations from Compiler PR #120 and VM PR #116.
 Both have since been merged into `main`. This change adds only Map's

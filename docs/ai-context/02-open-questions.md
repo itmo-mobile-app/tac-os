@@ -18,6 +18,13 @@ Remaining open:
 - Exact representation of structs or objects.
 - Error handling model.
 - Standard library scope.
+- Issue #127 proposes nine narrow String/JSON Runtime helpers using existing
+  scalar values, not structs or a JSON DOM. See `spec/language.md` and
+  `spec/runtime-api.md` for the unapproved signatures and limits, and
+  `docs/data-contract-review.md` for owner review. Exact-field-set validation,
+  recoverable rejection of malformed messages, and bounded String reclamation
+  must be decided before #132/#133 implement this proposal. Device/network/WM
+  signatures remain with #128. No owner approval is inferred from these docs.
 
 ## Compiler
 
@@ -57,22 +64,11 @@ The Runtime call ABI and the first function (`runtime.log`) are defined in `spec
 mechanism and message format for the Analyzer↔Map scenario are defined in `spec/ipc.md` (both approved by
 the Runtime owner). Remaining open:
 
-- Sprint 4 device/time, Broker, drawing/events and bounded IPC candidates are
-  documented in [`spec/runtime-api.md`](../../spec/runtime-api.md#sprint-4-minimum-api-128-proposal)
-  for issue #128. They are not approved or implemented. Required owner decisions:
-  - snapshot-based location/heading getters, true-north camera-axis convention,
-    provider injection, sample age and camera/pose skew;
-  - extending the existing Int/String VM-to-Runtime conversion boundary for
-    finite Float values, with Compiler registration and existing v1/v2 regression;
-  - recoverable status codes, deadlines and additive IPC polling so Map can
-    service local observations, Broker messages and native close in one thread;
-  - Broker transport/line limits, no-ACK semantics and explicit reconnect policy;
-  - bounded WM commands/event subscription/cleanup consistent with the reviewed
-    Activity contract, including no duplicate CLOSE and no application QUIT;
-  - agreement with #127 / PR #152 on recoverable domain validation, exact field
-    sets and bounded reclamation of generated Strings;
-  - the minimum trigonometry and Float-to-Int pixel rounding/conversion needed
-    for general Analyzer bearings and the final Map drawing path.
+- Device #134, Broker #135 and WM #136 APIs are implemented, but the remaining
+  design decisions for #128 require owner review (see `spec/runtime-api.md`).
+  In particular, a nonblocking `runtime.ipc_poll`/`runtime.ipc_message` pair
+  is still only a proposal; the current blocking `ipc_receive` is unsuitable
+  for the final Map event loop without separate scheduling.
 - Linux threading primitive.
 - Thread synchronization primitives.
 The camera architecture and the **initial** `camera.detectMarkers() -> String`
@@ -80,18 +76,17 @@ API are fixed in `spec/runtime-api.md`; the private Unix-domain socket
 protocol, timeout and helper lifecycle are fixed in
 `spec/camera-detector-protocol.md`. Still unresolved:
 
-- The Float contract is described in `spec/language.md` and
-  `spec/bytecode.md` (#106); Compiler #107 and VM #108 are merged, with the
-  real Compiler-to-VM projection scenario in `tests/map-tc/`. Runtime still
-  accepts/returns only Int and String; a Float boundary is proposed in #128.
+- Float is implemented in Compiler #107 and VM #108 and is passed through the
+  Runtime Value boundary by #134. There is no new bytecode ABI; VM/Runtime
+  validation and generated String ownership still need data-integration review.
   Native collections/`Detection[]` remain unresolved, and the current
   Camera API continues returning JSON as `String`.
 - A recoverable error mechanism visible to `.tc` beyond an initial Runtime failure.
 - Production camera configuration and device-calibration strategy; initial
   defaults are only for the prototype.
 - Approval from the course instructor for OpenCV/gocv usage in the detector.
-- Approval of the #128 location, orientation, Broker and time proposal before
-  implementation in #134/#135; drawing/lifecycle integration follows in #136.
+- Review of implemented location, orientation and time calls from #134 / PR #162; Linux test providers are explicit, while production sensor calibration and permitted sample age still need a decision.
+- Additional networking API beyond the implemented Broker transport.
 - File API.
 
 ## Window Manager
@@ -162,7 +157,6 @@ Remaining open:
 
 The minimal SQL subset is defined in `spec/sql.md` (approved by the SQL DBMS owner). Remaining open:
 
-- Storage format.
 - Table representation.
 - Whether indexes are required.
 - Whether transactions are required.

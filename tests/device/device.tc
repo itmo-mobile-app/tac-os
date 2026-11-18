@@ -1,0 +1,15 @@
+fun main() {
+    if (location.read(1000) != 0) { return; }
+    if (orientation.read(1000) != 0) { return; }
+
+    let latitude: Float = location.latitude();
+    let longitude: Float = location.longitude();
+    let heading: Float = orientation.heading();
+    let now: Int = time.nowMs();
+
+    if (latitude != 59.9505) { return; }
+    if (longitude != 30.311) { return; }
+    if (heading != 90.0) { return; }
+    if (now != 1800000000100) { return; }
+    runtime.log("device sample ok");
+}

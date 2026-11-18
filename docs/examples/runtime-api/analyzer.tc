@@ -1,5 +1,5 @@
-// #128 proposal: new device/time calls and Runtime Float results are not implemented.
-// Camera also needs registration in Compiler's Runtime signature table.
+// #128 API usage sketch: device/time and Runtime Float results are implemented.
+// Camera registration and end-to-end application data processing need integration review.
 // This is an API usage sketch, not the finished Analyzer or an executable test.
 fun main() {
     if (location.read(1000) != 0) {

@@ -97,6 +97,14 @@ func (s *Server) Run(ctx context.Context) error {
 	_ = os.Chmod(s.EventSocketPath, 0600)
 
 	defer func() {
+		s.mu.Lock()
+		if s.window != nil {
+			_ = s.window.Close()
+			s.window = nil
+			s.windowID = ""
+		}
+		s.mu.Unlock()
+
 		_ = commandListener.Close()
 		_ = eventListener.Close()
 		_ = os.Remove(s.SocketPath)
@@ -150,6 +158,9 @@ func (s *Server) Run(ctx context.Context) error {
 
 			s.eventMu.Unlock()
 			s.mu.Unlock()
+			if err == nil {
+				go s.watchEventClient(conn)
+			}
 		}
 	}()
 
@@ -190,6 +201,21 @@ func (s *Server) Run(ctx context.Context) error {
 			}
 		case received := <-requests:
 			_ = s.handleRequest(received.conn, received.req, received.err)
+		}
+	}
+}
+
+// watchEventClient removes disconnected Runtime subscribers instead of
+// retaining dead Unix connections until the next broadcast or WM shutdown.
+func (s *Server) watchEventClient(conn net.Conn) {
+	var buffer [1]byte
+	for {
+		if _, err := conn.Read(buffer[:]); err != nil {
+			s.eventMu.Lock()
+			delete(s.eventClients, conn)
+			s.eventMu.Unlock()
+			_ = conn.Close()
+			return
 		}
 	}
 }

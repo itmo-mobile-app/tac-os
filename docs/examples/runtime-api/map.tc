@@ -1,4 +1,4 @@
-// #128 proposal: requires unimplemented Broker/drawing/polling signatures.
+// #128 usage sketch: Broker and drawing APIs are implemented; IPC polling remains proposed.
 // This is a bounded API usage sketch with fixture pixels, not the finished Map.
 fun main() {
     runtime.ipc_listen();

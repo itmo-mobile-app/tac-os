@@ -1,4 +1,4 @@
-foreach(case Create Insert Select Update UpdateErrors Literals Syntax Semantic Atomicity Independent ResultTypes)
+foreach(case Create Insert Select Update UpdateErrors Literals Syntax Semantic Atomicity Independent ResultTypes SnapshotRoundTrip SnapshotRejectsCorruption SnapshotFailedRenameDoesNotApplyWrite)
     string(TOLOWER "${case}" name)
     add_test(NAME dbms.${name}
         COMMAND "${CMAKE_COMMAND}" -E env
