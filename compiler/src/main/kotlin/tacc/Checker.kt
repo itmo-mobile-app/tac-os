@@ -28,6 +28,13 @@ object RuntimeFunctions {
         "runtime.ipc_send" to Signature(
             listOf(Type.STRING), Type.INT
         ),
+        "broker.connect" to Signature(listOf(Type.STRING, Type.INT, Type.INT), Type.INT),
+        "broker.subscribe" to Signature(listOf(Type.STRING), Type.INT),
+        "broker.publish" to Signature(listOf(Type.STRING, Type.STRING), Type.INT),
+        "broker.receive" to Signature(listOf(Type.INT), Type.INT),
+        "broker.topic" to Signature(emptyList(), Type.STRING),
+        "broker.payload" to Signature(emptyList(), Type.STRING),
+        "broker.close" to Signature(emptyList(), Type.INT),
         "window.create" to Signature(
             listOf(Type.STRING, Type.INT, Type.INT), Type.INT
         ),

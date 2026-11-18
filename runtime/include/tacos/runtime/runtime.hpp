@@ -10,7 +10,10 @@
 
 namespace tacos::runtime {
 
-namespace detail { class CameraDetectorClient; }
+namespace detail {
+class BrokerClient;
+class CameraDetectorClient;
+}
 
 // Host configuration; the VM-facing camera function still has zero arguments.
 struct CameraOptions {
@@ -90,6 +93,9 @@ public:
 
 
 private:
+    struct FunctionEntry;
+    static const FunctionEntry* find_function(const std::string& name);
+
     std::ostream& output_;
     std::string wm_socket_path_;
     std::string ipc_socket_path_;
@@ -106,6 +112,7 @@ private:
     // Данные, полученные после очередного '\n'.
     std::string ipc_buffer_;
     std::unique_ptr<detail::CameraDetectorClient> camera_;
+    std::unique_ptr<detail::BrokerClient> broker_;
 };
 
 } // namespace tacos::runtime

@@ -1,6 +1,7 @@
 # Runtime is linked into the VM executable (docs/ai-context/01-architecture.md).
 add_library(tacos_runtime STATIC
     src/runtime.cpp
+    src/broker_client.cpp
     src/camera_detector_client.cpp
     src/window_manager_client.cpp)
 
