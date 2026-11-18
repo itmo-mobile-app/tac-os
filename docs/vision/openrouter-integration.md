@@ -1,7 +1,7 @@
 # Proposed OpenRouter vision integration and evaluation
 
 Status: **proposal for review**, issue #129; related #104 (Analyzer PoC),
-#141 (Runtime integration) and #142 (final `.tc` Analyzer). This file is
+issue #141 (Runtime integration) and issue #142 (final `.tc` Analyzer). This file is
 not an approved public `spec/` contract and does not change the current
 `DETECT` wire format or the six-field `Observation`.
 
@@ -37,7 +37,7 @@ default (max 60s), and there is no automatic retry. Every failed or
 invalid response is treated as a failure, **not** as "no player".
 
 OpenRouter documents the multimodal Chat Completions input shape at:
-https://openrouter.ai/blog/tutorials/send-image-to-llm/
+[OpenRouter multimodal image tutorial](https://openrouter.ai/blog/tutorials/send-image-to-llm/)
 
 ## Candidate **result schema** for Analyzer/Runtime review
 
