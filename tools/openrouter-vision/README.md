@@ -111,8 +111,10 @@ testdata/README.md and testdata/expected.json.
 
 No fetch command or Wikimedia download is required. From this directory:
 
-    python3 testdata/vision_samples.py check
-    python3 testdata/vision_samples.py run --ids P1,C1,N1 --send-images
+```sh
+python3 testdata/vision_samples.py check
+python3 testdata/vision_samples.py run --ids P1,C1,N1 --send-images
+```
 
 The first command validates local files without any network. The second
 performs one external OpenRouter request per selected photo and requires
