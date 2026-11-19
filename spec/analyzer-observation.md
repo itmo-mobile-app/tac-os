@@ -192,23 +192,20 @@ Questions handed to #104, with the full list in `docs/ai-context/02-open-questio
 - the limits: images and consent, the API key kept outside git, latency, cost, failures and the
   offline fallback.
 
-## Changes needed outside this document
+## Implementation status and remaining integration
 
-These are **not** approved here; each needs its owner's decision.
+The coordinate calculation and all 16 reference vectors execute in the real
+`app/analyzer/tc/observation.tc`. Sprint 4 #138 now also serializes **calculated**
+Observations using the approved #127 JSON/String helpers and sends them via
+`runtime.ipc_send`. The `analyzer_tc_ipc_e2e` test uses a separate `.tc` Map
+listener running in a second VM process. The unchanged IPC schema still has six
+domain fields plus `type: "OBSERVATION"`.
 
-1. `Float` in the language, bytecode and VM is implemented (#106–#108). No further Float language support is needed for this calculation; Float crossing VM/Runtime remains a separate API decision.
-2. `sin` and `cos`, or equivalent functions, for `.tc` code: not part of the language or of the
-   Runtime API. `app/analyzer/tc/observation.tc` (#138) implements them in `.tc` source with a
-   Maclaurin series, so no contract change is needed to run the calculation; a Runtime or language
-   function remains an optional later replacement (Runtime and Language owners).
-3. Runtime location, orientation and time APIs with the units of "Inputs" (Runtime owner).
-4. Access to the fields of the detections. `camera.detectMarkers()` returns a JSON `String`, and
-   `.tc` has neither a JSON parser nor collections (`spec/runtime-api.md`).
-5. Formatting `Float` values into the JSON `String` that `runtime.ipc_send` sends.
-
-The calculation, the validation and the confidence policy run in `.tc` and pass all vectors
-(`app/analyzer/tc/observation.tc`, #138). Items 3 to 5 do not exist yet, so that program takes the
-detections and the device pose from fixtures and does not send an `Observation`.
+For this acceptance test, the detection arrays, location, orientation and time
+are fixture inputs. Production sensor/Camera integration, AI vision and
+the final Map/Broker/WM event loop remain in Sprint 5 (#141–#143). No
+additional `.tc` Float syntax, Runtime trigonometry or new IPC wire field
+was introduced. `sinDeg` and `cosDeg` remain in the Analyzer source.
 
 ## Test vectors
 

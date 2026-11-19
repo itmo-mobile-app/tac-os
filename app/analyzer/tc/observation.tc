@@ -5,8 +5,8 @@
 // and one detection, validates the input and checks the results against the shared vectors
 // in spec/analyzer-observation-vectors.json.
 //
-// Not done here: building the Observation JSON String and sending it with runtime.ipc_send.
-// That needs String assembly and Float formatting, which `.tc` does not have yet (see README.md).
+// The same file now assembles and sends calculated Observations over Runtime IPC.
+// Live camera/position sources and AI recognition remain in Sprint 5 (#142).
 
 // ---- Constants of spec/analyzer-observation.md ----
 
@@ -493,4 +493,97 @@ fun main() {
     } else {
         runtime.log("analyzer-observation-failed");
     }
+    runtime.log(fixtureDelivery());
+}
+
+
+// ---- IPC delivery from real calculated values, not from a prebuilt message ----
+// The input arrays and pose are fixtures for Sprint 4. Camera/device integration is #142.
+
+fun observationJson(id: Int, observerId: String, latitude: Float, longitude: Float,
+                    confidence: Float, timestamp: Int): String {
+    let message: String = "{\"type\":\"OBSERVATION\",\"targetId\":";
+    message = text.concat(message, json.quote(text.fromInt(id)));
+    message = text.concat(message, ",\"observerId\":");
+    message = text.concat(message, json.quote(observerId));
+    message = text.concat(message, ",\"latitude\":");
+    message = text.concat(message, text.fromFloat(latitude));
+    message = text.concat(message, ",\"longitude\":");
+    message = text.concat(message, text.fromFloat(longitude));
+    message = text.concat(message, ",\"confidence\":");
+    message = text.concat(message, text.fromFloat(confidence));
+    message = text.concat(message, ",\"timestamp\":");
+    message = text.concat(message, text.fromInt(timestamp));
+    return text.concat(message, "}");
+}
+
+// Returns number of successfully sent Observations, or -1 if any send failed.
+// Invalid individual detections are ignored without hiding valid detections.
+// This deliberately uses the same status/calculation/confidence as the 16 vector tests.
+fun transmitDetections(detections: String, observerId: String, timestamp: Int,
+                       positionAvailable: Bool, deviceLatitude: Float, deviceLongitude: Float,
+                       headingAvailable: Bool, heading: Float): Int {
+    const count: Int = json.arrayLength(detections);
+    let index: Int = 0;
+    let sent: Int = 0;
+    let failed: Bool = false;
+    while (index < count) {
+        const detection: String = json.arrayObject(detections, index);
+        const id: Int = json.getInt(detection, "id");
+        const relativeAngle: Float = json.getFloat(detection, "relativeAngle");
+        const distance: Float = json.getFloat(detection, "distance");
+        if (status(positionAvailable, deviceLatitude, deviceLongitude,
+                   headingAvailable, heading, id, relativeAngle, distance) == 0) {
+            const latitude: Float = targetLatitude(deviceLatitude, heading, relativeAngle, distance);
+            const longitude: Float = targetLongitude(deviceLatitude, deviceLongitude,
+                                                     heading, relativeAngle, distance);
+            const confidence: Float = localConfidence(distance);
+            const message: String = observationJson(id, observerId, latitude, longitude,
+                                                    confidence, timestamp);
+            if (runtime.ipc_send(message) == 0) {
+                sent = sent + 1;
+            } else {
+                failed = true;
+            }
+        }
+        index = index + 1;
+    }
+    if (failed) {
+        return -1;
+    }
+    return sent;
+}
+
+// Exercise 0, 1, 2 detections and a mixed invalid+valid frame.
+// With Map absent, all send attempts return -1 without stopping the VM.
+// With a live Map, four actual serialized Observations cross the IPC socket.
+fun fixtureDelivery(): String {
+    const zero: Int = transmitDetections("[]", "device-1", 1800000000100,
+                                         true, 59.9505, 30.311, true, 90.0);
+    const one: Int = transmitDetections(
+        "[{\"id\":17,\"relativeAngle\":0.0,\"distance\":10.0}]",
+        "device-1", 1800000000100, true, 59.9505, 30.311, true, 90.0);
+    const two: Int = transmitDetections(
+        "[{\"id\":17,\"relativeAngle\":12.5,\"distance\":3.2},{\"id\":23,\"relativeAngle\":-8.4,\"distance\":5.7}]",
+        "device-2", 9007199254740993, true, 59.9505, 30.311, true, 350.0);
+    const mixed: Int = transmitDetections(
+        "[{\"id\":18,\"relativeAngle\":0.0,\"distance\":-2.0},{\"id\":23,\"relativeAngle\":-8.4,\"distance\":5.7}]",
+        "device-3", 1800000000101, true, 59.9505, 30.311, true, 350.0);
+    if (zero == 0) {
+        if (one == 1) {
+            if (two == 2) {
+                if (mixed == 1) {
+                    return "analyzer-ipc-sent";
+                }
+            }
+        }
+        if (one == -1) {
+            if (two == -1) {
+                if (mixed == -1) {
+                    return "analyzer-ipc-unavailable";
+                }
+            }
+        }
+    }
+    return "analyzer-ipc-failed";
 }
