@@ -68,6 +68,8 @@ object RuntimeFunctions {
         "json.getInt" to Signature(listOf(Type.STRING, Type.STRING), Type.INT),
         "json.getFloat" to Signature(listOf(Type.STRING, Type.STRING), Type.FLOAT),
         "json.getString" to Signature(listOf(Type.STRING, Type.STRING), Type.STRING),
+        "json.validateObservation" to Signature(listOf(Type.STRING, Type.INT), Type.INT),
+        "json.validateTarget" to Signature(listOf(Type.STRING), Type.INT),
         "json.quote" to Signature(listOf(Type.STRING), Type.STRING),
         "text.concat" to Signature(listOf(Type.STRING, Type.STRING), Type.STRING),
         "text.fromInt" to Signature(listOf(Type.INT), Type.STRING),

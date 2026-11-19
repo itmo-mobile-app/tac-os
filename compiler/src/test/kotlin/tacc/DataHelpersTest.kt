@@ -113,6 +113,22 @@ class DataHelpersTest {
         assertEquals(1, bytes[4].toInt())
     }
 
+    @Test
+    fun recoverableValidationCompilesWithExistingAbi() {
+        val module = Module.read(compile(inMain("""
+            const payload = "{\"targetId\":\"17\",\"latitude\":0,\"longitude\":0,\"probability\":0.9,\"lastSeenAt\":1}";
+            if (json.validateTarget(payload) == 1) { runtime.log("good"); }
+            if (json.validateObservation(payload, 0) == 0) { runtime.log("not observation"); }
+        """.trimIndent())))
+        val calls = module.functions.flatMap { fn -> disassemble(module, fn.name) }
+        assertTrue(calls.any { it.contains("CALL_RUNTIME json.validateTarget, 1") })
+        assertTrue(calls.any { it.contains("CALL_RUNTIME json.validateObservation, 2") })
+        rejects(inMain("let s = json.validateTarget(1);"),
+            "argument 1 of 'json.validateTarget' must be String, found Int")
+        rejects(inMain("let s = json.validateObservation(\"{}\", \"1\");"),
+            "argument 2 of 'json.validateObservation' must be Int, found String")
+    }
+
     // ---- Negative ----
 
     @Test

@@ -346,11 +346,15 @@ The sample confidence formula remains a proposal from
 Full trigonometry, device/time calls, Broker I/O and WM drawing remain separate
 dependencies (#128/#134–#136); their signatures must not be invented here.
 
-Open before implementation: owner approval of this helper set, bounded String
-ownership in VM, and a recoverable validation path for untrusted JSON. The
-initial RuntimeError behavior cannot satisfy Map's eventual requirement to
-discard malformed updates and keep its window alive. The example only covers
-a well-typed fixture; no `try`, sentinel value or silent fallback is implied.
+Two additional narrow Runtime calls, `json.validateObservation(source, ipc)` and
+`json.validateTarget(source)`, have been implemented as a nonfatal validation
+boundary for untrusted domain JSON; `1` means valid and `0` means invalid.
+They leave existing getters' fail-fast semantics intact, so a Map checks the
+status before reading fields. No `try`, implicit conversion, new collection,
+or JSON DOM is introduced. An invalid frame in blocking `runtime.ipc_receive`
+still requires the separately proposed #128 polling API for full recovery.
+Final event-loop behavior and live-memory limits remain tracked in
+`spec/runtime-api.md`.
 
 Not decided here; see `docs/ai-context/02-open-questions.md` → "Language":
 
