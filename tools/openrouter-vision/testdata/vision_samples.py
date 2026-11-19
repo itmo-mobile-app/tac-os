@@ -106,15 +106,19 @@ def run_one(sample_id, timeout):
     validate_jpeg(path.read_bytes())
     cmd = ["go", "run", ".", "-image", str(path), "-send-image",
            "-timeout", str(timeout) + "s"]
-    finished = subprocess.run(
-        cmd,
-        cwd=HERE.parent,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        timeout=timeout + 90,
-        check=False,
-    )
+    try:
+        finished = subprocess.run(
+            cmd,
+            cwd=HERE.parent,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=timeout + 90,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        print(f"{sample_id}: ERROR: local Go process timed out", file=sys.stderr)
+        return False
     if finished.returncode:
         # CLI already sanitizes provider errors; no raw image/model response.
         print(f"{sample_id}: ERROR: {finished.stderr.strip()}", file=sys.stderr)
