@@ -62,6 +62,9 @@ jobs:
           - component: Target Service
             directory: target-service
             packages: ./...
+          - component: OpenRouter Vision PoC
+            directory: tools/openrouter-vision
+            packages: ./...
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v6
@@ -80,6 +83,11 @@ jobs:
       - name: Go tests (race detector)
         working-directory: ${{ matrix.directory }}
         run: go test -race -count=1 ${{ matrix.packages }}
+
+      - name: Verify offline Vision image fixture tooling
+        if: matrix.component == 'OpenRouter Vision PoC'
+        working-directory: tools/openrouter-vision
+        run: python3 -m unittest discover -s testdata -p 'test_*.py'
 
       # Verify real Unix-socket SQL integration in CI; ordinary Go tests use a fake DBMS.
       - name: Build DBMS server for Target Service E2E
