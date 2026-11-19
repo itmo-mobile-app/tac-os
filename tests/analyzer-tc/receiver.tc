@@ -1,0 +1,9 @@
+// Minimal separate .tc Map receiver for the real Analyzer IPC acceptance test.
+// Runtime validates exact seven-field Observation messages before returning them.
+fun main() {
+    runtime.ipc_listen();
+    runtime.log(runtime.ipc_receive());
+    runtime.log(runtime.ipc_receive());
+    runtime.log(runtime.ipc_receive());
+    runtime.log(runtime.ipc_receive());
+}
