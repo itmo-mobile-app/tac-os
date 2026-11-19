@@ -553,8 +553,8 @@ per-call limits are accepted for this increment. This is a contract decision,
 not a guarantee of bounded total live memory for a long-running Map.
 
 Remaining work is tracked separately: `runtime.ipc_poll`/`ipc_message` from
-#128 must be implemented and exercised with malformed transport frames in
-#143/#145. The previous `runtime.ipc_receive` fatal-error behavior is unchanged.
+Issue #128 must be implemented and exercised with malformed transport frames in
+issues #143/#145. The previous `runtime.ipc_receive` fatal-error behavior is unchanged.
 
 See [`data-contract-review.md`](../docs/data-contract-review.md) for required
 reviews and acceptance vectors. #128 owns device/time, networking and WM calls;
