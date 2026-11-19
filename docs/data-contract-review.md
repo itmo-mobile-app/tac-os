@@ -3,7 +3,7 @@
 Status: #127 contract approved by the project coordinator on 19 November 2026
 and issue closed. Nine helpers (#132) and two validators (#167) are implemented.
 Final Map IPC recovery and long-running resource tests remain open under
-#143/#145; approval is not evidence of an already working Map event loop.
+issues #143/#145; approval is not evidence of an already working Map event loop.
 
 ## Review scope
 
@@ -56,7 +56,7 @@ example intentionally remains unbuildable until its API is implemented.
 
 These cases are exercised by `runtime_data_helpers`, `data_tc_e2e` and the
 Compiler type checks where applicable. Recoverable domain validation and exact field-set checks are implemented by
-#167; malformed IPC-frame recovery remains separate in #143/#145.
+PR #167; malformed IPC-frame recovery remains separate in #143/#145.
 
 | Case | Expected |
 | --- | --- |
