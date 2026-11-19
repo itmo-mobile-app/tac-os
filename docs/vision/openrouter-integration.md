@@ -7,9 +7,11 @@ not an approved public `spec/` contract and does not change the current
 
 ## Goal and evaluation boundary
 
-Show **real** model-based visual recognition of one visible player/target.
-The chosen vision model receives an authorized still image and may state
-whether a player is visible and optionally provide an image-space region.
+Show **real** model-based visual detection of any visible person, including
+ordinary players wearing casual clothes, T-shirts or sportswear without
+uniforms or airsoft markers. The chosen model receives an authorized still
+image and may state whether a person is visible and optionally provide a
+region within the image.
 This is intentionally **not** automatic personal identification, ArUco
 marker decoding, distance estimation, geographic localization or proof of
 target identity.
@@ -28,8 +30,12 @@ The CLI `tools/openrouter-vision/` sends a single
 - `model` from `OPENROUTER_MODEL` or explicit CLI argument;
 - one `messages[0].content` array with `text` and
   `image_url.url = data:<mime>;base64,<bytes>`;
-- `temperature = 0` and `max_tokens = 220` as a budget-conscious
-  request, without promising deterministic behavior from all models.
+- `temperature = 0` and `max_tokens = 220` by default; for the
+  tested free NVIDIA Nemotron 3.5 Super VL endpoint, the CLI requests
+  `max_tokens = 1024`, `reasoning.enabled = false` and
+  `response_format.type = "json_object"` to avoid empty completions.
+  Other models do not automatically receive the NVIDIA-specific fields.
+  These settings do not promise deterministic behavior or fixed costs.
 
 The CLI requires an explicit `-send-image` consent switch; local input
 is a regular JPEG/PNG/WebP file up to 2 MiB, timeout is 15 seconds by
@@ -97,7 +103,7 @@ The approved six-field `Observation` and five-field `Target` schemas
 remain unchanged. The AI result should not be written into Broker/DBMS
 as an extra field without a separate contract.
 
-## Real-image evaluation protocol (not yet executed)
+## Real-image evaluation protocol and initial operator results
 
 Use the **same authorized images** for every candidate vision model.
 Record only fixture IDs, expected labels, normalized result, latency,
@@ -124,8 +130,28 @@ all six requests complete; no malformed results; zero false positives
 on N1/N2; at least P1 succeeds. The final accuracy threshold and P3's
 label are for @slutswarming and the project lead to approve.
 
-**Observed results:** none yet. No API key or approved player photographs
-are available in the project context, so success is not claimed.
+**Initial operator-reported results (19 November 2026):** a local Mac user
+tested `nvidia/nemotron-3.5-super-vl:free` via the Go CLI after adding
+`reasoning.enabled=false` and expanding the output token limit. The
+following statuses and normalized boxes were reported directly in the
+project conversation; the photos themselves were not committed or
+independently inspected, and bbox placement has not been audited.
+
+| Image | Result status | Returned bbox (x, y, w, h) | Observation |
+| --- | --- | --- | --- |
+| P1 | `present` | 0.29, 0.43, 0.51, 0.22 | Positive sample |
+| P2 | `present` | 0.03, 0.46, 0.25, 0.50 | Positive sample |
+| P3 | `present` | 0.10, 0.15, 0.75, 0.85 | Positive sample |
+| N1 | `absent` | null | Empty woodland/background |
+| N2 | `absent` | null | Equipment without a person |
+| N3 | `present` | 0.18, 0.03, 0.52, 0.97 | Mannequin; project coordinator accepts this false positive for initial PoC |
+
+All six reported requests returned strictly parsable result JSON. This is
+**not a measured accuracy rate** or proof of the quality of the returned boxes.
+The results were obtained with the former airsoft-oriented prompt, **before**
+the updated casual-clothing detection wording; re-run the model on
+authorized photos of people in everyday clothing. A mannequin result
+must not be confused with proof of a living person's identity.
 
 ## Errors and offline behavior
 
@@ -153,8 +179,10 @@ are available in the project context, so success is not claimed.
       image frames synchronize with ArUco detections.
 - [ ] Compiler/VM owners approve a concrete ABI if Runtime needs a
       new return type.
-- [ ] Real image request and negative tests are executed, recorded and
-      reproducible with a permitted key.
+- [x] Operator reported one set of six real image requests and negative
+      controls using their own API key; resulting statuses are recorded above.
+      Updated-prompt validation on casual-clothes photos and independent
+      assessment of bbox placement remain incomplete.
 
 Until then #129 provides a tested **transport/response-format prototype
 by design**, not evidence of production-ready camera integration.
