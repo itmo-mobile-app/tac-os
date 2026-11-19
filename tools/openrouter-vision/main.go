@@ -24,14 +24,18 @@ const (
 	maxResponseBytes   = 128 << 10
 )
 
-const prompt = `Classify this airsoft-game camera image. Is a human player visibly present?
-Reply with ONLY a JSON object with exactly these keys:
+const prompt = `Analyze this photo. Is any human person visibly present?
+This includes people in casual clothes, T-shirts, jeans, sportswear, or
+camouflage. A person does NOT need a uniform, airsoft equipment, a
+weapon, or a visible marker to count. Detect ordinary recreational
+players and bystanders just as you would a person in tactical gear.
+Reply with ONLY one JSON object with exactly these keys:
 {"status":"present|absent|uncertain","bbox":null}
-If a player is clearly visible, use "present". If no person is visible,
-use "absent". If the image is ambiguous, use "uncertain".
+Use "present" for a visible person, "absent" if no person is visible,
+and "uncertain" if visibility makes that decision unreliable.
 For "present", bbox may be {"x":0.1,"y":0.2,"w":0.3,"h":0.4},
-normalized to [0,1] and enclosing ONE visible player, or null if not
-reliably localized. For "absent" and "uncertain", bbox MUST be null.
+normalized to [0,1] and enclosing ONE visible person, or null if
+not reliably localized. For "absent" and "uncertain", bbox MUST be null.
 Do not include commentary or Markdown. Do not guess an ArUco marker ID,
 a person's identity, distance, geographic position, or a confidence score.`
 
@@ -172,6 +176,16 @@ func recognize(ctx context.Context, client *http.Client, endpoint, apiKey, model
 			},
 		},
 	}
+	// The verified free NVIDIA vision endpoint may spend the entire small
+	// completion budget on reasoning and return empty message.content.
+	// Its tested PoC configuration disables reasoning, requests JSON and
+	// gives the concise response sufficient room. Other models retain
+	// the original portable request instead of receiving unsupported flags.
+	if model == "nvidia/nemotron-3.5-super-vl:free" {
+		payload["max_tokens"] = 1024
+		payload["reasoning"] = map[string]any{"enabled": false}
+		payload["response_format"] = map[string]string{"type": "json_object"}
+	}
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return result{}, errors.New("failed to build provider request")
@@ -198,6 +212,11 @@ func recognize(ctx context.Context, client *http.Client, endpoint, apiKey, model
 	var completion completionResponse
 	if err := json.Unmarshal(reply, &completion); err != nil || len(completion.Choices) == 0 {
 		return result{}, errors.New("invalid API response envelope")
+	}
+	// Keep all provider output private. Empty completions are distinct
+	// from a malformed JSON object, and must not count as "absent".
+	if strings.TrimSpace(completion.Choices[0].Message.Content) == "" {
+		return result{}, errors.New("vision model returned empty content (check reasoning and token limit)")
 	}
 	return parseResult(completion.Choices[0].Message.Content)
 }
