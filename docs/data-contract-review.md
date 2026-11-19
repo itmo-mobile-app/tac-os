@@ -86,7 +86,7 @@ without stopping the VM. Tests cover malformed/duplicate/missing/extra
 fields, schema, ranges, exact i64 and the ability to validate a subsequent
 correct message. Existing `json.get*` helpers still throw on unchecked bad
 input. For Map's complete event loop, malformed IPC frames still need the
-#128 nonblocking/polling receive path; this is not a completed E2E of #143.
+The #128 nonblocking/polling receive path is still required; this is not a completed E2E of #143.
 
 ## Handoff
 
