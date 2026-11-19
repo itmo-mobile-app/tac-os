@@ -372,8 +372,8 @@ implementation and system-level verification in #143/#145.
 
 The existing `runtime.ipc_receive()` deliberately waits indefinitely while idle;
 calling it in Map's only event loop would prevent Broker polling and native close
-handling. Changing that existing signature/behavior is not proposed. The concrete
-single-threaded Map scenario needs these additive candidates:
+handling. Changing that existing signature/behavior is not part of this contract.
+The single-threaded Map scenario needs these approved additive calls:
 
 | Approved signature | Result |
 | --- | --- |
@@ -422,7 +422,7 @@ schema validators from #167 (see #127). Tests include `runtime_data_helpers`
 and `data_tc_e2e`. No additional individual owner sign-offs are required.
 This approval does not make malformed IPC frames recoverable in the final Map.
 Selection rationale and source examples are in
-[`language.md`](language.md#observation-and-target-data-access-127-proposal).
+[`language.md`](language.md#observation-and-target-data-access-127-approved).
 
 | Approved signature | Result and concrete use |
 | --- | --- |
@@ -556,8 +556,8 @@ Remaining work is tracked separately: `runtime.ipc_poll`/`ipc_message` from
 Issue #128 must be implemented and exercised with malformed transport frames in
 issues #143/#145. The previous `runtime.ipc_receive` fatal-error behavior is unchanged.
 
-See [`data-contract-review.md`](../docs/data-contract-review.md) for required
-reviews and acceptance vectors. #128 owns device/time, networking and WM calls;
+See [`data-contract-review.md`](../docs/data-contract-review.md) for the
+project approval decision and acceptance vectors. #128 owns device/time, networking and WM calls;
 this section adds no signatures for those services and changes neither the
 Camera String result nor the private detector protocol.
 
