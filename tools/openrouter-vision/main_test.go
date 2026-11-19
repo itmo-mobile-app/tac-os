@@ -45,7 +45,7 @@ func TestVisionRequestAndResult(t *testing.T) {
 			MaxTokens      int             `json:"max_tokens"`
 			Reasoning      json.RawMessage `json:"reasoning"`
 			ResponseFormat json.RawMessage `json:"response_format"`
-			Messages []struct {
+			Messages       []struct {
 				Content []struct {
 					Type     string `json:"type"`
 					Text     string `json:"text"`
@@ -98,7 +98,6 @@ func TestVisionRequestAndResult(t *testing.T) {
 		t.Fatalf("unexpected result: %#v; calls=%d", got, called.Load())
 	}
 }
-
 
 func TestNvidiaFreeVisionRequestProfile(t *testing.T) {
 	var calls atomic.Int32
