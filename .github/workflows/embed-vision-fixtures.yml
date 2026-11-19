@@ -1,0 +1,104 @@
+name: Commit licensed Vision JPEG fixtures (one-time)
+
+on:
+  push:
+    branches:
+      - feat/issue-129-openrouter-poc
+    paths:
+      - .github/workflows/embed-vision-fixtures.yml
+
+permissions:
+  contents: write
+
+jobs:
+  embed-images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Download verified Wikimedia Commons images
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import time
+          from pathlib import Path
+          from urllib.error import HTTPError, URLError
+          from urllib.parse import quote
+          from urllib.request import Request, urlopen
+
+          photos = Path("tools/openrouter-vision/testdata/photos")
+          photos.mkdir(parents=True, exist_ok=True)
+          cases = {
+              "P1": ("Airsoft_squad.jpg", "present", "Od5563 / BEAR Airsoft", "CC BY 4.0"),
+              "P2": ("AirsoftRockField.jpg", "present", "Michael Brown (UNHchabo)", "CC BY 2.5"),
+              "P3": ("Airsoft_sniper.jpg", "present", "Kokanee", "Public domain"),
+              "C1": ("People_walking_in_park_in_front_of_bay_and_Berkeley_shore_(7114041597).jpg", "present", "D Coetzee", "CC0 1.0"),
+              "N1": ("Forest_nature_trail.jpg", "absent", "Steve Hillebrand / USFWS", "Public domain"),
+              "N2": ("Airsoft_Bushnell_rifle_scope.JPG", "absent", "BrokenSphere", "CC BY-SA 3.0"),
+              "N3": ("Mannequin_in_a_Singapore_Army_uniform_on_display_at_the_National_Museum_of_Singapore_-_20140223.jpg", None, "Sgconlaw", "CC BY-SA 3.0"),
+          }
+          manifest = {}
+          for sample_id, (filename, expected, credit, license_name) in cases.items():
+              digest = hashlib.md5(filename.encode("utf-8")).hexdigest()
+              url_name = quote(filename, safe="")
+              root = "https://upload.wikimedia.org/wikipedia/commons/"
+              if sample_id in ("C1", "N3"):
+                  url = (root + "thumb/" + digest[0] + "/" + digest[:2] + "/"
+                         + url_name + "/960px-" + url_name)
+              else:
+                  url = root + digest[0] + "/" + digest[:2] + "/" + url_name
+              data = None
+              for attempt in range(4):
+                  try:
+                      request = Request(url, headers={
+                          "User-Agent": "TacOsCourseVisionFixtures/1.0 (GitHub Actions; Wikimedia attribution in repo)",
+                          "Accept": "image/jpeg",
+                      })
+                      with urlopen(request, timeout=60) as response:
+                          if response.status != 200:
+                              raise ValueError("unexpected HTTP status")
+                          if response.headers.get_content_type() != "image/jpeg":
+                              raise ValueError("unexpected content type")
+                          data = response.read((2 << 20) + 1)
+                      if not data.startswith(bytes.fromhex("ffd8ff")) or not data.endswith(bytes.fromhex("ffd9")):
+                          raise ValueError("invalid JPEG data")
+                      if len(data) > 2 << 20:
+                          raise ValueError("image larger than 2 MiB")
+                      break
+                  except (HTTPError, URLError, TimeoutError) as exc:
+                      print(f"{sample_id}: attempt {attempt + 1}/4 failed ({type(exc).__name__})")
+                      if attempt == 3:
+                          raise
+                      time.sleep((attempt + 1) * 2)
+              assert data
+              (photos / f"{sample_id}.jpg").write_bytes(data)
+              manifest[sample_id] = {
+                  "expect": expected,
+                  "sha256": hashlib.sha256(data).hexdigest(),
+                  "source": "https://commons.wikimedia.org/wiki/File:" + url_name,
+                  "credit": credit,
+                  "license": license_name,
+                  "resized": sample_id in ("C1", "N3"),
+              }
+              print(f"{sample_id}: JPEG verified, size={len(data)}")
+          Path("tools/openrouter-vision/testdata/expected.json").write_text(
+              json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
+              encoding="utf-8",
+          )
+          PY
+      - name: Verify committed fixture acceptance
+        run: python3 tools/openrouter-vision/testdata/vision_samples.py check
+      - name: Commit JPEGs and remove this one-time workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f tools/openrouter-vision/testdata/photos/*.jpg
+          git add tools/openrouter-vision/testdata/expected.json
+          git rm .github/workflows/embed-vision-fixtures.yml
+          git commit -m "test: vendor verified Wikimedia Vision JPEG fixtures"
+          git push origin HEAD:feat/issue-129-openrouter-poc
