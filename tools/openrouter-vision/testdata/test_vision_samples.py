@@ -1,4 +1,4 @@
-"""Offline safety checks for the committed Wikimedia Commons JPEG fixtures."""
+"""Offline checks for versioned Wikimedia-derived JPEG/WebP photographs."""
 import hashlib
 import json
 from pathlib import Path
@@ -21,7 +21,7 @@ class SampleFixtureTests(unittest.TestCase):
                 "https://commons.wikimedia.org/wiki/File:"))
             with self.subTest(sample_id=sample_id):
                 samples.validate_image(
-                    samples.image_path(sample_id), item["sha256"])
+                    samples.image_path(sample_id), item["git_blob_sha1"])
 
     def test_sample_ids_are_validated_without_network(self):
         cases = samples.load_manifest()
@@ -37,13 +37,13 @@ class SampleFixtureTests(unittest.TestCase):
             image = Path(folder) / "test.jpg"
             content = b"\xff\xd8\xff" + b"photo bytes" + b"\xff\xd9"
             image.write_bytes(content)
-            sha = hashlib.sha256(content).hexdigest()
+            sha = hashlib.sha1(b"blob " + str(len(content)).encode() + b"\0" + content).hexdigest()
             samples.validate_image(image, sha)
             with self.assertRaises(ValueError):
-                samples.validate_image(image, "0" * 64)
+                samples.validate_image(image, "0" * 40)
             image.write_bytes(b"not an image")
             with self.assertRaises(ValueError):
-                samples.validate_image(image, hashlib.sha256(b"not an image").hexdigest())
+                samples.validate_image(image, hashlib.sha1(b"blob 12\0not an image").hexdigest())
             image.unlink()
             with self.assertRaises(ValueError):
                 samples.validate_image(image, sha)
