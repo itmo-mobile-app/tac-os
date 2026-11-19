@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run opt-in OpenRouter Vision checks against JPEG fixtures committed to Git.
+"""Run opt-in OpenRouter Vision checks against JPEG/WebP photos committed to Git.
 
 No photo downloads or network requests happen except deliberate
 OpenRouter calls triggered by run --send-images.
@@ -137,7 +137,7 @@ def main():
                       f"{image_path(sample_id)}")
             elif args.action == "check":
                 validate_image(image_path(sample_id), entry["git_blob_sha1"])
-                print(f"{sample_id}: committed JPEG checksum OK")
+                print(f"{sample_id}: committed photo checksum OK")
             else:
                 result = run_one(sample_id, cases, args.timeout)
                 success = result and success
