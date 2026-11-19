@@ -104,9 +104,9 @@ func TestNvidiaFreeVisionRequestProfile(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls.Add(1)
 		var request struct {
-			Model          string `json:"model"`
-			MaxTokens      int    `json:"max_tokens"`
-			Reasoning      struct {
+			Model     string `json:"model"`
+			MaxTokens int    `json:"max_tokens"`
+			Reasoning struct {
 				Enabled *bool `json:"enabled"`
 			} `json:"reasoning"`
 			ResponseFormat struct {
