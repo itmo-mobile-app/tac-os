@@ -1,9 +1,9 @@
 # Observation and Target data contract review (#127)
 
-Status: Compiler/Runtime helpers and E2E tests are available (#132).
-Recoverable Observation/Target validators are implemented as a separate
-increment. Final Map IPC recovery and long-running resource tests are not
-covered here; issue #127 remains open until those acceptance gaps are resolved.
+Status: #127 contract approved by the project coordinator on 19 November 2026
+and issue closed. Nine helpers (#132) and two validators (#167) are implemented.
+Final Map IPC recovery and long-running resource tests remain open under
+issues #143/#145; approval is not evidence of an already working Map event loop.
 
 ## Review scope
 
@@ -14,19 +14,19 @@ model, bytecode version or ABI. Only JSON decoding/encoding and formatting
 run in Runtime. Geometry and local confidence remain in Analyzer `.tc`;
 projection remains in Map `.tc`; aggregation remains in Target Service.
 
-| Required reviewer | Area | Evidence/status |
+| Original review owner | Area | Decision status |
 | --- | --- | --- |
-| @pypynyaa | VM kinds, calls, generated String lifetime and resource limits | Pending |
-| @pateWY | Runtime helper surface, parsing, errors and alignment with #128 | Pending |
-| @slutswarming | Detector extraction and Observation assembly in Analyzer | Pending |
-| @mattthewww | Target extraction, invalid-update handling and Map needs | Pending |
-| @TheGeniusOfEternity | Architecture boundaries and minimum sufficient scope | Pending |
+| @pypynyaa | VM kinds, calls, generated String lifetime and resource limits | Project-level approval in #127; individual sign-off not required |
+| @pateWY | Runtime helper surface, parsing, errors and alignment with #128 | Project-level approval in #127; individual sign-off not required |
+| @slutswarming | Detector extraction and Observation assembly in Analyzer | Project-level approval in #127; individual sign-off not required |
+| @mattthewww | Target extraction, invalid-update handling and Map needs | Project-level approval in #127; individual sign-off not required |
+| @TheGeniusOfEternity | Architecture boundaries and minimum sufficient scope | Project-level approval in #127; individual sign-off not required |
 
-Record actual review links and decisions here before changing status to
-approved. Required unresolved decisions are listed under "Errors and approval
-gates" in `spec/runtime-api.md`: exact-field-set validation, recoverable errors,
-bounded String reclamation, limits and helper selection. A document merge alone
-must not be used as evidence of approval by all five owners.
+Project decision is recorded in issue #127. The coordinator waived the
+individual review requirement and approved the minimal scalar helper/validator
+API. This statement records **project approval**, not personal approvals from
+individual owners. The remaining IPC transport recovery and long-running
+memory/event-loop concerns are implementation tasks under #143/#145.
 
 ## Example expectations
 
@@ -55,8 +55,8 @@ example intentionally remains unbuildable until its API is implemented.
 ## Implementation acceptance vectors for #132/#133
 
 These cases are exercised by `runtime_data_helpers`, `data_tc_e2e` and the
-Compiler type checks where applicable. Recoverable malformed-input handling
-and exact domain field-set approval remain separate gates.
+Compiler type checks where applicable. Recoverable domain validation and exact field-set checks are implemented by
+PR #167; malformed IPC-frame recovery remains separate in #143/#145.
 
 | Case | Expected |
 | --- | --- |
@@ -85,8 +85,9 @@ An application can call `json.validateObservation` (ipc=0/1) or
 without stopping the VM. Tests cover malformed/duplicate/missing/extra
 fields, schema, ranges, exact i64 and the ability to validate a subsequent
 correct message. Existing `json.get*` helpers still throw on unchecked bad
-input. For Map's complete event loop, malformed IPC frames still need the
-The #128 nonblocking/polling receive path is still required; this is not a completed E2E of #143.
+input. For Map's complete event loop, malformed IPC frames still require the
+approved but not yet implemented #128 nonblocking/polling receive path. This
+is not a completed E2E of #143.
 
 ## Handoff
 
@@ -94,8 +95,9 @@ The #128 nonblocking/polling receive path is still required; this is not a compl
   with positive/negative type checks and no new language syntax.
 - #133 with Runtime owner: verify VM ownership/bounds, bytecode/runtime kinds
   and the additional real Compiler-to-VM acceptance cases from PR #164.
-- #128/#134–#136: separately agree device/time, transport, errors and WM calls.
+- #128/#134–#136: implemented device/time, transport and WM contracts are
+  approved; finish the additive IPC polling implementation in #143/#145.
 - #138/#139: turn the sketches into real application increments only after the
   required operations and validation path are approved and implemented.
-- Request the five reviews on the PR; keep #127 open until approval evidence
-  and required CI are present. No reviews have been requested by this document.
+- Project-level approval is recorded in #127; additional reviewer sign-offs
+  are not a closing condition. Keep #143/#145 open until the Map/IPC E2E passes.

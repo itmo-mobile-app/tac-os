@@ -292,18 +292,19 @@ A compliant compiler rejects each of `let x: Float = 1;`,
 
 ## Open questions
 
-### Observation and Target data access (#127, proposal)
+### Observation and Target data access (#127, approved)
 
-This subsection and the linked examples are **pending owner review**, not an
-extension of the approved language or an implementation claim. The proposed
-Runtime signatures and their errors/limits are in
-[`runtime-api.md`](runtime-api.md#minimal-string-data-helpers-127-proposal).
-The review record is in
+This minimal data-access contract was approved by the project coordinator on
+19 November 2026 (#127). The nine helpers and two domain validators are
+implemented; no additional team reviews are required. Their signatures,
+error behavior and limits are documented in
+[`runtime-api.md`](runtime-api.md#minimal-string-data-helpers-127-approved).
+The acceptance record is in
 [`data-contract-review.md`](../docs/data-contract-review.md).
 
 Use existing scalar locals and function parameters for domain fields, and
 immutable UTF-8 `String` values for JSON. A detection array is a JSON String,
-not a new `.tc` array type. The proposal adds only explicitly typed Runtime
+not a new `.tc` array type. The approved increment adds only explicitly typed Runtime
 calls: array length/element extraction, flat object field extraction, JSON
 quoting, numeric formatting and string concatenation. It adds no grammar,
 operator overload, implicit conversion, struct, class, JSON DOM or generic
@@ -315,7 +316,7 @@ The alternatives were compared against the actual application operations:
 | --- | --- | --- |
 | Raw string slicing/search | Indexing, escaping, numeric parsing and a JSON parser written in `.tc` | More language operations and easy framing/escaping mistakes |
 | Simple records and arrays | Type declarations, field/index access, allocation and Compiler/VM layout agreement | Valid future option, but not required to pass six/five scalar fields |
-| Narrow String helpers | Nine typed Runtime calls over existing values | Proposed minimum; application decisions stay in `.tc` |
+| Narrow String helpers | Nine typed Runtime calls over existing values | Approved minimum; application decisions stay in `.tc` |
 
 The two complete source sketches are
 [`analyzer.tc`](../docs/examples/data-contract/analyzer.tc) and
@@ -326,10 +327,9 @@ serializes all six Observation fields and checks `runtime.ipc_send`'s result.
 The second extracts all five Target fields, validates their ranges and computes
 map coordinates in `.tc`. Its input is one Broker **payload**, not a `MSG` line.
 
-Compiler #132 would register exactly the approved helper signatures, including
+Compiler #132 registers the approved helper signatures, including
 return types usable in expressions, and the existing zero-argument
-`camera.detectMarkers() -> String`. That Camera function exists in Runtime
-but is absent from the current Compiler signature table. Wrong arity, wrong
+`camera.detectMarkers() -> String` in its Runtime function table. Wrong arity, wrong
 argument types, unknown helpers and mixed Int/Float remain compile-time errors.
 Calls evaluate arguments left to right and lower to the existing
 `CALL_RUNTIME`; no source syntax or bytecode signature metadata is added.
@@ -352,7 +352,8 @@ boundary for untrusted domain JSON; `1` means valid and `0` means invalid.
 They leave existing getters' fail-fast semantics intact, so a Map checks the
 status before reading fields. No `try`, implicit conversion, new collection,
 or JSON DOM is introduced. An invalid frame in blocking `runtime.ipc_receive`
-still requires the separately proposed #128 polling API for full recovery.
+still requires the separately approved but not yet implemented #128 polling API
+for full recovery.
 Final event-loop behavior and live-memory limits remain tracked in
 `spec/runtime-api.md`.
 

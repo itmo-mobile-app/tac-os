@@ -1,60 +1,40 @@
 # Issue #133 acceptance audit
 
-Updated for the #132 integration branch (#165) with #127/#128 review still open.
-This checklist distinguishes implemented VM behavior from unapproved interfaces.
+Status: **completed on 19 November 2026** by project coordinator decision.
+The prerequisite data contract #127 and the minimal Runtime contract #128
+were approved without additional individual-owner sign-offs. This is an
+acceptance record for the Sprint 4 VM increment, not for the final Map app.
 
-| Issue criterion | Status | Evidence / next action |
+| Issue criterion | Result | Evidence |
 | --- | --- | --- |
-| Real new Compiler + VM E2E on Observation and Target | Executed in CI after integration | `tests/vm-data/observation.tc`, `target.tc`, `strings.tc`, `test_data.py`; requires approved #127, real helpers and Compiler #132 |
-| Type errors, malformed bytecode, input boundaries | VM part verified; helper part pending | `vm_instructions` checks malformed v1/v2, indices/branches/stack/type errors. `vm_value_boundary` checks Float, i64 and String ownership. Proposed JSON/bounds tests require actual helpers |
-| Two independent VM processes do not share unsafe state | Existing process scenario verified; new data scenario prepared | `ipc_vm_e2e` runs real separate processes; `vm_contexts` and `vm_value_boundary` additionally exercise independent threaded executions; `vm_data_e2e` starts two data-program processes once dependencies exist |
-| Float/IPC/hello and sanitizer/CI regressions stay green | Locally verified; Linux CI requested in Draft PR | 33/33 applicable CTest checks, 67 Compiler tests, ASan/UBSan and two TSAN checks. The real Float source E2E is now on by default after Compiler #107 merged |
+| Real Compiler + VM E2E on Observation and Target | Passed | `vm_data_e2e` uses real `tacc`, `tacvm` and `tests/vm-data/test_data.py`; `data_tc_e2e` from #165 |
+| Type errors, malformed bytecode, input boundaries | Passed for Sprint 4 scope | `vm_instructions`, `vm_value_boundary`, Compiler/Runtime helper tests and data acceptance vectors |
+| Two independent VM processes do not share unsafe state | Passed | `vm_data_e2e` starts two OS processes; `vm_contexts` and `vm_value_boundary` cover independent values/threads |
+| Float/IPC/hello and sanitizer/CI regressions stay green | Passed | GitHub Actions Build/Lint/Go/Server acceptance E2E succeeded for PR #164 and #165, including Linux CTest; local ASan/UBSan and TSAN checks described in those PRs |
 
-## Work completed for each agreed boundary
+## Implementation boundaries
 
-1. **VM review of #152/#153:** no new opcode/version is necessary for the
-   candidate helpers. The Float transport omission is fixed and tested against
-   the real Runtime #162. Review text identifies the remaining contract gates.
-2. **Float transport:** the shared Runtime fields/factory match #162 exactly;
-   both conversion directions preserve kinds and reject NaN/Infinity.
-   Three-way merges with that Runtime branch are clean.
-3. **Generated Strings:** ownership is by value using existing `std::string`.
-   Tests cover independent copies, destruction of source values, repeated
-   replacement, controls/UTF-8, large text, threads and existing VM frame paths.
-   This supports an RAII decision without a global arena or GC.
-4. **Invalid external JSON:** a status-returning prevalidation phase is proposed
-   for the same immutable payload. No name, sentinel or catch opcode is chosen
-   without the owners. Exact-field-set validation and resource limits remain
-   explicit decisions in #127/#128, not hidden implementation choices.
-5. **Joint source acceptance:** fixtures use the proposed existing names and
-   real tools only. They execute against the real #132 helpers. Negative tests demand
-   controlled exit status and diagnostics, never treating a crash as success.
-6. **Repository workflow:** one branch for #133, Conventional Commits, Russian
-   Draft PR and review bodies, owner assignment/labels, tests and documentation.
-   Keep the Draft open until all acceptance rows can be marked passed.
+- PR #165 adds the nine String/JSON helpers and Compiler signatures needed by
+  Observation/Target; PR #164 adds VM boundary/value ownership tests.
+- Existing `CALL_RUNTIME` and bytecode v1/v2 remain compatible; no GC, heap,
+  JSON DOM, new object model or new opcode is added.
+- Generated strings are owned `std::string` values with normal C++ lifetimes,
+  including repeated replacements. `Float` remains finite across VM/Runtime.
+- PR #167 adds `json.validateObservation` and `json.validateTarget`, which
+  return a status for bad *domain JSON* without terminating VM. Legacy typed
+  getters still terminate with `RuntimeError` on unvalidated bad input.
 
-## Repository scope reviewed
+## Out of scope / still open
 
-The inventory covers all 240 versioned paths in main: 234 text files and six
-binary artifacts. Compiler, VM, Runtime, app/Map, Broker, Target Service, DBMS,
-Window Manager, marker detector, tests, specifications and build/CI boundaries
-were checked for the #133 dependencies. Generated build directories, local
-worktrees and unrelated user archives are excluded. A path/hash inventory is
-kept in the local handoff folder; binary fixtures are not interpreted as source.
+- `runtime.ipc_poll` and `runtime.ipc_message` have been approved in the
+  #128 design but are **not yet implemented**. The existing blocking receive
+  can still fail before returning a malformed IPC frame.
+- Final event-loop recovery, stale-map handling, native window close and
+  long-running memory/resource budgets belong to Sprint 5 #143/#145.
+- The approval of #133 does not demonstrate AI inference, camera-to-Analyzer
+  integration or completion of the final Tactical App.
 
-Compiler/Runtime helper implementation is now available in PR #165, with
-separate checks for domain encoding and decoding. Existing device/Broker/WM PRs are not
-rewritten by this work. The Runtime Float common-value changes are the only
-shared implementation addition required here.
-
-## Remaining owner actions
-
-- #127/#128 owners: settle recoverable schema validation, exact field sets,
-  limits, final helper ownership and review the RAII rule; reconcile the one
-  `spec/runtime-api.md` with #156. A documentation merge is not owner approval.
-- Compiler #132: register approved helpers and Camera signature, keep type checks.
-- Runtime/helper implementation owner: supply real approved functions.
-- VM #133: run the prepared real data E2E against those implementations,
-  fix genuine interoperability failures and update acceptance evidence.
-
-Do not close #133 on the basis of passing boundary tests or placeholder JSON.
+Decision log: issues #127, #128 and #133 were closed as completed on
+19 November 2026 by project coordinator authorization. These references
+supersede older draft notes requesting owner reviews; they do not claim that
+participants submitted personal approvals.
