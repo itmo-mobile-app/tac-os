@@ -1,6 +1,6 @@
 # Runtime API specification
 
-Status: the existing call ABI, Camera, IPC and implemented WM operations are approved or documented; Broker transport (#135) and device data (#134) are implemented and await full #128 owner review.
+Status: the minimal #127 data-helper and #128 VM-facing Runtime contracts were approved by the project coordinator on 19 November 2026 (issues #127/#128). Existing device, Broker and WM operations are implemented; the additional `runtime.ipc_poll`/`runtime.ipc_message` calls are approved for implementation, but do not exist yet.
 
 This document defines the VM-facing Runtime boundary. IPC and Broker wire protocols are documented separately in `spec/ipc.md` and `spec/broker-protocol.md`.
 
@@ -360,22 +360,22 @@ The test checks background and Target pixels, a simulated native close
 event, explicit closure, a second application launch against the same WM,
 and removal of both socket paths after WM shutdown.
 
-## Remaining interface proposal (#128; owner review required)
+## Additional Runtime interfaces (#128; approved contract, implementation pending)
 
 The device #134, Broker #135 and window #136 operations above are implemented
-and covered by component integration tests. This does not imply approval of the
-remaining design decisions: recoverable validation of arbitrary malformed domain
-JSON, scheduling IPC/Broker/window events in the single-threaded Map, and
-resource bounds on a long-running application still require joint review.
+and covered by component integration tests. Project approval of the remaining
+minimal interfaces is recorded in #128. Recovery from malformed transport frames,
+single-threaded Map scheduling, and long-running resource bounds still need
+implementation and system-level verification in #143/#145.
 
-### Bounded local IPC for the Map loop (proposal requiring IPC review)
+### Bounded local IPC for the Map loop (approved, not implemented)
 
 The existing `runtime.ipc_receive()` deliberately waits indefinitely while idle;
 calling it in Map's only event loop would prevent Broker polling and native close
 handling. Changing that existing signature/behavior is not proposed. The concrete
 single-threaded Map scenario needs these additive candidates:
 
-| Proposed signature | Result |
+| Approved signature | Result |
 | --- | --- |
 | `runtime.ipc_poll(timeoutMs: Int) -> Int` | After `ipc_listen`: 1 validated Observation, 0 idle, negative status for external failure |
 | `runtime.ipc_message() -> String` | Last successfully polled IPC JSON object, including `type`, without newline |
@@ -388,14 +388,15 @@ existing five-second partial-message inactivity timeout across calls. A polling
 timeout is idle result 0 and never extends that inactivity deadline by itself.
 Do not mix `ipc_poll` and `ipc_receive` on one Runtime; this is a programming error.
 No acknowledgement, new wire message, extra listener or automatic resend is added.
-This is a proposed addition for owner review, not a claim of current IPC support.
+This interface was approved on 19 November 2026. It is **not implemented** at this time. Track implementation and recovery testing in #143/#145.
 
-### Required architectural decisions
+### Decision and verification record
 
 See [`02-open-questions.md`](../docs/ai-context/02-open-questions.md#runtime).
-Before calling #128 approved, record decisions on:
+The design baseline is approved by the project coordinator; the following
+integration checks remain necessary to demonstrate working behavior:
 
-| Gate | Required review / decision |
+| Area | Implementation / verification responsibility |
 | --- | --- |
 | Sensor surface and conventions | Runtime, Analyzer and architecture: snapshot getters vs #127 representation; provider configuration, calibration, age/skew |
 | Scalar Float at VM ↔ Runtime | Compiler and VM with Runtime: value conversions, result kinds, existing v1/v2 regression |
@@ -405,26 +406,25 @@ Before calling #128 approved, record decisions on:
 | #127 data bridge | Compiler, VM, Analyzer, Map and Runtime: recoverable domain validation, exact field sets, generated String reclamation |
 | Required scalar math | Compiler, Runtime, Analyzer and Map: minimal sin/cos and pixel rounding/conversion approach |
 
-The #128 reviewer set includes `@khamitova-prog`, `@mattthewww`, `@slutswarming`,
-`@m4shustik-s`, `@pypynyaa` and architecture; Broker behavior also needs its owner.
-No final approval of these combined API decisions has been recorded here.
+Decision authority: the project coordinator approved the minimal #128 contract
+without requiring additional participant reviews (see issue #128). This does not
+certify that polling, calibration, resource bounds or final Map E2E already pass.
 Threads, generic files/networking, Activity callbacks, WebView, multiple windows,
 camera schema changes and a general exception system are outside this proposal.
 
 ## Open questions
 
-### Minimal String data helpers (#127, proposal)
+### Minimal String data helpers (#127, approved)
 
-**Implementation status:** nine helpers are implemented in Compiler/Runtime #132
-for real E2E verification (`runtime_data_helpers`, `data_tc_e2e`). This does not
-constitute owner approval of #127 or a recoverable error policy for Map.
-
-**Pending VM, Runtime, Analyzer, Map and architecture owner review.** The
-approved API above is unchanged. Implementation alone does not approve these names, limits or error semantics.
+**Approved 19 November 2026:** the project coordinator accepted the nine
+implemented Compiler/Runtime helpers from #132 and the two status-returning
+schema validators from #167 (see #127). Tests include `runtime_data_helpers`
+and `data_tc_e2e`. No additional individual owner sign-offs are required.
+This approval does not make malformed IPC frames recoverable in the final Map.
 Selection rationale and source examples are in
 [`language.md`](language.md#observation-and-target-data-access-127-proposal).
 
-| Proposed signature | Result and concrete use |
+| Approved signature | Result and concrete use |
 | --- | --- |
 | `json.arrayLength(source: String) -> Int` | Number of detector objects; `[]` gives 0 |
 | `json.arrayObject(source: String, index: Int) -> String` | One flat detection object, zero-based index |
@@ -436,9 +436,9 @@ Selection rationale and source examples are in
 | `text.fromInt(value: Int) -> String` | Base-10 i64 token without quotes, grouping or leading `+` |
 | `text.fromFloat(value: Float) -> String` | Locale-independent finite JSON number token |
 
-### Recoverable domain JSON validation (#127)
+### Recoverable domain JSON validation (#127; approved and implemented)
 
-**Implementation candidate:** these two additional Runtime functions are implemented
+**Approved and implemented:** these two additional Runtime functions are implemented
 to let a single-threaded Map discard an invalid external payload without
 terminating the VM. They use the existing Int/String CALL_RUNTIME ABI; the nine
 existing getters and formatters are unchanged.
@@ -492,8 +492,9 @@ increment does not claim that the final Map event loop is already resilient.
   field types are errors, never empty String, zero or absent-value sentinels.
   These readers do not enforce domain field sets or ranges: `.tc` still owns
   schema/range validation according to `data-model.md` and `ipc.md`.
-  Support for exact-key-set validation without a DOM is an open review question
-  below; unknown domain fields must not silently become accepted wire data.
+  The additional `json.validateObservation` and `json.validateTarget` calls
+  enforce exact domain field sets and ranges before the typed getters; unchecked
+  getters retain their fail-fast behavior.
 - `getInt` accepts integer lexical tokens only, in signed i64 range. `17.0`,
   `17e0`, `"17"` and overflowing integers are errors. It does not pass through
   binary64, so `9007199254740993` remains exact. `-0` yields Int 0.
@@ -520,7 +521,7 @@ increment does not claim that the final Map event loop is already resilient.
   IPC, network or WM I/O, and never add a newline. `runtime.ipc_send` remains
   responsible for the one transport newline. Application JSON assembly selects
   exactly six domain fields or those same six plus IPC `type: "OBSERVATION"`.
-- Proposed bounds: 65,536 UTF-8 bytes per input/output String, excluding any
+- Approved per-call bounds: 65,536 UTF-8 bytes per input/output String, excluding any
   transport newline, and at most 72 array elements (the detector marker range).
   Bounds are checked before allocation/concatenation; an escape-expanded
   `quote` result may exceed the bound even when its input fits.
@@ -529,7 +530,7 @@ increment does not claim that the final Map event loop is already resilient.
   independent VM executions. Results use the existing String runtime kind;
   numeric results use existing Int or Float kinds.
 
-#### Errors and approval gates
+#### Errors and remaining implementation work
 
 Wrong argument runtime kinds, malformed/unsupported JSON, missing/wrong-type
 fields, numeric overflow, negative/out-of-range array indices, byte/element
@@ -544,20 +545,16 @@ Map may skip it before calling getters. This does not make malformed IPC
 frames recoverable in `runtime.ipc_receive()`; see #128. The existing
 `runtime.ipc_send` still returns -1 on transport/framing failure.
 
-Before #132/#133 proceed, owners must decide:
+Decision for #127 (19 November 2026): use the nine scalar String/JSON
+helpers, plus the two domain validators. Generated String values use existing
+VM/Runtime owned `std::string` values with RAII; no GC, new bytecode opcodes
+or general exception syntax is authorized. The 65,536-byte and 72-element
+per-call limits are accepted for this increment. This is a contract decision,
+not a guarantee of bounded total live memory for a long-running Map.
 
-1. Whether these nine helpers are sufficient, or narrow schema-aware codecs
-   would reduce total complexity. Such codecs may validate/encode fields only;
-   they must never compute coordinates, confidence, probability or map pixels.
-2. The narrow validation API above addresses malformed/wrong-type/extra-field
-   Broker payloads without fatal RuntimeError. Recoverable IPC framing and
-   event-loop scheduling remain a dependency of #128; neither a general
-   exception model nor a JSON DOM is introduced here.
-3. The VM ownership/reclamation rule for generated immutable Strings. Per-call
-   size bounds do not bound a long-running process. No GC, global String arena,
-   leaked lifetime or new pointer ABI is implicitly approved.
-4. Agreement on the proposed byte/element limits with existing camera/IPC and
-   future Broker limits. Parser implementation/library selection is not fixed.
+Remaining work is tracked separately: `runtime.ipc_poll`/`ipc_message` from
+#128 must be implemented and exercised with malformed transport frames in
+#143/#145. The previous `runtime.ipc_receive` fatal-error behavior is unchanged.
 
 See [`data-contract-review.md`](../docs/data-contract-review.md) for required
 reviews and acceptance vectors. #128 owns device/time, networking and WM calls;
