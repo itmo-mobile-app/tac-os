@@ -14,13 +14,13 @@ model, bytecode version or ABI. Only JSON decoding/encoding and formatting
 run in Runtime. Geometry and local confidence remain in Analyzer `.tc`;
 projection remains in Map `.tc`; aggregation remains in Target Service.
 
-| Required reviewer | Area | Evidence/status |
+| Original review owner | Area | Decision status |
 | --- | --- | --- |
-| @pypynyaa | VM kinds, calls, generated String lifetime and resource limits | Reviewed as a design area; individual sign-off waived by project coordinator (#127) |
-| @pateWY | Runtime helper surface, parsing, errors and alignment with #128 | Reviewed as a design area; individual sign-off waived by project coordinator (#127) |
-| @slutswarming | Detector extraction and Observation assembly in Analyzer | Reviewed as a design area; individual sign-off waived by project coordinator (#127) |
-| @mattthewww | Target extraction, invalid-update handling and Map needs | Reviewed as a design area; individual sign-off waived by project coordinator (#127) |
-| @TheGeniusOfEternity | Architecture boundaries and minimum sufficient scope | Reviewed as a design area; individual sign-off waived by project coordinator (#127) |
+| @pypynyaa | VM kinds, calls, generated String lifetime and resource limits | Project-level approval in #127; individual sign-off not required |
+| @pateWY | Runtime helper surface, parsing, errors and alignment with #128 | Project-level approval in #127; individual sign-off not required |
+| @slutswarming | Detector extraction and Observation assembly in Analyzer | Project-level approval in #127; individual sign-off not required |
+| @mattthewww | Target extraction, invalid-update handling and Map needs | Project-level approval in #127; individual sign-off not required |
+| @TheGeniusOfEternity | Architecture boundaries and minimum sufficient scope | Project-level approval in #127; individual sign-off not required |
 
 Project decision is recorded in issue #127. The coordinator waived the
 individual review requirement and approved the minimal scalar helper/validator
@@ -95,7 +95,8 @@ is not a completed E2E of #143.
   with positive/negative type checks and no new language syntax.
 - #133 with Runtime owner: verify VM ownership/bounds, bytecode/runtime kinds
   and the additional real Compiler-to-VM acceptance cases from PR #164.
-- #128/#134–#136: separately agree device/time, transport, errors and WM calls.
+- #128/#134–#136: implemented device/time, transport and WM contracts are
+  approved; finish the additive IPC polling implementation in #143/#145.
 - #138/#139: turn the sketches into real application increments only after the
   required operations and validation path are approved and implemented.
 - Project-level approval is recorded in #127; additional reviewer sign-offs
