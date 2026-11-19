@@ -41,7 +41,10 @@ func TestVisionRequestAndResult(t *testing.T) {
 			t.Errorf("missing JSON content type")
 		}
 		var request struct {
-			Model    string `json:"model"`
+			Model          string          `json:"model"`
+			MaxTokens      int             `json:"max_tokens"`
+			Reasoning      json.RawMessage `json:"reasoning"`
+			ResponseFormat json.RawMessage `json:"response_format"`
 			Messages []struct {
 				Content []struct {
 					Type     string `json:"type"`
@@ -55,14 +58,19 @@ func TestVisionRequestAndResult(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 			t.Errorf("invalid request: %v", err)
 		}
-		if request.Model != "test/vision-model" || len(request.Messages) != 1 || len(request.Messages[0].Content) != 2 {
-			t.Errorf("wrong model or content parts")
+		if request.Model != "test/vision-model" || request.MaxTokens != 220 ||
+			len(request.Reasoning) != 0 || len(request.ResponseFormat) != 0 ||
+			len(request.Messages) != 1 || len(request.Messages[0].Content) != 2 {
+			t.Errorf("wrong default model settings or content parts")
 			http.Error(w, "bad request", http.StatusBadRequest)
 			return
 		}
 		parts := request.Messages[0].Content
-		if parts[0].Type != "text" || !strings.Contains(parts[0].Text, "Do not guess an ArUco marker ID") {
-			t.Errorf("expected constrained text prompt")
+		if parts[0].Type != "text" ||
+			!strings.Contains(parts[0].Text, "casual clothes") ||
+			!strings.Contains(parts[0].Text, "visible marker") ||
+			!strings.Contains(parts[0].Text, "Do not guess an ArUco marker ID") {
+			t.Errorf("expected casual-clothes detection prompt without identity guessing")
 		}
 		if parts[1].Type != "image_url" {
 			t.Errorf("expected image_url")
@@ -88,6 +96,54 @@ func TestVisionRequestAndResult(t *testing.T) {
 	}
 	if called.Load() != 1 || got.Status != "present" || got.BBox == nil || got.BBox.W != 0.3 {
 		t.Fatalf("unexpected result: %#v; calls=%d", got, called.Load())
+	}
+}
+
+
+func TestNvidiaFreeVisionRequestProfile(t *testing.T) {
+	var calls atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		var request struct {
+			Model          string `json:"model"`
+			MaxTokens      int    `json:"max_tokens"`
+			Reasoning      struct {
+				Enabled *bool `json:"enabled"`
+			} `json:"reasoning"`
+			ResponseFormat struct {
+				Type string `json:"type"`
+			} `json:"response_format"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			t.Errorf("failed to decode request: %v", err)
+		}
+		if request.Model != "nvidia/nemotron-3.5-super-vl:free" ||
+			request.MaxTokens != 1024 || request.Reasoning.Enabled == nil ||
+			*request.Reasoning.Enabled || request.ResponseFormat.Type != "json_object" {
+			t.Errorf("incorrect free NVIDIA vision settings: %+v", request)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\\"status\\":\\"present\\",\\"bbox\\":null}"}}]}`))
+	}))
+	defer server.Close()
+	got, err := recognize(context.Background(), server.Client(), server.URL,
+		"test-key", "nvidia/nemotron-3.5-super-vl:free", "image/png", testPNG(t))
+	if err != nil || got.Status != "present" || got.BBox != nil || calls.Load() != 1 {
+		t.Fatalf("free NVIDIA request failed: result=%+v, err=%v, calls=%d", got, err, calls.Load())
+	}
+}
+
+func TestEmptyCompletionIsSanitizedAndNeverAbsent(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"   "}}]}`))
+	}))
+	defer server.Close()
+	res, err := recognize(context.Background(), server.Client(), server.URL,
+		"test-key", "nvidia/nemotron-3.5-super-vl:free", "image/png", testPNG(t))
+	if err == nil || !strings.Contains(err.Error(), "empty content") ||
+		res.Status == "absent" {
+		t.Fatalf("empty completion must be an explicit error, got %+v, %v", res, err)
 	}
 }
 
@@ -129,6 +185,7 @@ func TestProviderErrorsAreSanitized(t *testing.T) {
 	}{
 		{"rate-limited", http.StatusTooManyRequests, `{"error":"sensitive image data"}`},
 		{"unauthorized", http.StatusUnauthorized, `{"error":"test-key"}`},
+		{"payment-required", http.StatusPaymentRequired, `{"error":"test-key"}`},
 		{"bad-envelope", http.StatusOK, `{"choices":[]}`},
 		{"bad-model-text", http.StatusOK, `{"choices":[{"message":{"content":"person maybe"}}]}`},
 	}
