@@ -18,13 +18,14 @@ Remaining open:
 - Exact representation of structs or objects.
 - Error handling model.
 - Standard library scope.
-- Issue #127 introduced nine narrow String/JSON helpers and two additional
+- Approved issue #127 introduced nine narrow String/JSON helpers and two additional
   domain-schema validators over existing scalar values, not structs or a JSON
   DOM. The validators return `0` for malformed external domain content and
   `1` for valid content. See `spec/runtime-api.md` and
   `docs/data-contract-review.md` for behavior and tests. Recovery from
   malformed IPC frames, final Map event-loop behavior and live-memory budgets
-  remain open in #128/#143; no general exception model is implemented.
+  remain as implementation work in #143/#145; #128 is approved and closed.
+  No general exception model is implemented.
 
 ## Compiler
 
@@ -44,10 +45,10 @@ Runtime calls are defined in `spec/bytecode.md` (approved by the VM Core owner).
 
 ## VM
 
-- VM #133 adds dedicated Float/String ownership and real data E2E tests from
+- Completed VM #133 adds dedicated Float/String ownership and real data E2E tests from
   PR #164 over the implementation from #165. Recoverable domain JSON validation
   is implemented through narrow Int-returning Runtime calls; IPC-frame recovery
-  and bounded live-memory policy remain to be verified (#128/#143).
+  and bounded live-memory policy remain to be verified (#143/#145).
 
 - The C++ independent-execution model is defined in `spec/vm-execution.md` (#93).
   The Runtime owner reviewed the resource-isolation restrictions in PR #117;
@@ -69,11 +70,11 @@ The Runtime call ABI and the first function (`runtime.log`) are defined in `spec
 mechanism and message format for the Analyzer↔Map scenario are defined in `spec/ipc.md` (both approved by
 the Runtime owner). Remaining open:
 
-- Device #134, Broker #135 and WM #136 APIs are implemented, but the remaining
-  design decisions for #128 require owner review (see `spec/runtime-api.md`).
-  In particular, a nonblocking `runtime.ipc_poll`/`runtime.ipc_message` pair
-  is still only a proposal; the current blocking `ipc_receive` is unsuitable
-  for the final Map event loop without separate scheduling.
+- Device #134, Broker #135 and WM #136 APIs are implemented. The project
+  coordinator approved the minimal #128 design without individual owner review.
+  The additional `runtime.ipc_poll`/`runtime.ipc_message` pair is **not yet
+  implemented** (implementation/E2E in #143/#145); the current blocking
+  `ipc_receive` is unsuitable for the final Map event loop.
 - Linux threading primitive.
 - Thread synchronization primitives.
 The camera architecture and the **initial** `camera.detectMarkers() -> String`
@@ -83,11 +84,12 @@ protocol, timeout and helper lifecycle are fixed in
 
 - Float is implemented in Compiler #107 and VM #108 and is passed through the
   Runtime Value boundary by #134. There is no new bytecode ABI; VM/Runtime
-  validation and generated String ownership still need data-integration review.
+  validation and generated String ownership have VM/data E2E coverage in #133.
   Native collections/`Detection[]` remain unresolved, and the current
   Camera API continues returning JSON as `String`.
 - An overall recoverable error mechanism visible to `.tc` beyond the narrow
-  nonfatal domain validators; malformed IPC frames still need #128 polling.
+  nonfatal domain validators; malformed IPC frames still need the approved
+  #128 polling interface to be implemented and verified in #143/#145.
 - Production camera configuration and device-calibration strategy; initial
   defaults are only for the prototype.
 - Approval from the course instructor for OpenCV/gocv usage in the detector.
