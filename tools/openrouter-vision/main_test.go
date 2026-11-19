@@ -123,7 +123,7 @@ func TestNvidiaFreeVisionRequestProfile(t *testing.T) {
 			t.Errorf("incorrect free NVIDIA vision settings: %+v", request)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\\"status\\":\\"present\\",\\"bbox\\":null}"}}]}`))
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"status\":\"present\",\"bbox\":null}"}}]}`))
 	}))
 	defer server.Close()
 	got, err := recognize(context.Background(), server.Client(), server.URL,
