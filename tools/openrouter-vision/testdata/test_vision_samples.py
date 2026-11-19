@@ -14,7 +14,7 @@ class SampleFixtureTests(unittest.TestCase):
         self.assertEqual(len(cases), 7)
         self.assertEqual(cases["C1"]["expect"], "present")
         self.assertEqual(cases["N1"]["expect"], "absent")
-        self.assertIsNone(cases["N3"]["expect"])
+        self.assertEqual(cases["N3"]["expect"], "absent")
         for sample_id, item in cases.items():
             self.assertIn(item["expect"], ("present", "absent", None))
             self.assertTrue(item["source"].startswith(

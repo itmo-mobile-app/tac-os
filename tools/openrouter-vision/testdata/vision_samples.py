@@ -27,8 +27,10 @@ def load_manifest():
             "present", "absent", None
         ):
             raise ValueError(f"{sample_id}: invalid expected status")
-        if not isinstance(entry.get("sha256"), str) or len(entry["sha256"]) != 64:
-            raise ValueError(f"{sample_id}: missing SHA-256")
+        if entry.get("file") not in (sample_id + ".jpg", sample_id + ".webp"):
+            raise ValueError(f"{sample_id}: invalid image filename")
+        if not isinstance(entry.get("git_blob_sha1"), str) or len(entry["git_blob_sha1"]) != 40:
+            raise ValueError(f"{sample_id}: missing Git blob SHA-1")
     return data
 
 
@@ -41,26 +43,34 @@ def selected_ids(value, cases):
     return names
 
 
-def image_path(sample_id):
-    return PHOTOS / (sample_id + ".jpg")
+def image_path(sample_id, cases=None):
+    cases = cases if cases is not None else load_manifest()
+    return PHOTOS / cases[sample_id]["file"]
 
 
-def validate_image(path, expected_sha256):
+def validate_image(path, expected_sha1):
     # Verify the exact committed image used to define the test expectation.
     if not path.is_file():
         raise ValueError(f"missing committed image: {path}")
     data = path.read_bytes()
     if not 1 <= len(data) <= MAX_BYTES:
         raise ValueError(f"{path.name}: image size exceeds 2 MiB or is empty")
-    if not data.startswith(b"\xff\xd8\xff") or not data.endswith(b"\xff\xd9"):
-        raise ValueError(f"{path.name}: not a complete JPEG")
-    if hashlib.sha256(data).hexdigest() != expected_sha256:
-        raise ValueError(f"{path.name}: content hash differs from expected.json")
+    if path.suffix.lower() == ".jpg":
+        valid_format = data.startswith(b"\xff\xd8\xff") and data.endswith(b"\xff\xd9")
+    elif path.suffix.lower() == ".webp":
+        valid_format = data.startswith(b"RIFF") and data[8:12] == b"WEBP"
+    else:
+        valid_format = False
+    if not valid_format:
+        raise ValueError(f"{path.name}: invalid JPEG/WebP contents")
+    git_blob = b"blob " + str(len(data)).encode("ascii") + b"\x00" + data
+    if hashlib.sha1(git_blob).hexdigest() != expected_sha1:
+        raise ValueError(f"{path.name}: Git blob hash differs from expected.json")
 
 
 def run_one(sample_id, cases, timeout):
     path = image_path(sample_id)
-    validate_image(path, cases[sample_id]["sha256"])
+    validate_image(path, cases[sample_id]["git_blob_sha1"])
     cmd = ["go", "run", ".", "-image", str(path), "-send-image",
            "-timeout", str(timeout) + "s"]
     try:
@@ -126,7 +136,7 @@ def main():
                 print(f"{sample_id}: {entry['expect'] or 'informational'} "
                       f"{image_path(sample_id)}")
             elif args.action == "check":
-                validate_image(image_path(sample_id), entry["sha256"])
+                validate_image(image_path(sample_id), entry["git_blob_sha1"])
                 print(f"{sample_id}: committed JPEG checksum OK")
             else:
                 result = run_one(sample_id, cases, args.timeout)

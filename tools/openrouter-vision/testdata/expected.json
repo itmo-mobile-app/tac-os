@@ -1,0 +1,72 @@
+{
+  "P1": {
+    "file": "P1.jpg",
+    "expect": "present",
+    "git_blob_sha1": "8490a58249f2481a20f2a437eb3a13c2af4a0472",
+    "credit": "Od5563 / BEAR Airsoft",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Airsoft_squad.jpg",
+    "mirrored_from": "0Inexis0/saar-fighters:app/assets/slideshow/airsoft-squad.jpg",
+    "description": "Original previously tested P1 airsoft squad"
+  },
+  "P2": {
+    "file": "P2.jpg",
+    "expect": "present",
+    "git_blob_sha1": "14f3725cd654c7ba6cc1ff883a9f975fbd8b086a",
+    "credit": "Mamusque",
+    "license": "CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:ASD_Decima_Airborne_Softair_Team_-_Pisa_-_In_Action.jpg",
+    "mirrored_from": "0Inexis0/saar-fighters:app/assets/slideshow/airsoft-team.jpg",
+    "description": "Different airsoft-team image, not the older P2"
+  },
+  "P3": {
+    "file": "P3.jpg",
+    "expect": "present",
+    "git_blob_sha1": "6c2e9ce208291a2810983663b0642ef36613613b",
+    "credit": "Myneone",
+    "license": "CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Airsoft_Designed_Shooter.jpg",
+    "mirrored_from": "0Inexis0/saar-fighters:app/assets/slideshow/airsoft-shooter.jpg",
+    "description": "Different airsoft player, not older P3"
+  },
+  "C1": {
+    "file": "C1.webp",
+    "expect": "present",
+    "git_blob_sha1": "92d3c138038e6657063959e0d1ad80d80265f267",
+    "credit": "D Coetzee",
+    "license": "CC0 1.0",
+    "source": "https://commons.wikimedia.org/wiki/File:People_walking_in_park_in_front_of_bay_and_Berkeley_shore_(7114041597).jpg",
+    "mirrored_from": "GiuseppeBellamacina/babbol:www/img/p/park-walk.webp",
+    "description": "Everyday-clothed people in a park; downsized WebP"
+  },
+  "N1": {
+    "file": "N1.webp",
+    "expect": "absent",
+    "git_blob_sha1": "6bdba4651edd51af49ef8ec1d257a55f4ff10f70",
+    "credit": "Ann Cook",
+    "license": "CC BY-SA 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Heading_for_the_fork_in_the_path_-_geograph.org.uk_-_3327285.jpg",
+    "mirrored_from": "GiuseppeBellamacina/babbol:www/img/p/r-b2-02.webp",
+    "description": "Woodland trail without people; different from older N1"
+  },
+  "N2": {
+    "file": "N2.webp",
+    "expect": "absent",
+    "git_blob_sha1": "1abf7f932e8523ff67e3477e3ce280abc5b9e6e6",
+    "credit": "ajay_suresh",
+    "license": "CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:AA_Batteries_(51825378856).jpg",
+    "mirrored_from": "GiuseppeBellamacina/babbol:www/img/p/battery.webp",
+    "description": "Batteries with no person; different from older airsoft-scope N2"
+  },
+  "N3": {
+    "file": "N3.webp",
+    "expect": "absent",
+    "git_blob_sha1": "bbcaed246f10b21941de50b58dcb58109352921e",
+    "credit": "Acabashi",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Baggage_cases_luggage_trunks_Epping-Ongar-Railway_North_Weald_Essex_England.jpg",
+    "mirrored_from": "GiuseppeBellamacina/babbol:www/img/p/suitcase.webp",
+    "description": "Luggage without people; not the earlier N3 mannequin"
+  }
+}
