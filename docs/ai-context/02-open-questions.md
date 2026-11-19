@@ -18,13 +18,13 @@ Remaining open:
 - Exact representation of structs or objects.
 - Error handling model.
 - Standard library scope.
-- Issue #127 proposes nine narrow String/JSON Runtime helpers using existing
-  scalar values, not structs or a JSON DOM. See `spec/language.md` and
-  `spec/runtime-api.md` for the unapproved signatures and limits, and
-  `docs/data-contract-review.md` for owner review. Exact-field-set validation,
-  recoverable rejection of malformed messages, and bounded String reclamation
-  must be decided before #132/#133 implement this proposal. Device/network/WM
-  signatures remain with #128. No owner approval is inferred from these docs.
+- Issue #127 introduced nine narrow String/JSON helpers and two additional
+  domain-schema validators over existing scalar values, not structs or a JSON
+  DOM. The validators return `0` for malformed external domain content and
+  `1` for valid content. See `spec/runtime-api.md` and
+  `docs/data-contract-review.md` for behavior and tests. Recovery from
+  malformed IPC frames, final Map event-loop behavior and live-memory budgets
+  remain open in #128/#143; no general exception model is implemented.
 
 ## Compiler
 
@@ -45,8 +45,9 @@ Runtime calls are defined in `spec/bytecode.md` (approved by the VM Core owner).
 ## VM
 
 - VM #133 adds dedicated Float/String ownership and real data E2E tests from
-  PR #164 over the implementation from #165. The remaining decisions are
-  recoverable validation and bounded live-memory policy (#127/#128).
+  PR #164 over the implementation from #165. Recoverable domain JSON validation
+  is implemented through narrow Int-returning Runtime calls; IPC-frame recovery
+  and bounded live-memory policy remain to be verified (#128/#143).
 
 - The C++ independent-execution model is defined in `spec/vm-execution.md` (#93).
   The Runtime owner reviewed the resource-isolation restrictions in PR #117;
@@ -85,7 +86,8 @@ protocol, timeout and helper lifecycle are fixed in
   validation and generated String ownership still need data-integration review.
   Native collections/`Detection[]` remain unresolved, and the current
   Camera API continues returning JSON as `String`.
-- A recoverable error mechanism visible to `.tc` beyond an initial Runtime failure.
+- An overall recoverable error mechanism visible to `.tc` beyond the narrow
+  nonfatal domain validators; malformed IPC frames still need #128 polling.
 - Production camera configuration and device-calibration strategy; initial
   defaults are only for the prototype.
 - Approval from the course instructor for OpenCV/gocv usage in the detector.

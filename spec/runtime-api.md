@@ -30,8 +30,9 @@ borrowing parser storage; copying/moving/overwriting values reclaims
 ownership through normal C++ lifetimes. The actual `vm_value_boundary`
 and `vm_data_e2e` tests are enabled in the full CTest suite.
 
-This value transport does not approve recoverable JSON errors or an
-unbounded-memory guarantee for the final Map application.
+This value transport alone does not provide nonfatal JSON validation or an
+unbounded-memory guarantee for the final Map application; see the narrow
+validation operations below.
 
 ## First Runtime function
 
@@ -435,6 +436,48 @@ Selection rationale and source examples are in
 | `text.fromInt(value: Int) -> String` | Base-10 i64 token without quotes, grouping or leading `+` |
 | `text.fromFloat(value: Float) -> String` | Locale-independent finite JSON number token |
 
+### Recoverable domain JSON validation (#127)
+
+**Implementation candidate:** these two additional Runtime functions are implemented
+to let a single-threaded Map discard an invalid external payload without
+terminating the VM. They use the existing Int/String CALL_RUNTIME ABI; the nine
+existing getters and formatters are unchanged.
+
+| Signature | Return |
+| --- | --- |
+| `json.validateObservation(source: String, ipc: Int) -> Int` | `1` if valid, `0` if malformed/invalid |
+| `json.validateTarget(source: String) -> Int` | `1` if valid, `0` if malformed/invalid |
+
+`ipc` is `1` for exactly seven fields (`type: "OBSERVATION"` plus the six
+Observation fields from `spec/ipc.md`), or `0` for exactly the six Broker
+Observation fields. Target requires exactly the five fields in
+`spec/data-model.md`. Fields may appear in any order. Duplicate, missing
+or extra keys, unknown `type`, unsupported/nested JSON values, bad UTF-8,
+nonempty-ID violations, incorrect numeric types and out-of-range latitude
+(-90..90), longitude (-180..180), confidence/probability (0..1), or a
+timestamp/lastSeenAt outside signed i64 are invalid. Observation `targetId`
+must contain only decimal digits; Target requires a nonempty `targetId`.
+
+Both functions parse at most 65,536 UTF-8 bytes and return `0` for
+malformed, unsupported or oversized *external content*, without logging
+the payload or producing substitute values. They are pure and own no
+state across calls. Incorrect *program arguments* (wrong Runtime kinds,
+arity, or `ipc` other than `0`/`1`) remain `RuntimeError`. Allocation
+failure and VM/runtime corruption are not converted to success statuses.
+
+Only after validation returns `1` may the application call the existing
+typed `json.get*` helpers on the same immutable payload. Otherwise it
+drops the update and retains the previously accepted state. The legacy
+getters remain fail-fast if called on unchecked data; no general `try`
+syntax, new value kind, JSON DOM or schema-changing wire format is added.
+
+This validates *returned Broker payload Strings* in a Map loop. A
+malformed Analyzer IPC frame currently fails inside the blocking
+`runtime.ipc_receive()` before returning a String. To recover from that
+error as well, the additive `runtime.ipc_poll`/`runtime.ipc_message`
+proposal in #128 must be implemented independently and tested. This
+increment does not claim that the final Map event loop is already resilient.
+
 #### Supported JSON subset
 
 - Input must be valid UTF-8 JSON with exactly one root value; JSON whitespace
@@ -495,20 +538,21 @@ identify the helper and failing key/index or limit without logging the entire
 payload. A declared call with a wrong argument type is rejected earlier by
 Compiler; invalid bytecode is still checked by VM/Runtime.
 
-The existing uncaught Runtime error path terminates execution with a nonzero
-status. This is an explicit limitation of this proposal, **not** the production
-Map policy. In contrast, the existing `runtime.ipc_send` still returns -1 on
-transport/framing failure; helpers do not change that approved behavior.
+The existing *legacy getter* RuntimeError path terminates execution with a
+nonzero status. The two new validators return `0` for bad external JSON so
+Map may skip it before calling getters. This does not make malformed IPC
+frames recoverable in `runtime.ipc_receive()`; see #128. The existing
+`runtime.ipc_send` still returns -1 on transport/framing failure.
 
 Before #132/#133 proceed, owners must decide:
 
 1. Whether these nine helpers are sufficient, or narrow schema-aware codecs
    would reduce total complexity. Such codecs may validate/encode fields only;
    they must never compute coordinates, confidence, probability or map pixels.
-2. How `.tc` can reject malformed, wrong-type, missing/extra-field domain
-   messages and continue without a fatal RuntimeError. A bounded validation
-   API versus recoverable errors needs explicit agreement with #128; neither
-   a general exception model nor a JSON DOM is approved here.
+2. The narrow validation API above addresses malformed/wrong-type/extra-field
+   Broker payloads without fatal RuntimeError. Recoverable IPC framing and
+   event-loop scheduling remain a dependency of #128; neither a general
+   exception model nor a JSON DOM is introduced here.
 3. The VM ownership/reclamation rule for generated immutable Strings. Per-call
    size bounds do not bound a long-running process. No GC, global String arena,
    leaked lifetime or new pointer ABI is implicitly approved.

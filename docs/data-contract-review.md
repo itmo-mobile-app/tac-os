@@ -1,8 +1,9 @@
 # Observation and Target data contract review (#127)
 
-Status: Compiler/Runtime implementation and E2E tests are available (#132),
-but required owner approvals are not recorded. This is a review checklist;
-issue #127 is not complete.
+Status: Compiler/Runtime helpers and E2E tests are available (#132).
+Recoverable Observation/Target validators are implemented as a separate
+increment. Final Map IPC recovery and long-running resource tests are not
+covered here; issue #127 remains open until those acceptance gaps are resolved.
 
 ## Review scope
 
@@ -79,10 +80,13 @@ and exact domain field-set approval remain separate gates.
 | Older Runtime loads bytecode naming an unknown helper | Load-time error |
 | Existing hello, Float, IPC and map projection scenarios | Unchanged behavior |
 
-Production Map must reject invalid/extra-field updates and continue displaying
-the previous state. The error/validation mechanism to support this remains an
-approval gate coordinated with #128; the current fatal helper-error proposal
-alone cannot provide this guarantee.
+An application can call `json.validateObservation` (ipc=0/1) or
+`json.validateTarget` and skip an invalid message when the result is `0`,
+without stopping the VM. Tests cover malformed/duplicate/missing/extra
+fields, schema, ranges, exact i64 and the ability to validate a subsequent
+correct message. Existing `json.get*` helpers still throw on unchecked bad
+input. For Map's complete event loop, malformed IPC frames still need the
+The #128 nonblocking/polling receive path is still required; this is not a completed E2E of #143.
 
 ## Handoff
 

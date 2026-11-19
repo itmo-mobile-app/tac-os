@@ -2,7 +2,9 @@
 
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
 #include <cmath>
+#include <initializer_list>
 #include <cstdint>
 #include <limits>
 #include <set>
@@ -122,6 +124,67 @@ Value checked_string_result(std::string text, const char* helper) {
     return Value::string_value_of(std::move(text));
 }
 
+// Schema validation is deliberately non-throwing for untrusted message contents.
+// The existing field getters still throw on programmer errors or unchecked input.
+bool exact_fields(const json& object, std::initializer_list<const char*> names) {
+    if (!object.is_object() || object.size() != names.size()) return false;
+    for (const char* name : names) {
+        if (!object.contains(name)) return false;
+    }
+    return true;
+}
+
+bool int64_field(const json& value) {
+    if (value.is_number_unsigned()) {
+        return value.get<std::uint64_t>() <=
+               static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max());
+    }
+    return value.is_number_integer();
+}
+
+bool number_in_range(const json& value, double low, double high) {
+    if (!value.is_number()) return false;
+    const double number = value.get<double>();
+    return std::isfinite(number) && number >= low && number <= high;
+}
+
+bool nonempty_string(const json& value) {
+    return value.is_string() && !value.get_ref<const std::string&>().empty();
+}
+
+bool observation_fields(const json& object, bool ipc) {
+    if (ipc) {
+        if (!exact_fields(object, {"type", "targetId", "observerId",
+                                   "latitude", "longitude", "confidence", "timestamp"}) ||
+            !object["type"].is_string() || object["type"] != "OBSERVATION") return false;
+    } else if (!exact_fields(object, {"targetId", "observerId", "latitude",
+                                      "longitude", "confidence", "timestamp"})) {
+        return false;
+    }
+
+    if (!nonempty_string(object["targetId"]) ||
+        !nonempty_string(object["observerId"])) return false;
+    const auto& target = object["targetId"].get_ref<const std::string&>();
+    if (!std::all_of(target.begin(), target.end(), [](unsigned char ch) {
+            return ch >= '0' && ch <= '9';
+        })) return false;
+
+    return number_in_range(object["latitude"], -90.0, 90.0) &&
+           number_in_range(object["longitude"], -180.0, 180.0) &&
+           number_in_range(object["confidence"], 0.0, 1.0) &&
+           int64_field(object["timestamp"]);
+}
+
+bool target_fields(const json& object) {
+    return exact_fields(object, {"targetId", "latitude", "longitude",
+                                 "probability", "lastSeenAt"}) &&
+           nonempty_string(object["targetId"]) &&
+           number_in_range(object["latitude"], -90.0, 90.0) &&
+           number_in_range(object["longitude"], -180.0, 180.0) &&
+           number_in_range(object["probability"], 0.0, 1.0) &&
+           int64_field(object["lastSeenAt"]);
+}
+
 } // namespace
 
 Value json_array_length(Runtime&, std::ostream&, const std::vector<Value>& args) {
@@ -191,6 +254,35 @@ Value json_get_string(Runtime&, std::ostream&, const std::vector<Value>& args) {
         throw RuntimeError(std::string(helper) + ": key '" + key + "' is not a String");
     }
     return Value::string_value_of(value.get<std::string>());
+}
+
+Value json_validate_observation(Runtime&, std::ostream&, const std::vector<Value>& args) {
+    constexpr const char* helper = "json.validateObservation";
+    const std::string& source = string_arg(args, 0, helper);
+    if (args[1].kind != ValueKind::Int) {
+        throw RuntimeError(std::string(helper) + ": argument 2 must be an Int");
+    }
+    const std::int64_t mode = args[1].int_value;
+    if (mode != 0 && mode != 1) {
+        throw RuntimeError(std::string(helper) + ": ipc must be 0 or 1");
+    }
+    try {
+        const json document = parse(source, helper);
+        return Value::int_value_of(observation_fields(document, mode == 1) ? 1 : 0);
+    } catch (const RuntimeError&) {
+        return Value::int_value_of(0);
+    }
+}
+
+Value json_validate_target(Runtime&, std::ostream&, const std::vector<Value>& args) {
+    constexpr const char* helper = "json.validateTarget";
+    const std::string& source = string_arg(args, 0, helper);
+    try {
+        const json document = parse(source, helper);
+        return Value::int_value_of(target_fields(document) ? 1 : 0);
+    } catch (const RuntimeError&) {
+        return Value::int_value_of(0);
+    }
 }
 
 Value json_quote(Runtime&, std::ostream&, const std::vector<Value>& args) {

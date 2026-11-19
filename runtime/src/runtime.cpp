@@ -603,6 +603,8 @@ const Runtime::FunctionEntry* Runtime::find_function(const std::string& name) {
         {"json.getInt", {2, &detail::json_get_int}},
         {"json.getFloat", {2, &detail::json_get_float}},
         {"json.getString", {2, &detail::json_get_string}},
+        {"json.validateObservation", {2, &detail::json_validate_observation}},
+        {"json.validateTarget", {1, &detail::json_validate_target}},
         {"json.quote", {1, &detail::json_quote}},
         {"text.concat", {2, &detail::text_concat}},
         {"text.fromInt", {1, &detail::text_from_int}},

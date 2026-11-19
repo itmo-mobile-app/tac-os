@@ -174,6 +174,79 @@ void limits(Runtime& r) {
     rejects(r, "json.quote", {S(std::string(bound / 2, '"'))}, "exceeds 65536", "escape expansion");
 }
 
+void recoverable_validation(Runtime& r) {
+    const std::string observation =
+        R"({"targetId":"17","observerId":"device-1","latitude":59.9505,"longitude":30.311,"confidence":0.85,"timestamp":9007199254740993})";
+    const std::string ipc =
+        R"({"type":"OBSERVATION","targetId":"17","observerId":"device-1","latitude":59.9505,"longitude":30.311,"confidence":0.85,"timestamp":9007199254740993})";
+    const std::string target =
+        R"({"targetId":"17","latitude":59.9505,"longitude":30.311,"probability":0.85,"lastSeenAt":9007199254740993})";
+    auto accepted = [&](const std::string& name, const std::string& source, bool ipc_mode = false) {
+        const std::vector<Value> args = name == "json.validateObservation"
+            ? std::vector<Value>{S(source), I(ipc_mode ? 1 : 0)}
+            : std::vector<Value>{S(source)};
+        const Value result = r.call(name, args);
+        check(result.kind == ValueKind::Int, name + " result kind");
+        return result.int_value;
+    };
+
+    check(accepted("json.validateObservation", observation) == 1, "valid Broker Observation");
+    check(accepted("json.validateObservation", ipc, true) == 1, "valid IPC Observation");
+    check(accepted("json.validateTarget", target) == 1, "valid Target");
+    const std::string reordered =
+        R"({"lastSeenAt":9007199254740993,"probability":0.85,"longitude":30.311,"latitude":59.9505,"targetId":"17"})";
+    check(accepted("json.validateTarget", reordered) == 1, "reordered keys");
+    check(accepted("json.validateObservation", ipc) == 0, "IPC type disallowed on Broker");
+    check(accepted("json.validateObservation", observation, true) == 0, "IPC type required");
+
+    const std::vector<std::string> bad_target = {
+        "", "{", "[]", R"({"targetId":"17","latitude":59.9505})",
+        R"({"targetId":"17","latitude":59.9505,"longitude":30.311,"probability":0.85,"lastSeenAt":1,"extra":0})",
+        R"({"targetId":"17","targetId":"18","latitude":59.9505,"longitude":30.311,"probability":0.85,"lastSeenAt":1})",
+        R"({"targetId":"17","latitude":"59.95","longitude":30.311,"probability":0.85,"lastSeenAt":1})",
+        R"({"targetId":"17","latitude":91,"longitude":30.311,"probability":0.85,"lastSeenAt":1})",
+        R"({"targetId":"17","latitude":59.95,"longitude":-181,"probability":0.85,"lastSeenAt":1})",
+        R"({"targetId":"17","latitude":59.95,"longitude":30.311,"probability":1.01,"lastSeenAt":1})",
+        R"({"targetId":"17","latitude":59.95,"longitude":30.311,"probability":0.85,"lastSeenAt":1.0})",
+        R"({"targetId":"17","latitude":59.95,"longitude":30.311,"probability":0.85,"lastSeenAt":9223372036854775808})",
+        R"({"targetId":"","latitude":59.95,"longitude":30.311,"probability":0.85,"lastSeenAt":1})",
+        R"({"targetId":"17","latitude":59.95,"longitude":30.311,"probability":0.85,"lastSeenAt":null})",
+        R"({"targetId":"17","latitude":59.95,"longitude":30.311,"probability":0.85,"lastSeenAt":1e9999})",
+        target + " garbage", target + " ",
+    };
+    for (std::size_t i = 0; i < bad_target.size(); ++i) {
+        if (i == bad_target.size() - 1) {
+            check(accepted("json.validateTarget", bad_target[i]) == 1, "trailing JSON whitespace");
+        } else {
+            check(accepted("json.validateTarget", bad_target[i]) == 0,
+                  "bad Target " + std::to_string(i));
+        }
+    }
+    check(accepted("json.validateTarget", std::string(65537, 'x')) == 0,
+          "oversized input returns 0");
+    check(accepted("json.validateTarget", target + std::string(1, '\xff')) == 0,
+          "invalid UTF-8 returns 0");
+    const std::vector<std::string> bad_observation = {
+        R"({"type":"WRONG","targetId":"17","observerId":"x","latitude":0,"longitude":0,"confidence":0.9,"timestamp":1})",
+        R"({"type":"OBSERVATION","targetId":"x17","observerId":"x","latitude":0,"longitude":0,"confidence":0.9,"timestamp":1})",
+        R"({"type":"OBSERVATION","targetId":"17","observerId":"","latitude":0,"longitude":0,"confidence":0.9,"timestamp":1})",
+        R"({"type":"OBSERVATION","targetId":"17","observerId":"x","latitude":0,"longitude":0,"confidence":1.1,"timestamp":1})",
+        R"({"type":"OBSERVATION","targetId":"17","observerId":"x","latitude":0,"longitude":0,"confidence":0.9,"timestamp":1,"distance":3})",
+        R"({"type":"OBSERVATION","targetId":"17","observerId":"x","latitude":0,"longitude":0,"confidence":0.9,"timestamp":true})",
+    };
+    for (std::size_t i = 0; i < bad_observation.size(); ++i) {
+        check(accepted("json.validateObservation", bad_observation[i], true) == 0,
+              "bad Observation " + std::to_string(i));
+    }
+    check(accepted("json.validateTarget", target) == 1,
+          "valid update after malformed input");
+    rejects(r, "json.validateTarget", {I(1)}, "argument 1", "invalid argument kind");
+    rejects(r, "json.validateObservation", {S(observation), S("1")}, "argument 2",
+            "invalid mode kind");
+    rejects(r, "json.validateObservation", {S(observation), I(2)}, "ipc must be 0 or 1",
+            "invalid mode value");
+}
+
 void independent_runtimes() {
     // Two independent Runtimes in parallel: no shared parser state or String storage.
     auto worker = [](int seed, bool* ok) {
@@ -204,7 +277,8 @@ int main() {
     for (const auto& [name, arity] : std::vector<std::pair<std::string, int>>{
              {"json.arrayLength", 1}, {"json.arrayObject", 2}, {"json.getInt", 2},
              {"json.getFloat", 2}, {"json.getString", 2}, {"json.quote", 1},
-             {"text.concat", 2}, {"text.fromInt", 1}, {"text.fromFloat", 1}}) {
+             {"text.concat", 2}, {"text.fromInt", 1}, {"text.fromFloat", 1},
+             {"json.validateObservation", 2}, {"json.validateTarget", 1}}) {
         check(runtime.has_function(name, static_cast<std::uint8_t>(arity)), name + " registered");
         check(!runtime.has_function(name, static_cast<std::uint8_t>(arity + 1)), name + " arity");
     }
@@ -212,6 +286,7 @@ int main() {
     objects(runtime);
     output(runtime);
     limits(runtime);
+    recoverable_validation(runtime);
     independent_runtimes();
     check(sink.str().empty(), "helpers do no I/O");
 
