@@ -102,6 +102,26 @@ and [multimodal image tutorial](https://openrouter.ai/blog/tutorials/send-image-
 - `OPENROUTER_MODEL` must be selected and proven by real tests under #104;
   a name alone is not evidence that it supports images.
 
+## Download and run the curated image samples
+
+The repository includes a small opt-in **fixture downloader and evaluator**
+in [`testdata/`](testdata/README.md). Image binaries are not committed;
+the source/author/license/expected label is documented and one command
+downloads the samples into a Git-ignored folder. This includes the original
+P1–P3/N1–N3 scenarios plus **C1, ordinary people without tactical gear**:
+
+```sh
+python3 testdata/vision_samples.py fetch
+export OPENROUTER_MODEL="nvidia/nemotron-3.5-super-vl:free"
+python3 testdata/vision_samples.py run --ids P1,C1,N1 --send-images
+```
+
+The `fetch` operation **never calls the model**. The `run` operation
+makes one external request per selected image and requires an API key and
+explicit upload consent. Ordinary GitHub CI only checks the downloader
+offline and never uploads images. Verify source and provider usage rights
+before sending any real photographs of people.
+
 ## Suggested verification images
 
 Run approved photos of: one clearly visible casual-clothes player, a group
