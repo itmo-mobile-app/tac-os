@@ -26,6 +26,8 @@ jobs:
           go-version: stable
           cache: false
       - name: Check acceptance test formatting
-        run: test -z "$(gofmt -l server_e2e_test.go)"
+        run: test -z "$(gofmt -l server_e2e_test.go dbms_restart_e2e_test.go)"
       - name: Verify acceptance tests with real Broker, DBMS, Target Service and Map
         run: go test -mod=readonly -tags server_e2e -race -count=1 -timeout 5m -v -run '^TestServerE2E$' .
+      - name: Verify DBMS restart and storage failures with real Target data
+        run: go test -mod=readonly -tags server_e2e -race -count=1 -timeout 5m -v -run '^TestDBMSRestartE2E$' .
