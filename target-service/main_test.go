@@ -338,3 +338,34 @@ func TestSystemRealBrokerAndDBMS(t *testing.T) {
 		t.Fatal("service did not notice Broker disconnect")
 	}
 }
+
+// TestAmbiguousWriteNoReplay complements the client's wire-level no-replay test.
+func TestAmbiguousWriteNoReplay(t *testing.T) {
+	for _, failedSQL := range []string{"INSERT INTO observations", "INSERT INTO targets", "UPDATE targets"} {
+		t.Run(failedSQL, func(t *testing.T) {
+			db := &mockDB{}
+			publications := 0
+			s := newService(db, func(aggregation.Target) error { publications++; return nil }, func() time.Time { return time.UnixMilli(1800000000000) })
+			if failedSQL == "UPDATE targets" {
+				if _, err := s.observation(context.Background(), obs("first", 0.8, 1800000000000)); err != nil {
+					t.Fatal(err)
+				}
+			}
+			before := publications
+			db.statements = nil
+			db.fail = failedSQL
+			if _, err := s.observation(context.Background(), obs("second", 0.6, 1800000000000)); err == nil {
+				t.Fatal("ambiguous write reported success")
+			}
+			writes := 0
+			for _, sql := range db.statements {
+				if strings.HasPrefix(sql, failedSQL) {
+					writes++
+				}
+			}
+			if writes != 1 || publications != before {
+				t.Fatalf("replay or publish: writes=%d publications=%d->%d", writes, before, publications)
+			}
+		})
+	}
+}

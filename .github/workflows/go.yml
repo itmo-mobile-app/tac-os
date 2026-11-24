@@ -100,7 +100,7 @@ jobs:
         working-directory: target-service
         env:
           TACOS_DBMS_SERVER: ${{ runner.temp }}/tacdb-server
-        run: go test -race -count=1 -v -run '^TestRealDBMSIntegration$' ./dbclient
+        run: go test -race -count=1 -v -run '^TestRealDBMS(Integration|LostReply)$' ./dbclient
 
       - name: Build Window Manager server and client
         if: matrix.component == 'Window Manager'

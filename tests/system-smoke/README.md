@@ -252,3 +252,20 @@ GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local go test -tags server_e2e -race -run '^
 ```
 
 The command's exit status is significant; a log file does not imply a passing run.
+
+## DBMS restart acceptance (#147)
+
+`TestDBMSRestartE2E` reuses the `server_e2e` fixtures to check real Target Service
+rows across DBMS restarts, with orderly and abrupt termination, invalid SQL,
+corrupt snapshot copies, int64/REAL preservation and socket cleanup:
+
+```sh
+GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local go test -tags server_e2e -race \
+  -run '^TestDBMSRestartE2E$' -count=1 -timeout 5m -v .
+```
+
+The Server acceptance E2E workflow runs it explicitly. Full instructions and
+ambiguous-write checks are in [DBMS restart verification](../../docs/testing/dbms-restart.md).
+The Target Service is stopped before the DBMS restart; no new observations are
+published before checking restored rows. Restarting/reconstructing Target Service
+itself remains #148. Untagged green tests do not substitute for this scenario.
